@@ -747,7 +747,8 @@ def day_bounds(current_date: date, window: ReportWindow) -> tuple[datetime, date
 
 
 def week_start_for_date(current_date: date) -> date:
-    return current_date - timedelta(days=current_date.weekday())
+    sprint_offset = ((current_date.day - 1) // 7) * 7
+    return date(current_date.year, current_date.month, 1) + timedelta(days=sprint_offset)
 
 
 def week_end_for_start(week_start: date) -> date:
@@ -1350,7 +1351,7 @@ def write_dashboard_files(payload: dict[str, Any], dashboard_dir: Path) -> None:
 
 def print_summary(built_report: BuiltReport, payload: dict[str, Any]) -> None:
     print("Dashboard data built: Отчет по МОПам")
-    print(f"Weeks: {built_report.week_count}")
+    print(f"Sprints: {built_report.week_count}")
     print(f"MOPs: {built_report.mop_count}")
     print(f"Detail rows: {built_report.detail_count}")
     print(f"Dashboard rows: {len(payload.get('baseRows', []))}")

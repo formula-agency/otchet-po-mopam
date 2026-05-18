@@ -157,12 +157,12 @@ function addDays(date, days) {
   return new Date(date.getTime() + days * DAY_MS);
 }
 
-function startOfWeek(date) {
-  const day = date.getUTCDay() || 7;
-  return addDays(date, 1 - day);
+function sprintStartForDate(date) {
+  const sprintOffset = Math.floor((date.getUTCDate() - 1) / 7) * 7;
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1 + sprintOffset));
 }
 
-function endOfWeek(date) {
+function sprintEndForStart(date) {
   return addDays(date, 6);
 }
 
@@ -170,14 +170,12 @@ function monthKey(date) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
-function startOfMonth(key) {
-  const [year, month] = key.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, 1));
+function firstDayOfMonth(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
 }
 
-function endOfMonth(key) {
-  const [year, month] = key.split('-').map(Number);
-  return new Date(Date.UTC(year, month, 0));
+function nextMonth(date) {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
 }
 
 function shortDate(date) {
@@ -191,7 +189,7 @@ function fullDate(date) {
 function formatWeekLabel(weekStartValue) {
   const start = parseISODate(weekStartValue);
   if (!start) return weekStartValue;
-  return `${shortDate(start)}-${fullDate(endOfWeek(start))}`;
+  return `${shortDate(start)}-${fullDate(sprintEndForStart(start))}`;
 }
 
 function formatMonthLabel(key) {
@@ -204,40 +202,47 @@ function referenceDate() {
 }
 
 function weekRange() {
-  const fallback = startOfWeek(referenceDate());
+  const fallback = sprintStartForDate(referenceDate());
   const rangeStart = parseISODate(data.filters?.minWeek)
-    || startOfWeek(parseISODate(data.report?.from) || fallback);
+    || sprintStartForDate(parseISODate(data.report?.from) || fallback);
   const endCandidates = [
     parseISODate(data.filters?.maxWeek),
     parseISODate(data.report?.to),
     referenceDate(),
     ...((data.baseRows || []).map((row) => parseISODate(row.weekStart))),
-  ].filter(Boolean).map(startOfWeek);
+  ].filter(Boolean).map(sprintStartForDate);
   const rangeEnd = endCandidates.length
     ? new Date(Math.max(...endCandidates.map((date) => date.getTime())))
     : fallback;
   return {
-    start: startOfWeek(rangeStart),
+    start: sprintStartForDate(rangeStart),
     end: rangeEnd,
   };
 }
 
-function weekIntersectsMonth(weekStartValue, selectedMonth) {
+function sprintBelongsToMonth(weekStartValue, selectedMonth) {
   const weekStart = parseISODate(weekStartValue);
   if (!weekStart || !selectedMonth) return false;
-  const weekFinish = endOfWeek(weekStart);
-  return weekStart <= endOfMonth(selectedMonth) && weekFinish >= startOfMonth(selectedMonth);
+  return monthKey(weekStart) === selectedMonth;
 }
 
 function allWeekOptions() {
   const byWeek = new Map();
   for (const row of data.baseRows || []) {
-    byWeek.set(row.weekStart, row.weekLabel);
+    const rowStart = parseISODate(row.weekStart);
+    if (rowStart && isoDate(sprintStartForDate(rowStart)) === row.weekStart) {
+      byWeek.set(row.weekStart, row.weekLabel);
+    }
   }
   const range = weekRange();
-  for (let current = range.start; current <= range.end; current = addDays(current, 7)) {
-    const value = isoDate(current);
-    if (!byWeek.has(value)) byWeek.set(value, formatWeekLabel(value));
+  for (let monthStart = firstDayOfMonth(range.start); monthStart <= range.end; monthStart = nextMonth(monthStart)) {
+    for (let day = 1; day <= 29; day += 7) {
+      const current = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), day));
+      if (current.getUTCMonth() !== monthStart.getUTCMonth()) continue;
+      if (sprintEndForStart(current) < range.start || current > range.end) continue;
+      const value = isoDate(current);
+      if (!byWeek.has(value)) byWeek.set(value, formatWeekLabel(value));
+    }
   }
   return [...byWeek.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -249,9 +254,7 @@ function monthOptions() {
   for (const week of allWeekOptions()) {
     const start = parseISODate(week.value);
     if (!start) continue;
-    const end = endOfWeek(start);
     months.set(monthKey(start), formatMonthLabel(monthKey(start)));
-    months.set(monthKey(end), formatMonthLabel(monthKey(end)));
   }
   return [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -260,7 +263,7 @@ function monthOptions() {
 
 function sprintOptionsForMonth(selectedMonth) {
   return allWeekOptions()
-    .filter((week) => weekIntersectsMonth(week.value, selectedMonth))
+    .filter((week) => sprintBelongsToMonth(week.value, selectedMonth))
     .map((week, index) => ({
       value: week.value,
       label: `Спринт ${index + 1} · ${week.label}`,
@@ -268,7 +271,7 @@ function sprintOptionsForMonth(selectedMonth) {
 }
 
 function currentSprintValue() {
-  return isoDate(startOfWeek(referenceDate()));
+  return isoDate(sprintStartForDate(referenceDate()));
 }
 
 function defaultPeriod() {
@@ -319,7 +322,7 @@ function filteredRows() {
   return (data.baseRows || []).filter((row) => {
     if (state.mopName !== 'all' && row.mopName !== state.mopName) return false;
     if (state.sprint && row.weekStart !== state.sprint) return false;
-    if (!state.sprint && state.month && !weekIntersectsMonth(row.weekStart, state.month)) return false;
+    if (!state.sprint && state.month && !sprintBelongsToMonth(row.weekStart, state.month)) return false;
     if (!query) return true;
     return normalizeSearch(row.mopName).includes(query);
   });
