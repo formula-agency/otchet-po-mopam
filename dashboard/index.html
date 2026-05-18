@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Отчет по МОПам</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script defer src="./data/mop-report-data.js?v=20260515-1"></script>
+  <script defer src="./app.js?v=20260515-1"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="Наверх">Отчет по МОПам</a>
+    <nav class="site-nav" aria-label="Разделы">
+      <a href="#overview">Обзор</a>
+      <a href="#weeks">Недели</a>
+      <a href="#mops">МОПы</a>
+      <a href="#details">Детализация</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="summary-band section-anchor" id="overview" aria-labelledby="overview-title">
+      <div>
+        <p class="eyebrow">План-факт по спринтам</p>
+        <h1 id="overview-title">Отчет по МОПам</h1>
+      </div>
+      <div class="summary-band__stats" aria-label="Сводка">
+        <article><span>МОП</span><strong id="hero-mops">0</strong></article>
+        <article><span>Недель</span><strong id="hero-weeks">0</strong></article>
+        <article><span>Встречи</span><strong id="hero-meetings">0 / 0</strong></article>
+        <article><span>Брони</span><strong id="hero-reservations">0 / 0</strong></article>
+        <article><span>Ипотеки</span><strong id="hero-mortgages">0 / 0</strong></article>
+        <article><span>Эфир</span><strong id="hero-air">00:00:00 / 00:00:00</strong></article>
+      </div>
+    </section>
+
+    <div class="page-shell">
+      <section class="filters-band" aria-label="Фильтры">
+        <label class="field">
+          <span>МОП</span>
+          <select id="filter-mop"></select>
+        </label>
+        <label class="field">
+          <span>Неделя от</span>
+          <select id="filter-week-from"></select>
+        </label>
+        <label class="field">
+          <span>Неделя до</span>
+          <select id="filter-week-to"></select>
+        </label>
+        <label class="field field-search">
+          <span>Поиск</span>
+          <input id="filter-search" type="search" placeholder="МОП">
+        </label>
+        <button id="reset-filters" class="ghost-button" type="button">Сбросить</button>
+      </section>
+
+      <section class="active-state" aria-live="polite">
+        <div id="active-filters" class="chips"></div>
+        <div id="selection-summary" class="selection-summary"></div>
+      </section>
+
+      <section class="kpi-grid" aria-label="Ключевые показатели">
+        <article class="kpi-card accent-blue"><span>Встречи</span><strong id="kpi-meetings">0 / 0</strong><small id="kpi-meetings-rate">0%</small></article>
+        <article class="kpi-card accent-green"><span>Брони</span><strong id="kpi-reservations">0 / 0</strong><small id="kpi-reservations-rate">0%</small></article>
+        <article class="kpi-card accent-violet"><span>Ипотеки</span><strong id="kpi-mortgages">0 / 0</strong><small id="kpi-mortgages-rate">0%</small></article>
+        <article class="kpi-card accent-amber"><span>Звонки</span><strong id="kpi-calls">0 / 0</strong><small id="kpi-calls-rate">0%</small></article>
+        <article class="kpi-card accent-coral"><span>Эфир</span><strong id="kpi-air">00:00:00 / 00:00:00</strong><small id="kpi-air-rate">0%</small></article>
+      </section>
+
+      <section class="chart-grid">
+        <article class="panel panel-wide section-anchor" id="weeks">
+          <div class="panel-head"><h2>Динамика по неделям</h2></div>
+          <div class="chart-frame chart-frame--weekly"><canvas id="weekly-chart" height="120"></canvas></div>
+        </article>
+
+        <article class="panel section-anchor" id="mops">
+          <div class="panel-head"><h2>МОПы по встречам</h2></div>
+          <div class="chart-frame"><canvas id="mop-chart" height="220"></canvas></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head"><h2>Структура факта</h2></div>
+          <div class="chart-frame"><canvas id="fact-chart" height="220"></canvas></div>
+        </article>
+      </section>
+
+      <section class="panel panel-wide section-anchor" id="details">
+        <div class="panel-head panel-head-inline">
+          <div>
+            <h2>Детализация</h2>
+            <p id="detail-caption">0 строк</p>
+          </div>
+          <button id="export-csv" class="ghost-button" type="button">Экспорт CSV</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Неделя</th>
+                <th>МОП</th>
+                <th>Встречи</th>
+                <th>Брони</th>
+                <th>Ипотеки</th>
+                <th>Звонки</th>
+                <th>Эфир</th>
+              </tr>
+            </thead>
+            <tbody id="detail-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="warnings" id="warnings" hidden>
+        <div class="panel-head"><h2>Предупреждения</h2></div>
+        <ul id="warnings-list"></ul>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

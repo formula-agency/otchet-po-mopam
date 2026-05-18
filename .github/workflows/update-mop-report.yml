@@ -1,0 +1,81 @@
+name: Update MOP Report
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/update-mop-report.yml"
+      - "dashboard/**"
+      - "requirements.txt"
+      - "scripts/sync_mop_report.py"
+  schedule:
+    - cron: "0 1 * * *"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: mop-report-pages
+  cancel-in-progress: true
+
+jobs:
+  sync-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Sync MOP report
+        env:
+          BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
+          BITRIX_REQUEST_TIMEOUT: ${{ secrets.BITRIX_REQUEST_TIMEOUT }}
+          BITRIX_APPROVED_MORTGAGE_FIELD: ${{ secrets.BITRIX_APPROVED_MORTGAGE_FIELD }}
+          BITRIX_RESERVATION_FIELD: ${{ secrets.BITRIX_RESERVATION_FIELD }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_MEETING_LOG_SHEET_ID: ${{ secrets.GOOGLE_MEETING_LOG_SHEET_ID }}
+          GOOGLE_MEETING_LOG_SHEET_NAME: ${{ secrets.GOOGLE_MEETING_LOG_SHEET_NAME }}
+          MOP_PLAN_SHEET_ID: ${{ secrets.MOP_PLAN_SHEET_ID }}
+          MOP_PLAN_SHEET_NAME: ${{ secrets.MOP_PLAN_SHEET_NAME }}
+          MOP_PLAN_REQUIRED: ${{ secrets.MOP_PLAN_REQUIRED }}
+          MOP_DEAL_DATE_FIELD: ${{ secrets.MOP_DEAL_DATE_FIELD }}
+          MOP_APPROVED_MORTGAGE_DATE_FIELD: ${{ secrets.MOP_APPROVED_MORTGAGE_DATE_FIELD }}
+          MOP_RESERVATION_DATE_FIELD: ${{ secrets.MOP_RESERVATION_DATE_FIELD }}
+          MOP_ASSIGNED_FIELD: ${{ secrets.MOP_ASSIGNED_FIELD }}
+          MOP_UNKNOWN_USER: ${{ secrets.MOP_UNKNOWN_USER }}
+          MOP_INCLUDE_USERS: ${{ secrets.MOP_INCLUDE_USERS }}
+          MOP_EXCLUDE_USERS: ${{ secrets.MOP_EXCLUDE_USERS }}
+          MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
+          REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
+          REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
+          REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
+        run: python scripts/sync_mop_report.py
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard
+
+  deploy-dashboard:
+    needs: sync-report
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy dashboard to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

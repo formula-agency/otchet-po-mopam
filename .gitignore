@@ -1,0 +1,10 @@
+.env
+.env.local
+.env.*.local
+bitrix.env
+Credentials/*.json
+.venv/
+__pycache__/
+dashboard/data/mop-report-data.json
+dashboard/data/mop-report-data.js
+

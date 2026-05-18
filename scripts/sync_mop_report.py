@@ -1,0 +1,1399 @@
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from collections import defaultdict
+from dataclasses import dataclass, field
+from datetime import date, datetime, time, timedelta
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse, urlunparse
+from zoneinfo import ZoneInfo
+
+import requests
+from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+
+GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
+DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
+DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
+DEFAULT_DEAL_RESERVATION_FIELD = "UF_DEAL_WHERE_PUT_RESERVATION"
+SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
+DEFAULT_INCLUDED_MOPS = (
+    "Черткова Ирина",
+    "Газисова Мария",
+    "Попова Олеся",
+    "Попова Юлия",
+    "Губайдулина Заррина",
+    "Тончу Ростислав",
+    "Погребинский Артем",
+    "Камболин Александр",
+    "Жуков Лев",
+    "Гавриленко Елена",
+)
+
+MOP_REPORT_HEADERS = [
+    "Спринт",
+    "МОП",
+    "Встречи план",
+    "Встречи факт",
+    "Встречи %",
+    "Брони план",
+    "Брони факт",
+    "Брони %",
+    "Ипотеки план",
+    "Ипотеки факт",
+    "Ипотеки %",
+    "Звонки план",
+    "Звонки факт",
+    "Звонки %",
+    "Эфир план",
+    "Эфир факт",
+    "Эфир %",
+]
+
+PLAN_HEADER_ALIASES = {
+    "week": {"неделя", "спринт", "период", "week", "sprint", "period"},
+    "week_start": {
+        "начало недели",
+        "начало спринта",
+        "старт недели",
+        "старт спринта",
+        "от",
+        "week start",
+        "sprint start",
+        "date from",
+    },
+    "mop_id": {
+        "id моп",
+        "id менеджера",
+        "id ответственного",
+        "bitrix id",
+        "user id",
+        "assigned by id",
+    },
+    "mop_name": {
+        "моп",
+        "менеджер",
+        "ответственный",
+        "сотрудник",
+        "фио",
+        "sales manager",
+        "manager",
+    },
+    "meeting_plan": {
+        "встречи план",
+        "план встреч",
+        "план встречи",
+        "проведенные встречи план",
+        "meetings plan",
+    },
+    "reservation_plan": {
+        "брони план",
+        "план броней",
+        "план брони",
+        "созданные брони план",
+        "reservations plan",
+    },
+    "mortgage_plan": {
+        "ипотеки план",
+        "план ипотек",
+        "план ипотеки",
+        "одобренные ипотеки план",
+        "mortgages plan",
+    },
+    "call_plan": {
+        "звонки план",
+        "план звонков",
+        "количество звонков план",
+        "совершенные звонки план",
+        "calls plan",
+    },
+    "air_time_plan": {
+        "эфир план",
+        "план эфира",
+        "эфирное время план",
+        "целевое эфирное время",
+        "target air time",
+        "air time plan",
+    },
+}
+
+MEETING_LOG_HEADER_ALIASES = {
+    "status": {"статус", "status", "результат", "result"},
+    "meeting_start": {"начало встречи", "start", "meeting start"},
+    "deal_id": {"id сделки", "deal id", "id deal"},
+    "deal_link": {"ссылка на сделку", "deal link", "link"},
+}
+
+
+class ConfigError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True)
+class ReportWindow:
+    start: datetime
+    end: datetime
+
+
+@dataclass(frozen=True)
+class Settings:
+    bitrix_webhook_url: str
+    bitrix_request_timeout: int
+    bitrix_approved_mortgage_field: str
+    bitrix_reservation_field: str
+    google_service_account_file: str | None
+    google_service_account_json: str | None
+    google_meeting_log_sheet_id: str
+    google_meeting_log_sheet_name: str
+    report_timezone: str
+    report_period_mode: str
+    report_start_date: str
+
+
+@dataclass(frozen=True)
+class MopSettings:
+    plan_sheet_id: str
+    plan_sheet_name: str
+    plan_required: bool
+    dashboard_dir: Path
+    deal_date_field: str
+    approved_mortgage_date_field: str
+    reservation_date_field: str
+    assigned_field: str
+    unknown_mop_name: str
+    include_users: frozenset[str]
+    exclude_users: frozenset[str]
+    call_min_duration_seconds: int
+
+
+@dataclass(frozen=True)
+class MeetingLogEntry:
+    meeting_date: date
+    deal_id: str
+
+
+@dataclass
+class MopMetricSet:
+    meetings: int = 0
+    reservations: int = 0
+    approved_mortgages: int = 0
+    calls: int = 0
+    air_seconds: int = 0
+
+    def add(self, other: "MopMetricSet") -> None:
+        self.meetings += other.meetings
+        self.reservations += other.reservations
+        self.approved_mortgages += other.approved_mortgages
+        self.calls += other.calls
+        self.air_seconds += other.air_seconds
+
+    def as_dict(self, suffix: str) -> dict[str, int]:
+        return {
+            f"meetings{suffix}": self.meetings,
+            f"reservations{suffix}": self.reservations,
+            f"approvedMortgages{suffix}": self.approved_mortgages,
+            f"calls{suffix}": self.calls,
+            f"airTime{suffix}Seconds": self.air_seconds,
+        }
+
+
+@dataclass
+class MopIdentity:
+    mop_id: str = ""
+    mop_name: str = ""
+
+
+@dataclass
+class MopReportData:
+    facts: dict[date, dict[str, MopMetricSet]] = field(
+        default_factory=lambda: defaultdict(lambda: defaultdict(MopMetricSet))
+    )
+    plans: dict[date, dict[str, MopMetricSet]] = field(
+        default_factory=lambda: defaultdict(lambda: defaultdict(MopMetricSet))
+    )
+    identities: dict[str, MopIdentity] = field(default_factory=dict)
+    user_ids: set[str] = field(default_factory=set)
+    warnings: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class PlanEntry:
+    week_start: date
+    mop_id: str
+    mop_name: str
+    metrics: MopMetricSet
+
+
+@dataclass(frozen=True)
+class BuiltReport:
+    rows: list[list[Any]]
+    group_ranges: list[tuple[int, int]]
+    summary_rows: list[int]
+    detail_count: int
+    week_count: int
+    mop_count: int
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Build dashboard data for a weekly MOP plan/fact report from Bitrix24 and Google Sheets."
+    )
+    parser.add_argument("--env-file", help="Path to env file. Defaults to bitrix.env or .env.")
+    parser.add_argument("--dry-run", action="store_true", help="Kept for compatibility; the script never writes a report sheet.")
+    return parser.parse_args()
+
+
+def load_environment(env_file: str | None) -> None:
+    if env_file:
+        env_path = Path(env_file)
+        if not env_path.exists():
+            raise ConfigError(f"Env file not found: {env_path}")
+        load_dotenv(env_path, override=True)
+        return
+
+    for candidate in ("bitrix.env", ".env"):
+        candidate_path = Path(candidate)
+        if candidate_path.exists():
+            load_dotenv(candidate_path, override=False)
+
+
+def require_env(name: str) -> str:
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        raise ConfigError(f"Missing required env var: {name}")
+    return value.strip()
+
+
+def read_bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "y", "да"}:
+        return True
+    if normalized in {"0", "false", "no", "n", "нет"}:
+        return False
+    raise ConfigError(f"Invalid boolean value for {name}: {raw}")
+
+
+def read_positive_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ConfigError(f"Invalid integer value for {name}: {raw}") from exc
+    if value <= 0:
+        raise ConfigError(f"{name} must be greater than zero.")
+    return value
+
+
+def read_non_negative_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ConfigError(f"Invalid integer value for {name}: {raw}") from exc
+    if value < 0:
+        raise ConfigError(f"{name} must be greater than or equal to zero.")
+    return value
+
+
+def read_filter_tokens(name: str, default_values: tuple[str, ...] = ()) -> frozenset[str]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return frozenset(normalize_key(item) for item in default_values if item.strip())
+    return frozenset(normalize_key(item) for item in raw.split(",") if item.strip())
+
+
+def load_settings() -> Settings:
+    google_service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip() or None
+    google_service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip() or None
+
+    if not google_service_account_file:
+        credentials_dir = Path.cwd() / "Credentials"
+        discovered_files = sorted(credentials_dir.glob("*.json"))
+        if len(discovered_files) == 1:
+            google_service_account_file = str(discovered_files[0])
+
+    return Settings(
+        bitrix_webhook_url=require_env("BITRIX_WEBHOOK_URL"),
+        bitrix_request_timeout=read_positive_int_env("BITRIX_REQUEST_TIMEOUT", 120),
+        bitrix_approved_mortgage_field=(
+            os.getenv("BITRIX_APPROVED_MORTGAGE_FIELD", DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD).strip()
+            or DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD
+        ),
+        bitrix_reservation_field=(
+            os.getenv("BITRIX_RESERVATION_FIELD", DEFAULT_DEAL_RESERVATION_FIELD).strip()
+            or DEFAULT_DEAL_RESERVATION_FIELD
+        ),
+        google_service_account_file=google_service_account_file,
+        google_service_account_json=google_service_account_json,
+        google_meeting_log_sheet_id=(
+            os.getenv("GOOGLE_MEETING_LOG_SHEET_ID", DEFAULT_MEETING_LOG_SHEET_ID).strip()
+            or DEFAULT_MEETING_LOG_SHEET_ID
+        ),
+        google_meeting_log_sheet_name=(
+            os.getenv("GOOGLE_MEETING_LOG_SHEET_NAME", DEFAULT_MEETING_LOG_SHEET_NAME).strip()
+            or DEFAULT_MEETING_LOG_SHEET_NAME
+        ),
+        report_timezone=os.getenv("REPORT_TIMEZONE", "Asia/Yekaterinburg").strip() or "Asia/Yekaterinburg",
+        report_period_mode=os.getenv("REPORT_PERIOD_MODE", "from_start_date").strip().lower()
+        or "from_start_date",
+        report_start_date=os.getenv("REPORT_START_DATE", "2026-03-01").strip() or "2026-03-01",
+    )
+
+
+def load_mop_settings(settings: Settings) -> MopSettings:
+    plan_sheet_id = os.getenv("MOP_PLAN_SHEET_ID", "").strip() or os.getenv("GOOGLE_SHEET_ID", "").strip()
+    deal_date_field = os.getenv("MOP_DEAL_DATE_FIELD", "DATE_CREATE").strip() or "DATE_CREATE"
+
+    return MopSettings(
+        plan_sheet_id=plan_sheet_id,
+        plan_sheet_name=os.getenv("MOP_PLAN_SHEET_NAME", "Планы МОП").strip() or "Планы МОП",
+        plan_required=read_bool_env("MOP_PLAN_REQUIRED", False),
+        dashboard_dir=Path(os.getenv("MOP_DASHBOARD_DIR", "dashboard").strip() or "dashboard"),
+        deal_date_field=deal_date_field,
+        approved_mortgage_date_field=(
+            os.getenv("MOP_APPROVED_MORTGAGE_DATE_FIELD", "").strip() or deal_date_field
+        ),
+        reservation_date_field=os.getenv("MOP_RESERVATION_DATE_FIELD", "").strip() or deal_date_field,
+        assigned_field=os.getenv("MOP_ASSIGNED_FIELD", "ASSIGNED_BY_ID").strip() or "ASSIGNED_BY_ID",
+        unknown_mop_name=os.getenv("MOP_UNKNOWN_USER", "Без ответственного").strip()
+        or "Без ответственного",
+        include_users=read_filter_tokens("MOP_INCLUDE_USERS", DEFAULT_INCLUDED_MOPS),
+        exclude_users=read_filter_tokens("MOP_EXCLUDE_USERS"),
+        call_min_duration_seconds=read_non_negative_int_env("MOP_CALL_MIN_DURATION_SECONDS", 0),
+    )
+
+
+def resolve_report_window(settings: Settings) -> ReportWindow:
+    tz = ZoneInfo(settings.report_timezone)
+    now = datetime.now(tz)
+    start_date = datetime.strptime(settings.report_start_date, "%Y-%m-%d").date()
+    start = datetime.combine(start_date, time.min, tzinfo=tz)
+    end = now
+
+    if settings.report_period_mode not in {"from_start_date", "current_month", "previous_month", "all_time"}:
+        raise ConfigError(
+            "Unsupported REPORT_PERIOD_MODE. Use from_start_date, current_month, previous_month, or all_time."
+        )
+    if settings.report_period_mode == "current_month":
+        start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif settings.report_period_mode == "previous_month":
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        end = current_month_start - timedelta(seconds=1)
+        start = end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    elif settings.report_period_mode == "all_time":
+        start = datetime(2000, 1, 1, tzinfo=tz)
+
+    if start > end:
+        raise ConfigError("Resolved report window is invalid.")
+    return ReportWindow(start, end)
+
+
+def normalize_text(value: Any) -> str:
+    text = str(value or "").strip().lower().replace("ё", "е")
+    text = re.sub(r"[^0-9a-zа-я_ ]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def normalize_key(value: Any) -> str:
+    return re.sub(r"\s+", " ", str(value or "").strip().lower())
+
+
+def safe_error_text(exc: Exception) -> str:
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        status = exc.response.status_code
+        reason = exc.response.reason or "HTTP error"
+        return f"{status} {reason}"
+    text = str(exc)
+    text = re.sub(r"https?://\S+", "<redacted-url>", text)
+    return text
+
+
+def parse_sheet_datetime(value: Any, timezone_name: str) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    tz = ZoneInfo(timezone_name)
+    normalized = text.replace("T", " ").replace("/", "-")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        parsed = None
+
+    if parsed is None:
+        for pattern in (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%d.%m.%Y %H:%M:%S",
+            "%d.%m.%Y %H:%M",
+            "%Y-%m-%d",
+            "%d.%m.%Y",
+        ):
+            try:
+                parsed = datetime.strptime(normalized, pattern)
+                break
+            except ValueError:
+                continue
+
+    if parsed is None:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=tz)
+    return parsed.astimezone(tz)
+
+
+def parse_bitrix_datetime(value: Any, timezone_name: str) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+
+    tz = ZoneInfo(timezone_name)
+    normalized = text.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        parsed = parse_sheet_datetime(text, timezone_name)
+    if parsed is None:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=tz)
+    return parsed.astimezone(tz)
+
+
+def build_google_credentials(settings: Settings):
+    from google.oauth2.service_account import Credentials
+
+    if settings.google_service_account_file:
+        credential_path = Path(settings.google_service_account_file)
+        if not credential_path.is_absolute():
+            credential_path = Path.cwd() / credential_path
+        if not credential_path.exists():
+            raise ConfigError(f"Google service account file not found: {credential_path}")
+        return Credentials.from_service_account_file(str(credential_path), scopes=GOOGLE_SCOPES)
+
+    assert settings.google_service_account_json is not None
+    try:
+        info = json.loads(settings.google_service_account_json)
+    except json.JSONDecodeError as exc:
+        raise ConfigError("GOOGLE_SERVICE_ACCOUNT_JSON must contain valid JSON.") from exc
+    return Credentials.from_service_account_info(info, scopes=GOOGLE_SCOPES)
+
+
+def build_sheets_service(settings: Settings):
+    from googleapiclient.discovery import build
+
+    if not settings.google_service_account_file and not settings.google_service_account_json:
+        return None
+    credentials = build_google_credentials(settings)
+    return build("sheets", "v4", credentials=credentials, cache_discovery=False)
+
+
+def quote_sheet_title(sheet_title: str) -> str:
+    escaped_title = sheet_title.replace("'", "''")
+    return sheet_title if re.fullmatch(r"[A-Za-z0-9_]+", sheet_title) else f"'{escaped_title}'"
+
+
+def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str) -> str:
+    metadata = (
+        service.spreadsheets()
+        .get(spreadsheetId=spreadsheet_id, fields="properties(title),sheets(properties(title))")
+        .execute()
+    )
+    sheets = metadata.get("sheets", [])
+    if not sheets:
+        raise ConfigError("The target spreadsheet has no sheets.")
+
+    spreadsheet_title = metadata["properties"]["title"]
+    selected_sheet = next((sheet for sheet in sheets if sheet["properties"]["title"] == requested_title), None)
+    if selected_sheet is None and requested_title == spreadsheet_title and len(sheets) == 1:
+        selected_sheet = sheets[0]
+    elif selected_sheet is None and len(sheets) == 1:
+        selected_sheet = sheets[0]
+    if selected_sheet is None:
+        available = ", ".join(sheet["properties"]["title"] for sheet in sheets)
+        raise ConfigError(f"Sheet '{requested_title}' not found. Available sheets: {available}")
+    return selected_sheet["properties"]["title"]
+
+
+def normalize_webhook_base(url: str) -> str:
+    parsed = urlparse(url.strip())
+    path = parsed.path or "/"
+    if path.endswith(".json"):
+        path = path.rsplit("/", 1)[0] + "/"
+    elif not path.endswith("/"):
+        path += "/"
+    return urlunparse(parsed._replace(path=path, params="", query="", fragment=""))
+
+
+def build_bitrix_method_url(base_url: str, method_name: str) -> str:
+    return f"{normalize_webhook_base(base_url)}{method_name}.json"
+
+
+def build_bitrix_session() -> requests.Session:
+    session = requests.Session()
+    retries = Retry(
+        total=3,
+        connect=3,
+        read=3,
+        backoff_factor=1.5,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=frozenset({"GET"}),
+    )
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+    session.mount("http://", HTTPAdapter(max_retries=retries))
+    return session
+
+
+def execute_bitrix_method(
+    session: requests.Session,
+    settings: Settings,
+    method_name: str,
+    params: list[tuple[str, Any]] | dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    response = session.get(
+        build_bitrix_method_url(settings.bitrix_webhook_url, method_name),
+        params=params or {},
+        timeout=settings.bitrix_request_timeout,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if "error" in payload:
+        raise RuntimeError(f"Bitrix API error: {payload['error']} - {payload.get('error_description', '')}")
+    return payload
+
+
+def execute_bitrix_deal_get(session: requests.Session, settings: Settings, deal_id: str) -> dict[str, Any]:
+    payload = execute_bitrix_method(session, settings, "crm.deal.get", {"id": deal_id})
+    result = payload.get("result")
+    if not isinstance(result, dict):
+        raise RuntimeError("Unexpected Bitrix API response: crm.deal.get result is not an object.")
+    return result
+
+
+def fetch_day_deals(
+    session: requests.Session,
+    settings: Settings,
+    date_field: str,
+    day_start: datetime,
+    day_end: datetime,
+    select_fields: list[str],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    next_page: int | None = 0
+    while next_page is not None:
+        params: list[tuple[str, Any]] = [
+            ("start", next_page),
+            (f"filter[>={date_field}]", day_start.isoformat(timespec="seconds")),
+            (f"filter[<={date_field}]", day_end.isoformat(timespec="seconds")),
+        ]
+        for field_name in select_fields:
+            params.append(("select[]", field_name))
+
+        payload = execute_bitrix_method(session, settings, "crm.deal.list", params)
+        result = payload.get("result", [])
+        if not isinstance(result, list):
+            raise RuntimeError("Unexpected Bitrix API response: crm.deal.list result is not a list.")
+        records.extend(result)
+        raw_next = payload.get("next")
+        next_page = int(raw_next) if raw_next is not None else None
+    return records
+
+
+def fetch_paged_method(
+    session: requests.Session,
+    settings: Settings,
+    method_name: str,
+    filters: dict[str, Any],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    next_page: int | None = 0
+    while next_page is not None:
+        params: list[tuple[str, Any]] = [("start", next_page)]
+        for field_name, field_value in filters.items():
+            params.append((f"FILTER[{field_name}]", field_value))
+        payload = execute_bitrix_method(session, settings, method_name, params)
+        result = payload.get("result", [])
+        if not isinstance(result, list):
+            raise RuntimeError(f"Unexpected Bitrix API response for {method_name}: result is not a list.")
+        records.extend(result)
+        raw_next = payload.get("next")
+        next_page = int(raw_next) if raw_next is not None else None
+    return records
+
+
+def parse_numeric_id(value: Any) -> str:
+    match = re.search(r"\d+", str(value or ""))
+    return match.group(0) if match else ""
+
+
+def extract_deal_id_from_link(value: Any) -> str:
+    match = re.search(r"/crm/deal/details/(\d+)/?", str(value or ""), flags=re.IGNORECASE)
+    return match.group(1) if match else ""
+
+
+def find_matching_column(rows: list[list[Any]], aliases: set[str]) -> tuple[int, int] | None:
+    for row_index, row in enumerate(rows):
+        for column_index, cell in enumerate(row):
+            if normalize_text(cell) in aliases:
+                return row_index, column_index
+    return None
+
+
+def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
+    column_map: dict[str, int] = {}
+    matched_rows: list[int] = []
+    for canonical_name in ("status", "meeting_start"):
+        match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
+        if match is None:
+            raise ConfigError("Could not find required meeting log columns: status and meeting start.")
+        row_index, column_index = match
+        column_map[canonical_name] = column_index
+        matched_rows.append(row_index)
+
+    for canonical_name in ("deal_id", "deal_link"):
+        match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
+        if match is not None:
+            row_index, column_index = match
+            column_map[canonical_name] = column_index
+            matched_rows.append(row_index)
+
+    if "deal_id" not in column_map and "deal_link" not in column_map:
+        raise ConfigError("Could not find 'ID сделки' or 'Ссылка на сделку' columns in the meeting log sheet.")
+    return max(matched_rows), column_map
+
+
+def build_successful_meeting_entries(service: Any, settings: Settings) -> list[MeetingLogEntry]:
+    sheet_title = resolve_sheet_title(
+        service,
+        settings.google_meeting_log_sheet_id,
+        settings.google_meeting_log_sheet_name,
+    )
+    values = (
+        service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=settings.google_meeting_log_sheet_id,
+            range=f"{quote_sheet_title(sheet_title)}!A:Z",
+            majorDimension="ROWS",
+        )
+        .execute()
+        .get("values", [])
+    )
+    if not values:
+        return []
+
+    header_row_index, column_map = find_meeting_log_columns(values)
+    entries: list[MeetingLogEntry] = []
+    for row in values[header_row_index + 1 :]:
+        status_index = column_map["status"]
+        status_value = row[status_index] if status_index < len(row) else ""
+        if normalize_text(status_value) not in SUCCESSFUL_MEETING_STATUSES:
+            continue
+
+        start_index = column_map["meeting_start"]
+        meeting_datetime = parse_sheet_datetime(row[start_index] if start_index < len(row) else "", settings.report_timezone)
+        if meeting_datetime is None:
+            continue
+
+        deal_id = ""
+        deal_id_index = column_map.get("deal_id")
+        if deal_id_index is not None and deal_id_index < len(row):
+            deal_id = parse_numeric_id(row[deal_id_index])
+        if not deal_id:
+            deal_link_index = column_map.get("deal_link")
+            if deal_link_index is not None and deal_link_index < len(row):
+                deal_id = extract_deal_id_from_link(row[deal_link_index])
+        if deal_id:
+            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id))
+    return entries
+
+
+def iterate_report_dates(window: ReportWindow) -> list[date]:
+    days: list[date] = []
+    current = window.start.date()
+    while current <= window.end.date():
+        days.append(current)
+        current += timedelta(days=1)
+    return days
+
+
+def day_bounds(current_date: date, window: ReportWindow) -> tuple[datetime, datetime]:
+    day_start = datetime.combine(current_date, time.min, tzinfo=window.start.tzinfo)
+    day_end = datetime.combine(current_date, time.max, tzinfo=window.start.tzinfo)
+    if current_date == window.end.date():
+        day_end = window.end
+    return day_start, day_end
+
+
+def week_start_for_date(current_date: date) -> date:
+    return current_date - timedelta(days=current_date.weekday())
+
+
+def week_end_for_start(week_start: date) -> date:
+    return week_start + timedelta(days=6)
+
+
+def format_short_date(current_date: date) -> str:
+    return current_date.strftime("%d.%m")
+
+
+def format_sheet_date(current_date: date) -> str:
+    return current_date.strftime("%d.%m.%Y")
+
+
+def format_week_label(week_start: date) -> str:
+    return f"{format_short_date(week_start)}-{format_sheet_date(week_end_for_start(week_start))}"
+
+
+def parse_week_start(value: Any, window: ReportWindow, timezone_name: str) -> date | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    iso_week_match = re.search(r"(\d{4})\s*[- ]?w(?:eek)?\s*(\d{1,2})", text, flags=re.IGNORECASE)
+    if iso_week_match:
+        year, week = (int(part) for part in iso_week_match.groups())
+        return week_start_for_date(date.fromisocalendar(year, week, 1))
+
+    parsed = parse_sheet_datetime(text, timezone_name)
+    if parsed is not None:
+        return week_start_for_date(parsed.date())
+
+    date_match = re.search(r"(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?", text)
+    if not date_match:
+        return None
+    day, month, raw_year = date_match.groups()
+    year = window.start.year
+    if raw_year:
+        year = int(raw_year)
+        if year < 100:
+            year += 2000
+    try:
+        return week_start_for_date(date(year, int(month), int(day)))
+    except ValueError:
+        return None
+
+
+def parse_number(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
+        return 0
+    normalized = text.replace("\u00a0", " ").replace(" ", "").replace(",", ".")
+    match = re.search(r"-?\d+(?:\.\d+)?", normalized)
+    if not match:
+        return 0
+    return int(round(float(match.group(0))))
+
+
+def parse_duration_seconds(value: Any) -> int:
+    text = str(value or "").strip().lower()
+    if not text:
+        return 0
+    time_match = re.fullmatch(r"(\d{1,3}):(\d{2})(?::(\d{2}))?", text)
+    if time_match:
+        hours, minutes, seconds = time_match.groups()
+        return int(hours) * 3600 + int(minutes) * 60 + int(seconds or 0)
+
+    total = 0.0
+    for multiplier, pattern in (
+        (3600, r"(\d+(?:[,.]\d+)?)\s*(?:ч|час|часа|hours?|h)\b"),
+        (60, r"(\d+(?:[,.]\d+)?)\s*(?:м|мин|минут|minutes?|m)\b"),
+        (1, r"(\d+(?:[,.]\d+)?)\s*(?:с|сек|секунд|seconds?|s)\b"),
+    ):
+        match = re.search(pattern, text)
+        if match:
+            total += float(match.group(1).replace(",", ".")) * multiplier
+    if total:
+        return int(round(total))
+    return parse_number(text) * 60
+
+
+def format_duration(seconds: int) -> str:
+    seconds = max(0, int(seconds or 0))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def completion_cell(plan: int, fact: int) -> str:
+    if plan <= 0:
+        return "—" if fact > 0 else ""
+    return f"{fact / plan:.0%}"
+
+
+def resolve_boolean_field(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "да", "on", "ok", "checked", "t"}
+
+
+def resolve_non_empty_field(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, (list, tuple, set, dict)):
+        return len(value) > 0
+    if isinstance(value, str):
+        return bool(value.strip())
+    return bool(value)
+
+
+def normalize_mop_token(mop_id: str, mop_name: str) -> set[str]:
+    tokens = set()
+    if mop_id:
+        tokens.add(normalize_key(mop_id))
+        tokens.add(f"id:{normalize_key(mop_id)}")
+    if mop_name:
+        tokens.add(normalize_key(mop_name))
+    return tokens
+
+
+def mop_filter_matches(filter_value: str, mop_id: str, mop_name: str) -> bool:
+    normalized_filter = normalize_key(filter_value)
+    if not normalized_filter:
+        return False
+
+    tokens = normalize_mop_token(mop_id, mop_name)
+    if normalized_filter in tokens:
+        return True
+
+    normalized_name = normalize_key(mop_name)
+    if not normalized_name:
+        return False
+    return normalized_filter in normalized_name
+
+
+def mop_is_allowed(mop_id: str, mop_name: str, settings: MopSettings) -> bool:
+    if settings.include_users and not any(
+        mop_filter_matches(filter_value, mop_id, mop_name)
+        for filter_value in settings.include_users
+    ):
+        return False
+    if settings.exclude_users and any(
+        mop_filter_matches(filter_value, mop_id, mop_name)
+        for filter_value in settings.exclude_users
+    ):
+        return False
+    return True
+
+
+def key_for_mop_id(mop_id: str) -> str:
+    return f"id:{normalize_key(mop_id)}"
+
+
+def key_for_mop_name(mop_name: str) -> str:
+    normalized = normalize_key(mop_name)
+    return f"name:{normalized}" if normalized else "name:unknown"
+
+
+def remember_identity(data: MopReportData, key: str, mop_id: str, mop_name: str) -> None:
+    identity = data.identities.setdefault(key, MopIdentity())
+    if mop_id and not identity.mop_id:
+        identity.mop_id = mop_id
+    if mop_name and not identity.mop_name:
+        identity.mop_name = mop_name
+
+
+def add_fact(
+    data: MopReportData,
+    event_date: date,
+    mop_id: str,
+    metric_name: str,
+    value: int,
+    mop_name: str = "",
+) -> None:
+    if not mop_id and not mop_name:
+        mop_name = "Без ответственного"
+    key = key_for_mop_id(mop_id) if mop_id else key_for_mop_name(mop_name)
+    if mop_id:
+        data.user_ids.add(mop_id)
+    remember_identity(data, key, mop_id, mop_name)
+    metrics = data.facts[week_start_for_date(event_date)][key]
+    setattr(metrics, metric_name, value + getattr(metrics, metric_name))
+
+
+def add_plan(data: MopReportData, week_start: date, key: str, mop_id: str, mop_name: str, metrics: MopMetricSet) -> None:
+    remember_identity(data, key, mop_id, mop_name)
+    data.plans[week_start][key].add(metrics)
+
+
+def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_ids: set[str]) -> dict[str, str]:
+    user_names: dict[str, str] = {}
+    for user_id in sorted(user_ids, key=lambda item: int(item) if item.isdigit() else item):
+        result: list[dict[str, Any]] = []
+        for params in ({"ID": user_id}, {"FILTER[ID]": user_id}):
+            try:
+                payload = execute_bitrix_method(session, settings, "user.get", params)
+            except Exception:
+                continue
+            raw_result = payload.get("result", [])
+            if isinstance(raw_result, list) and raw_result:
+                result = raw_result
+                break
+        if not result:
+            user_names[user_id] = f"Пользователь {user_id}"
+            continue
+
+        user = result[0]
+        name_parts = [
+            str(user.get("LAST_NAME") or "").strip(),
+            str(user.get("NAME") or "").strip(),
+            str(user.get("SECOND_NAME") or "").strip(),
+        ]
+        full_name = " ".join(part for part in name_parts if part)
+        user_names[user_id] = full_name or str(user.get("LOGIN") or user.get("EMAIL") or f"Пользователь {user_id}")
+    return user_names
+
+
+def hydrate_fact_identities(data: MopReportData, user_names: dict[str, str]) -> None:
+    for identity in data.identities.values():
+        if identity.mop_id and not identity.mop_name:
+            identity.mop_name = user_names.get(identity.mop_id, f"Пользователь {identity.mop_id}")
+        elif not identity.mop_name:
+            identity.mop_name = "Без ответственного"
+
+
+def extract_assigned_user_id(record: dict[str, Any], mop_settings: MopSettings) -> str:
+    value = record.get(mop_settings.assigned_field)
+    if value in (None, "") and mop_settings.assigned_field != "ASSIGNED_BY_ID":
+        value = record.get("ASSIGNED_BY_ID")
+    if isinstance(value, dict):
+        value = value.get("ID") or value.get("id")
+    return str(value or "").strip()
+
+
+def build_deal_metric_facts(
+    data: MopReportData,
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> None:
+    metric_specs = [
+        ("approved_mortgages", settings.bitrix_approved_mortgage_field, mop_settings.approved_mortgage_date_field, resolve_boolean_field),
+        ("reservations", settings.bitrix_reservation_field, mop_settings.reservation_date_field, resolve_non_empty_field),
+    ]
+    for metric_name, metric_field, date_field, resolver in metric_specs:
+        if not metric_field:
+            continue
+        select_fields = ["ID", "ASSIGNED_BY_ID", date_field, metric_field]
+        if mop_settings.assigned_field not in select_fields:
+            select_fields.append(mop_settings.assigned_field)
+
+        for current_date in iterate_report_dates(window):
+            day_start, day_end = day_bounds(current_date, window)
+            records = fetch_day_deals(session, settings, date_field, day_start, day_end, select_fields)
+            for record in records:
+                if not resolver(record.get(metric_field)):
+                    continue
+                event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
+                event_date = event_datetime.date() if event_datetime else current_date
+                add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), metric_name, 1)
+
+
+def build_meeting_facts(
+    data: MopReportData,
+    service: Any,
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> None:
+    if service is None:
+        data.warnings.append("Встречи не посчитаны: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
+        return
+
+    try:
+        meeting_entries = build_successful_meeting_entries(service, settings)
+    except ConfigError as exc:
+        data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
+        return
+
+    deal_cache: dict[str, dict[str, Any]] = {}
+    for entry in meeting_entries:
+        if entry.meeting_date < window.start.date() or entry.meeting_date > window.end.date():
+            continue
+        deal = deal_cache.get(entry.deal_id)
+        if deal is None:
+            try:
+                deal = execute_bitrix_deal_get(session, settings, entry.deal_id)
+            except Exception as exc:
+                data.warnings.append(f"Не удалось получить сделку {entry.deal_id} для встречи: {safe_error_text(exc)}")
+                continue
+            deal_cache[entry.deal_id] = deal
+        add_fact(data, entry.meeting_date, extract_assigned_user_id(deal, mop_settings), "meetings", 1)
+
+
+def build_call_facts(
+    data: MopReportData,
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> None:
+    for current_date in iterate_report_dates(window):
+        day_start, day_end = day_bounds(current_date, window)
+        filters = {
+            ">=CALL_START_DATE": day_start.isoformat(timespec="seconds"),
+            "<=CALL_START_DATE": day_end.isoformat(timespec="seconds"),
+        }
+        try:
+            records = fetch_paged_method(session, settings, "voximplant.statistic.get", filters)
+        except Exception as exc:
+            data.warnings.append(f"Звонки не посчитаны: {safe_error_text(exc)}")
+            return
+        for record in records:
+            mop_id = str(record.get("PORTAL_USER_ID") or record.get("USER_ID") or "").strip()
+            if not mop_id:
+                continue
+            duration = parse_number(record.get("CALL_DURATION"))
+            if duration < mop_settings.call_min_duration_seconds:
+                continue
+            call_datetime = parse_bitrix_datetime(record.get("CALL_START_DATE"), settings.report_timezone)
+            call_date = call_datetime.date() if call_datetime else current_date
+            add_fact(data, call_date, mop_id, "calls", 1)
+            add_fact(data, call_date, mop_id, "air_seconds", duration)
+
+
+def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
+    column_map: dict[str, int] = {}
+    matched_rows: list[int] = []
+    for canonical_name, aliases in PLAN_HEADER_ALIASES.items():
+        for row_index, row in enumerate(rows[:10]):
+            for column_index, cell in enumerate(row):
+                if normalize_text(cell) in aliases:
+                    column_map[canonical_name] = column_index
+                    matched_rows.append(row_index)
+                    break
+            if canonical_name in column_map:
+                break
+    if "week" not in column_map and "week_start" not in column_map:
+        raise ConfigError("В листе планов не найдена колонка 'Неделя' или 'Начало недели'.")
+    if "mop_id" not in column_map and "mop_name" not in column_map:
+        raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
+    if not {"meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(column_map):
+        raise ConfigError("В листе планов не найдены плановые колонки по метрикам.")
+    return max(matched_rows) if matched_rows else 0, column_map
+
+
+def cell(row: list[Any], column_map: dict[str, int], name: str) -> Any:
+    index = column_map.get(name)
+    if index is None or index >= len(row):
+        return ""
+    return row[index]
+
+
+def load_plan_entries(
+    service: Any,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> list[PlanEntry]:
+    if not mop_settings.plan_sheet_id:
+        if mop_settings.plan_required:
+            raise ConfigError("Set MOP_PLAN_SHEET_ID or GOOGLE_SHEET_ID for required plan loading.")
+        return []
+    if service is None:
+        if mop_settings.plan_required:
+            raise ConfigError("Set GOOGLE_SERVICE_ACCOUNT_FILE or GOOGLE_SERVICE_ACCOUNT_JSON for required plan loading.")
+        return []
+
+    try:
+        sheet_title = resolve_sheet_title(service, mop_settings.plan_sheet_id, mop_settings.plan_sheet_name)
+    except ConfigError:
+        if mop_settings.plan_required:
+            raise
+        return []
+
+    values = (
+        service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=mop_settings.plan_sheet_id,
+            range=f"{quote_sheet_title(sheet_title)}!A:Z",
+            majorDimension="ROWS",
+        )
+        .execute()
+        .get("values", [])
+    )
+    if not values:
+        return []
+
+    header_row_index, column_map = find_plan_columns(values)
+    entries: list[PlanEntry] = []
+    for row in values[header_row_index + 1 :]:
+        week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
+        week_start = parse_week_start(week_value, window, settings.report_timezone)
+        if week_start is None:
+            continue
+        if week_end_for_start(week_start) < window.start.date() or week_start > window.end.date():
+            continue
+        mop_id = str(cell(row, column_map, "mop_id") or "").strip()
+        mop_name = str(cell(row, column_map, "mop_name") or "").strip()
+        if not mop_id and not mop_name:
+            continue
+        metrics = MopMetricSet(
+            meetings=parse_number(cell(row, column_map, "meeting_plan")),
+            reservations=parse_number(cell(row, column_map, "reservation_plan")),
+            approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
+            calls=parse_number(cell(row, column_map, "call_plan")),
+            air_seconds=parse_duration_seconds(cell(row, column_map, "air_time_plan")),
+        )
+        entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
+    return entries
+
+
+def apply_plan_entries(data: MopReportData, plan_entries: list[PlanEntry], user_names: dict[str, str]) -> None:
+    known_name_to_id = {normalize_key(name): user_id for user_id, name in user_names.items() if normalize_key(name)}
+    for entry in plan_entries:
+        mop_id = entry.mop_id
+        mop_name = entry.mop_name
+        if not mop_id and mop_name:
+            mop_id = known_name_to_id.get(normalize_key(mop_name), "")
+        key = key_for_mop_id(mop_id) if mop_id else key_for_mop_name(mop_name)
+        if mop_id and not mop_name:
+            mop_name = user_names.get(mop_id, f"Пользователь {mop_id}")
+        add_plan(data, entry.week_start, key, mop_id, mop_name, entry.metrics)
+
+
+def sum_metrics(items: list[MopMetricSet]) -> MopMetricSet:
+    total = MopMetricSet()
+    for item in items:
+        total.add(item)
+    return total
+
+
+def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: MopMetricSet) -> list[Any]:
+    return [
+        sprint_label,
+        mop_name,
+        plan.meetings,
+        fact.meetings,
+        completion_cell(plan.meetings, fact.meetings),
+        plan.reservations,
+        fact.reservations,
+        completion_cell(plan.reservations, fact.reservations),
+        plan.approved_mortgages,
+        fact.approved_mortgages,
+        completion_cell(plan.approved_mortgages, fact.approved_mortgages),
+        plan.calls,
+        fact.calls,
+        completion_cell(plan.calls, fact.calls),
+        format_duration(plan.air_seconds),
+        format_duration(fact.air_seconds),
+        completion_cell(plan.air_seconds, fact.air_seconds),
+    ]
+
+
+def build_report_rows(data: MopReportData, mop_settings: MopSettings) -> BuiltReport:
+    rows: list[list[Any]] = [MOP_REPORT_HEADERS]
+    group_ranges: list[tuple[int, int]] = []
+    summary_rows: list[int] = []
+    detail_keys: set[str] = set()
+    overall_plan = MopMetricSet()
+    overall_fact = MopMetricSet()
+    week_starts = sorted(set(data.facts) | set(data.plans))
+
+    for week_start in week_starts:
+        keys = sorted(
+            set(data.facts.get(week_start, {})) | set(data.plans.get(week_start, {})),
+            key=lambda key: data.identities.get(key, MopIdentity(mop_name=key)).mop_name,
+        )
+        filtered_keys = []
+        for key in keys:
+            identity = data.identities.get(key, MopIdentity(mop_name=key))
+            if mop_is_allowed(identity.mop_id, identity.mop_name, mop_settings):
+                filtered_keys.append(key)
+        if not filtered_keys:
+            continue
+
+        week_plan = sum_metrics([data.plans.get(week_start, {}).get(key, MopMetricSet()) for key in filtered_keys])
+        week_fact = sum_metrics([data.facts.get(week_start, {}).get(key, MopMetricSet()) for key in filtered_keys])
+        overall_plan.add(week_plan)
+        overall_fact.add(week_fact)
+        rows.append(row_for_metrics(f"Итого за спринт {format_week_label(week_start)}", "", week_plan, week_fact))
+        summary_rows.append(len(rows))
+        group_start = len(rows) + 1
+        for key in filtered_keys:
+            identity = data.identities.get(key, MopIdentity(mop_name=key))
+            plan = data.plans.get(week_start, {}).get(key, MopMetricSet())
+            fact = data.facts.get(week_start, {}).get(key, MopMetricSet())
+            rows.append(row_for_metrics(format_week_label(week_start), identity.mop_name, plan, fact))
+            detail_keys.add(key)
+        if group_start <= len(rows):
+            group_ranges.append((group_start, len(rows)))
+
+    if len(rows) > 1:
+        rows.append([""] * len(MOP_REPORT_HEADERS))
+        rows.append(row_for_metrics("Итого за период", "", overall_plan, overall_fact))
+        summary_rows.append(len(rows))
+
+    return BuiltReport(
+        rows=rows,
+        group_ranges=group_ranges,
+        summary_rows=summary_rows,
+        detail_count=max(0, len(rows) - len(summary_rows) - 1),
+        week_count=len(week_starts),
+        mop_count=len(detail_keys),
+    )
+
+
+def build_dashboard_payload(
+    data: MopReportData,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> dict[str, Any]:
+    rows: list[dict[str, Any]] = []
+    totals_plan = MopMetricSet()
+    totals_fact = MopMetricSet()
+    mop_names: set[str] = set()
+    weeks: set[str] = set()
+
+    for week_start in sorted(set(data.facts) | set(data.plans)):
+        keys = sorted(
+            set(data.facts.get(week_start, {})) | set(data.plans.get(week_start, {})),
+            key=lambda key: data.identities.get(key, MopIdentity(mop_name=key)).mop_name,
+        )
+        for key in keys:
+            identity = data.identities.get(key, MopIdentity(mop_name=key))
+            if not mop_is_allowed(identity.mop_id, identity.mop_name, mop_settings):
+                continue
+            plan = data.plans.get(week_start, {}).get(key, MopMetricSet())
+            fact = data.facts.get(week_start, {}).get(key, MopMetricSet())
+            totals_plan.add(plan)
+            totals_fact.add(fact)
+            mop_names.add(identity.mop_name)
+            weeks.add(week_start.isoformat())
+            row = {
+                "weekStart": week_start.isoformat(),
+                "weekEnd": week_end_for_start(week_start).isoformat(),
+                "weekLabel": format_week_label(week_start),
+                "mopId": identity.mop_id,
+                "mopName": identity.mop_name,
+                "airTimePlan": format_duration(plan.air_seconds),
+                "airTimeFact": format_duration(fact.air_seconds),
+            }
+            row.update(plan.as_dict("Plan"))
+            row.update(fact.as_dict("Fact"))
+            rows.append(row)
+
+    generated_at = datetime.now(ZoneInfo(settings.report_timezone)).isoformat()
+    return {
+        "report": {
+            "name": "Отчет по МОПам",
+            "from": window.start.date().isoformat(),
+            "to": window.end.date().isoformat(),
+            "timezone": settings.report_timezone,
+            "planTableUrl": (
+                f"https://docs.google.com/spreadsheets/d/{mop_settings.plan_sheet_id}/edit"
+                if mop_settings.plan_sheet_id
+                else ""
+            ),
+            "planSheetName": mop_settings.plan_sheet_name,
+        },
+        "generatedAt": generated_at,
+        "filters": {
+            "mopNames": sorted(mop_names),
+            "weeks": sorted(weeks),
+            "minWeek": min(weeks) if weeks else "",
+            "maxWeek": max(weeks) if weeks else "",
+        },
+        "totals": {
+            **totals_plan.as_dict("Plan"),
+            **totals_fact.as_dict("Fact"),
+            "airTimePlan": format_duration(totals_plan.air_seconds),
+            "airTimeFact": format_duration(totals_fact.air_seconds),
+        },
+        "overview": {"mopCount": len(mop_names), "weekCount": len(weeks)},
+        "warnings": data.warnings,
+        "baseRows": rows,
+    }
+
+
+def write_dashboard_files(payload: dict[str, Any], dashboard_dir: Path) -> None:
+    data_dir = dashboard_dir / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    json_text = json.dumps(payload, ensure_ascii=False, indent=2)
+    (data_dir / "mop-report-data.json").write_text(f"{json_text}\n", encoding="utf-8")
+    (data_dir / "mop-report-data.js").write_text(
+        f"window.MOP_REPORT_DASHBOARD_DATA = {json_text};\n",
+        encoding="utf-8",
+    )
+
+
+def print_summary(built_report: BuiltReport, payload: dict[str, Any]) -> None:
+    print("Dashboard data built: Отчет по МОПам")
+    print(f"Weeks: {built_report.week_count}")
+    print(f"MOPs: {built_report.mop_count}")
+    print(f"Detail rows: {built_report.detail_count}")
+    print(f"Dashboard rows: {len(payload.get('baseRows', []))}")
+    if payload.get("warnings"):
+        print("Warnings:")
+        for warning in payload["warnings"]:
+            print(f"- {warning}")
+
+
+def main() -> int:
+    try:
+        args = parse_args()
+        load_environment(args.env_file)
+        settings = load_settings()
+        mop_settings = load_mop_settings(settings)
+        window = resolve_report_window(settings)
+        service = build_sheets_service(settings)
+        session = build_bitrix_session()
+
+        data = MopReportData()
+        build_deal_metric_facts(data, session, settings, mop_settings, window)
+        build_meeting_facts(data, service, session, settings, mop_settings, window)
+        build_call_facts(data, session, settings, mop_settings, window)
+
+        user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
+        hydrate_fact_identities(data, user_names)
+        if service is None:
+            data.warnings.append("Планы не загружены: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
+        elif not mop_settings.plan_sheet_id:
+            data.warnings.append("Планы не загружены: не задан MOP_PLAN_SHEET_ID или GOOGLE_SHEET_ID.")
+        plan_entries = load_plan_entries(service, settings, mop_settings, window)
+        apply_plan_entries(data, plan_entries, user_names)
+
+        built_report = build_report_rows(data, mop_settings)
+        payload = build_dashboard_payload(data, settings, mop_settings, window)
+        write_dashboard_files(payload, mop_settings.dashboard_dir)
+
+        print_summary(built_report, payload)
+        return 0
+    except ConfigError as exc:
+        print(f"Configuration error: {exc}", file=sys.stderr)
+        return 2
+    except requests.Timeout as exc:
+        print(f"Timeout error: {safe_error_text(exc)}", file=sys.stderr)
+        return 4
+    except requests.HTTPError as exc:
+        print(f"HTTP error: {safe_error_text(exc)}", file=sys.stderr)
+        return 3
+    except Exception as exc:
+        print(f"Unhandled error: {safe_error_text(exc)}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
