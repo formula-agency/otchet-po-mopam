@@ -158,11 +158,12 @@ function addDays(date, days) {
 }
 
 function sprintStartForDate(date) {
-  const sprintOffset = Math.floor((date.getUTCDate() - 1) / 7) * 7;
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1 + sprintOffset));
+  const sprintDay = Math.min(22, 1 + Math.floor((date.getUTCDate() - 1) / 7) * 7);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), sprintDay));
 }
 
 function sprintEndForStart(date) {
+  if (date.getUTCDate() >= 22) return addDays(nextMonth(date), -1);
   return addDays(date, 6);
 }
 
@@ -236,7 +237,7 @@ function allWeekOptions() {
   }
   const range = weekRange();
   for (let monthStart = firstDayOfMonth(range.start); monthStart <= range.end; monthStart = nextMonth(monthStart)) {
-    for (let day = 1; day <= 29; day += 7) {
+    for (let day = 1; day <= 22; day += 7) {
       const current = new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth(), day));
       if (current.getUTCMonth() !== monthStart.getUTCMonth()) continue;
       if (sprintEndForStart(current) < range.start || current > range.end) continue;

@@ -746,12 +746,20 @@ def day_bounds(current_date: date, window: ReportWindow) -> tuple[datetime, date
     return day_start, day_end
 
 
+def month_end_for_date(current_date: date) -> date:
+    if current_date.month == 12:
+        return date(current_date.year, 12, 31)
+    return date(current_date.year, current_date.month + 1, 1) - timedelta(days=1)
+
+
 def week_start_for_date(current_date: date) -> date:
-    sprint_offset = ((current_date.day - 1) // 7) * 7
-    return date(current_date.year, current_date.month, 1) + timedelta(days=sprint_offset)
+    sprint_day = min(22, 1 + ((current_date.day - 1) // 7) * 7)
+    return date(current_date.year, current_date.month, sprint_day)
 
 
 def week_end_for_start(week_start: date) -> date:
+    if week_start.day >= 22:
+        return month_end_for_date(week_start)
     return week_start + timedelta(days=6)
 
 
