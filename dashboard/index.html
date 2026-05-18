@@ -6,15 +6,15 @@
   <title>Отчет по МОПам</title>
   <link rel="stylesheet" href="./styles.css">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script defer src="./data/mop-report-data.js?v=20260515-1"></script>
-  <script defer src="./app.js?v=20260515-1"></script>
+  <script defer src="./data/mop-report-data.js?v=20260518-1"></script>
+  <script defer src="./app.js?v=20260518-1"></script>
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="#top" aria-label="Наверх">Отчет по МОПам</a>
     <nav class="site-nav" aria-label="Разделы">
       <a href="#overview">Обзор</a>
-      <a href="#weeks">Недели</a>
+      <a href="#weeks">Спринты</a>
       <a href="#mops">МОПы</a>
       <a href="#details">Детализация</a>
     </nav>
@@ -28,7 +28,7 @@
       </div>
       <div class="summary-band__stats" aria-label="Сводка">
         <article><span>МОП</span><strong id="hero-mops">0</strong></article>
-        <article><span>Недель</span><strong id="hero-weeks">0</strong></article>
+        <article><span>Спринтов</span><strong id="hero-weeks">0</strong></article>
         <article><span>Встречи</span><strong id="hero-meetings">0 / 0</strong></article>
         <article><span>Брони</span><strong id="hero-reservations">0 / 0</strong></article>
         <article><span>Ипотеки</span><strong id="hero-mortgages">0 / 0</strong></article>
@@ -43,12 +43,12 @@
           <select id="filter-mop"></select>
         </label>
         <label class="field">
-          <span>Неделя от</span>
-          <select id="filter-week-from"></select>
+          <span>Месяц</span>
+          <select id="filter-month"></select>
         </label>
         <label class="field">
-          <span>Неделя до</span>
-          <select id="filter-week-to"></select>
+          <span>Спринт</span>
+          <select id="filter-sprint"></select>
         </label>
         <label class="field field-search">
           <span>Поиск</span>
@@ -72,7 +72,7 @@
 
       <section class="chart-grid">
         <article class="panel panel-wide section-anchor" id="weeks">
-          <div class="panel-head"><h2>Динамика по неделям</h2></div>
+          <div class="panel-head"><h2>Динамика по спринтам</h2></div>
           <div class="chart-frame chart-frame--weekly"><canvas id="weekly-chart" height="120"></canvas></div>
         </article>
 
@@ -99,7 +99,7 @@
           <table class="data-table">
             <thead>
               <tr>
-                <th>Неделя</th>
+                <th>Спринт</th>
                 <th>МОП</th>
                 <th>Встречи</th>
                 <th>Брони</th>

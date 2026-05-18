@@ -2,8 +2,8 @@ let data = null;
 
 const state = {
   mopName: 'all',
-  weekFrom: 'all',
-  weekTo: 'all',
+  month: '',
+  sprint: '',
   search: '',
 };
 
@@ -11,8 +11,8 @@ const els = {
   siteHeader: document.querySelector('.site-header'),
   navLinks: [...document.querySelectorAll('.site-nav a')],
   mop: document.getElementById('filter-mop'),
-  weekFrom: document.getElementById('filter-week-from'),
-  weekTo: document.getElementById('filter-week-to'),
+  month: document.getElementById('filter-month'),
+  sprint: document.getElementById('filter-sprint'),
   search: document.getElementById('filter-search'),
   reset: document.getElementById('reset-filters'),
   activeFilters: document.getElementById('active-filters'),
@@ -54,6 +54,21 @@ const percentFormatter = new Intl.NumberFormat('ru-RU', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0,
 });
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTH_NAMES = [
+  'Январь',
+  'Февраль',
+  'Март',
+  'Апрель',
+  'Май',
+  'Июнь',
+  'Июль',
+  'Август',
+  'Сентябрь',
+  'Октябрь',
+  'Ноябрь',
+  'Декабрь',
+];
 
 let weeklyChart;
 let mopChart;
@@ -105,12 +120,14 @@ function csvEscape(value) {
   return text;
 }
 
-function populateSelect(select, options, allLabel) {
+function populateSelect(select, options, allLabel, includeAll = true) {
   select.innerHTML = '';
-  const allOption = document.createElement('option');
-  allOption.value = 'all';
-  allOption.textContent = allLabel;
-  select.append(allOption);
+  if (includeAll) {
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = allLabel;
+    select.append(allOption);
+  }
 
   for (const option of options) {
     const element = document.createElement('option');
@@ -120,22 +137,189 @@ function populateSelect(select, options, allLabel) {
   }
 }
 
-function weekOptions() {
+function parseISODate(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const [, year, month, day] = match;
+  return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
+}
+
+function todayUTC() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+}
+
+function isoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date, days) {
+  return new Date(date.getTime() + days * DAY_MS);
+}
+
+function startOfWeek(date) {
+  const day = date.getUTCDay() || 7;
+  return addDays(date, 1 - day);
+}
+
+function endOfWeek(date) {
+  return addDays(date, 6);
+}
+
+function monthKey(date) {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function startOfMonth(key) {
+  const [year, month] = key.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, 1));
+}
+
+function endOfMonth(key) {
+  const [year, month] = key.split('-').map(Number);
+  return new Date(Date.UTC(year, month, 0));
+}
+
+function shortDate(date) {
+  return `${String(date.getUTCDate()).padStart(2, '0')}.${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function fullDate(date) {
+  return `${shortDate(date)}.${date.getUTCFullYear()}`;
+}
+
+function formatWeekLabel(weekStartValue) {
+  const start = parseISODate(weekStartValue);
+  if (!start) return weekStartValue;
+  return `${shortDate(start)}-${fullDate(endOfWeek(start))}`;
+}
+
+function formatMonthLabel(key) {
+  const [year, month] = key.split('-').map(Number);
+  return `${MONTH_NAMES[month - 1] || key} ${year}`;
+}
+
+function referenceDate() {
+  return parseISODate(data.generatedAt) || parseISODate(data.report?.to) || todayUTC();
+}
+
+function weekRange() {
+  const fallback = startOfWeek(referenceDate());
+  const rangeStart = parseISODate(data.filters?.minWeek)
+    || startOfWeek(parseISODate(data.report?.from) || fallback);
+  const endCandidates = [
+    parseISODate(data.filters?.maxWeek),
+    parseISODate(data.report?.to),
+    referenceDate(),
+    ...((data.baseRows || []).map((row) => parseISODate(row.weekStart))),
+  ].filter(Boolean).map(startOfWeek);
+  const rangeEnd = endCandidates.length
+    ? new Date(Math.max(...endCandidates.map((date) => date.getTime())))
+    : fallback;
+  return {
+    start: startOfWeek(rangeStart),
+    end: rangeEnd,
+  };
+}
+
+function weekIntersectsMonth(weekStartValue, selectedMonth) {
+  const weekStart = parseISODate(weekStartValue);
+  if (!weekStart || !selectedMonth) return false;
+  const weekFinish = endOfWeek(weekStart);
+  return weekStart <= endOfMonth(selectedMonth) && weekFinish >= startOfMonth(selectedMonth);
+}
+
+function allWeekOptions() {
   const byWeek = new Map();
   for (const row of data.baseRows || []) {
     byWeek.set(row.weekStart, row.weekLabel);
+  }
+  const range = weekRange();
+  for (let current = range.start; current <= range.end; current = addDays(current, 7)) {
+    const value = isoDate(current);
+    if (!byWeek.has(value)) byWeek.set(value, formatWeekLabel(value));
   }
   return [...byWeek.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([value, label]) => ({ value, label }));
 }
 
+function monthOptions() {
+  const months = new Map();
+  for (const week of allWeekOptions()) {
+    const start = parseISODate(week.value);
+    if (!start) continue;
+    const end = endOfWeek(start);
+    months.set(monthKey(start), formatMonthLabel(monthKey(start)));
+    months.set(monthKey(end), formatMonthLabel(monthKey(end)));
+  }
+  return [...months.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([value, label]) => ({ value, label }));
+}
+
+function sprintOptionsForMonth(selectedMonth) {
+  return allWeekOptions()
+    .filter((week) => weekIntersectsMonth(week.value, selectedMonth))
+    .map((week, index) => ({
+      value: week.value,
+      label: `Спринт ${index + 1} · ${week.label}`,
+    }));
+}
+
+function currentSprintValue() {
+  return isoDate(startOfWeek(referenceDate()));
+}
+
+function defaultPeriod() {
+  const months = monthOptions();
+  const currentMonth = monthKey(referenceDate());
+  const month = months.some((option) => option.value === currentMonth)
+    ? currentMonth
+    : (months.at(-1)?.value || currentMonth);
+  return {
+    month,
+    sprint: defaultSprintForMonth(month),
+  };
+}
+
+function defaultSprintForMonth(selectedMonth) {
+  const sprints = sprintOptionsForMonth(selectedMonth);
+  const currentSprint = currentSprintValue();
+  if (monthKey(referenceDate()) === selectedMonth && sprints.some((option) => option.value === currentSprint)) {
+    return currentSprint;
+  }
+  const currentWeek = currentSprintValue();
+  return [...sprints].reverse().find((option) => option.value <= currentWeek)?.value
+    || sprints[0]?.value
+    || '';
+}
+
+function syncSprintSelect(preserveSelection = false) {
+  const sprints = sprintOptionsForMonth(state.month);
+  if (!preserveSelection || !sprints.some((option) => option.value === state.sprint)) {
+    state.sprint = defaultSprintForMonth(state.month);
+  }
+  populateSelect(els.sprint, sprints, '', false);
+  els.sprint.value = state.sprint;
+}
+
+function setDefaultPeriod() {
+  const defaults = defaultPeriod();
+  state.month = defaults.month;
+  state.sprint = defaults.sprint;
+}
+
+function selectedOption(options, value) {
+  return options.find((option) => option.value === value);
+}
+
 function filteredRows() {
   const query = normalizeSearch(state.search);
   return (data.baseRows || []).filter((row) => {
     if (state.mopName !== 'all' && row.mopName !== state.mopName) return false;
-    if (state.weekFrom !== 'all' && row.weekStart < state.weekFrom) return false;
-    if (state.weekTo !== 'all' && row.weekStart > state.weekTo) return false;
+    if (state.sprint && row.weekStart !== state.sprint) return false;
+    if (!state.sprint && state.month && !weekIntersectsMonth(row.weekStart, state.month)) return false;
     if (!query) return true;
     return normalizeSearch(row.mopName).includes(query);
   });
@@ -218,9 +402,11 @@ function renderKpis(rows) {
 
 function renderActiveState(rows) {
   const chips = [];
+  const month = selectedOption(monthOptions(), state.month);
+  const sprint = selectedOption(sprintOptionsForMonth(state.month), state.sprint);
   if (state.mopName !== 'all') chips.push(`МОП: ${state.mopName}`);
-  if (state.weekFrom !== 'all') chips.push(`От: ${state.weekFrom}`);
-  if (state.weekTo !== 'all') chips.push(`До: ${state.weekTo}`);
+  if (month) chips.push(`Месяц: ${month.label}`);
+  if (sprint) chips.push(`Спринт: ${sprint.label}`);
   if (normalizeSearch(state.search)) chips.push(`Поиск: ${state.search.trim()}`);
 
   els.activeFilters.innerHTML = chips.length
@@ -395,7 +581,7 @@ function renderWarnings() {
 }
 
 function exportCsv(rows) {
-  const header = ['Неделя', 'МОП', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки план', 'Звонки факт', 'Эфир план', 'Эфир факт'];
+  const header = ['Спринт', 'МОП', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки план', 'Звонки факт', 'Эфир план', 'Эфир факт'];
   const body = rows.map((row) => [
     row.weekLabel,
     row.mopName,
@@ -457,12 +643,13 @@ function bindControls() {
     state.mopName = els.mop.value;
     render();
   });
-  els.weekFrom.addEventListener('change', () => {
-    state.weekFrom = els.weekFrom.value;
+  els.month.addEventListener('change', () => {
+    state.month = els.month.value;
+    syncSprintSelect(false);
     render();
   });
-  els.weekTo.addEventListener('change', () => {
-    state.weekTo = els.weekTo.value;
+  els.sprint.addEventListener('change', () => {
+    state.sprint = els.sprint.value;
     render();
   });
   els.search.addEventListener('input', () => {
@@ -471,12 +658,11 @@ function bindControls() {
   });
   els.reset.addEventListener('click', () => {
     state.mopName = 'all';
-    state.weekFrom = 'all';
-    state.weekTo = 'all';
     state.search = '';
+    setDefaultPeriod();
     els.mop.value = 'all';
-    els.weekFrom.value = 'all';
-    els.weekTo.value = 'all';
+    els.month.value = state.month;
+    syncSprintSelect(true);
     els.search.value = '';
     render();
   });
@@ -485,9 +671,10 @@ function bindControls() {
 
 function init() {
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
-  const weeks = weekOptions();
-  populateSelect(els.weekFrom, weeks, 'Все недели');
-  populateSelect(els.weekTo, weeks, 'Все недели');
+  setDefaultPeriod();
+  populateSelect(els.month, monthOptions(), '', false);
+  els.month.value = state.month;
+  syncSprintSelect(true);
   bindControls();
   bindHeaderState();
   renderWarnings();
