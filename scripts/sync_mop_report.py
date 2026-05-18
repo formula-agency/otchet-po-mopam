@@ -128,6 +128,7 @@ PLAN_HEADER_ALIASES = {
 MEETING_LOG_HEADER_ALIASES = {
     "status": {"статус", "status", "результат", "result"},
     "meeting_start": {"начало встречи", "start", "meeting start"},
+    "responsible": {"ответственный", "моп", "менеджер", "responsible", "manager"},
     "deal_id": {"id сделки", "deal id", "id deal"},
     "deal_link": {"ссылка на сделку", "deal link", "link"},
 }
@@ -178,6 +179,7 @@ class MopSettings:
 class MeetingLogEntry:
     meeting_date: date
     deal_id: str
+    mop_name: str
 
 
 @dataclass
@@ -665,7 +667,7 @@ def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]
         column_map[canonical_name] = column_index
         matched_rows.append(row_index)
 
-    for canonical_name in ("deal_id", "deal_link"):
+    for canonical_name in ("responsible", "deal_id", "deal_link"):
         match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
         if match is not None:
             row_index, column_index = match
@@ -719,7 +721,11 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
             if deal_link_index is not None and deal_link_index < len(row):
                 deal_id = extract_deal_id_from_link(row[deal_link_index])
         if deal_id:
-            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id))
+            responsible_index = column_map.get("responsible")
+            mop_name = ""
+            if responsible_index is not None and responsible_index < len(row):
+                mop_name = str(row[responsible_index] or "").strip()
+            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id, mop_name))
     return entries
 
 
@@ -1036,9 +1042,17 @@ def build_meeting_facts(
                 deal = execute_bitrix_deal_get(session, settings, entry.deal_id)
             except Exception as exc:
                 data.warnings.append(f"Не удалось получить сделку {entry.deal_id} для встречи: {safe_error_text(exc)}")
+                add_fact(data, entry.meeting_date, "", "meetings", 1, mop_name=entry.mop_name)
                 continue
             deal_cache[entry.deal_id] = deal
-        add_fact(data, entry.meeting_date, extract_assigned_user_id(deal, mop_settings), "meetings", 1)
+        add_fact(
+            data,
+            entry.meeting_date,
+            extract_assigned_user_id(deal, mop_settings),
+            "meetings",
+            1,
+            mop_name=entry.mop_name,
+        )
 
 
 def build_call_facts(
@@ -1302,11 +1316,6 @@ def build_dashboard_payload(
             "from": window.start.date().isoformat(),
             "to": window.end.date().isoformat(),
             "timezone": settings.report_timezone,
-            "planTableUrl": (
-                f"https://docs.google.com/spreadsheets/d/{mop_settings.plan_sheet_id}/edit"
-                if mop_settings.plan_sheet_id
-                else ""
-            ),
             "planSheetName": mop_settings.plan_sheet_name,
         },
         "generatedAt": generated_at,
