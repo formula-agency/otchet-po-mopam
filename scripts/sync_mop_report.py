@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlencode, urlparse, urlunparse
 from zoneinfo import ZoneInfo
 
 import requests
@@ -37,6 +37,36 @@ DEFAULT_INCLUDED_MOPS = (
     "Жуков Лев",
     "Гавриленко Елена",
 )
+CRM_DEAL_OWNER_TYPE_ID = 2
+ACTIVE_DEAL_BASE_FIELDS = [
+    "ID",
+    "TITLE",
+    "ASSIGNED_BY_ID",
+    "STAGE_ID",
+    "STAGE_SEMANTIC_ID",
+    "CATEGORY_ID",
+    "DATE_CREATE",
+    "DATE_MODIFY",
+    "CLOSEDATE",
+    "CLOSED",
+    "OPPORTUNITY",
+    "CURRENCY_ID",
+]
+ACTIVITY_SELECT_FIELDS = [
+    "ID",
+    "OWNER_ID",
+    "OWNER_TYPE_ID",
+    "TYPE_ID",
+    "PROVIDER_ID",
+    "PROVIDER_TYPE_ID",
+    "SUBJECT",
+    "START_TIME",
+    "END_TIME",
+    "CREATED",
+    "LAST_UPDATED",
+    "COMPLETED",
+    "DIRECTION",
+]
 
 MOP_REPORT_HEADERS = [
     "Спринт",
@@ -170,6 +200,7 @@ class MopSettings:
     reservation_date_field: str
     assigned_field: str
     unknown_mop_name: str
+    include_user_labels: tuple[str, ...]
     include_users: frozenset[str]
     exclude_users: frozenset[str]
     call_min_duration_seconds: int
@@ -180,6 +211,13 @@ class MeetingLogEntry:
     meeting_date: date
     deal_id: str
     mop_name: str
+
+
+@dataclass(frozen=True)
+class ActiveDealActivity:
+    date: date
+    kind: str
+    completed: bool = True
 
 
 @dataclass
@@ -319,6 +357,13 @@ def read_filter_tokens(name: str, default_values: tuple[str, ...] = ()) -> froze
     return frozenset(normalize_key(item) for item in raw.split(",") if item.strip())
 
 
+def read_filter_labels(name: str, default_values: tuple[str, ...] = ()) -> tuple[str, ...]:
+    raw = os.getenv(name, "").strip()
+    if not raw:
+        return tuple(item.strip() for item in default_values if item.strip())
+    return tuple(item.strip() for item in raw.split(",") if item.strip())
+
+
 def load_settings() -> Settings:
     google_service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip() or None
     google_service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip() or None
@@ -374,6 +419,7 @@ def load_mop_settings(settings: Settings) -> MopSettings:
         assigned_field=os.getenv("MOP_ASSIGNED_FIELD", "ASSIGNED_BY_ID").strip() or "ASSIGNED_BY_ID",
         unknown_mop_name=os.getenv("MOP_UNKNOWN_USER", "Без ответственного").strip()
         or "Без ответственного",
+        include_user_labels=read_filter_labels("MOP_INCLUDE_USERS", DEFAULT_INCLUDED_MOPS),
         include_users=read_filter_tokens("MOP_INCLUDE_USERS", DEFAULT_INCLUDED_MOPS),
         exclude_users=read_filter_tokens("MOP_EXCLUDE_USERS"),
         call_min_duration_seconds=read_non_negative_int_env("MOP_CALL_MIN_DURATION_SECONDS", 0),
@@ -579,6 +625,24 @@ def execute_bitrix_method(
     return payload
 
 
+def execute_bitrix_post_method(
+    session: requests.Session,
+    settings: Settings,
+    method_name: str,
+    params: list[tuple[str, Any]] | dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    response = session.post(
+        build_bitrix_method_url(settings.bitrix_webhook_url, method_name),
+        data=params or {},
+        timeout=settings.bitrix_request_timeout,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    if "error" in payload:
+        raise RuntimeError(f"Bitrix API error: {payload['error']} - {payload.get('error_description', '')}")
+    return payload
+
+
 def execute_bitrix_deal_get(session: requests.Session, settings: Settings, deal_id: str) -> dict[str, Any]:
     payload = execute_bitrix_method(session, settings, "crm.deal.get", {"id": deal_id})
     result = payload.get("result")
@@ -603,6 +667,31 @@ def fetch_day_deals(
             (f"filter[>={date_field}]", day_start.isoformat(timespec="seconds")),
             (f"filter[<={date_field}]", day_end.isoformat(timespec="seconds")),
         ]
+        for field_name in select_fields:
+            params.append(("select[]", field_name))
+
+        payload = execute_bitrix_method(session, settings, "crm.deal.list", params)
+        result = payload.get("result", [])
+        if not isinstance(result, list):
+            raise RuntimeError("Unexpected Bitrix API response: crm.deal.list result is not a list.")
+        records.extend(result)
+        raw_next = payload.get("next")
+        next_page = int(raw_next) if raw_next is not None else None
+    return records
+
+
+def fetch_deal_list(
+    session: requests.Session,
+    settings: Settings,
+    filters: dict[str, Any],
+    select_fields: list[str],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    next_page: int | None = 0
+    while next_page is not None:
+        params: list[tuple[str, Any]] = [("start", next_page)]
+        for field_name, field_value in filters.items():
+            params.append((f"filter[{field_name}]", field_value))
         for field_name in select_fields:
             params.append(("select[]", field_name))
 
@@ -907,6 +996,164 @@ def mop_is_allowed(mop_id: str, mop_name: str, settings: MopSettings) -> bool:
     ):
         return False
     return True
+
+
+def unique_fields(fields: list[str]) -> list[str]:
+    result: list[str] = []
+    for field_name in fields:
+        if field_name and field_name not in result:
+            result.append(field_name)
+    return result
+
+
+def parse_bitrix_date(value: Any, timezone_name: str) -> date | None:
+    parsed = parse_bitrix_datetime(value, timezone_name)
+    return parsed.date() if parsed else None
+
+
+def date_iso(value: date | None) -> str:
+    return value.isoformat() if value else ""
+
+
+def bitrix_deal_url(settings: Settings, deal_id: str) -> str:
+    parsed = urlparse(normalize_webhook_base(settings.bitrix_webhook_url))
+    return urlunparse(parsed._replace(path=f"/crm/deal/details/{deal_id}/", params="", query="", fragment=""))
+
+
+def fetch_deal_stage_names(session: requests.Session, settings: Settings) -> dict[str, str]:
+    try:
+        payload = execute_bitrix_method(session, settings, "crm.status.list")
+    except Exception:
+        return {}
+    result = payload.get("result", [])
+    if not isinstance(result, list):
+        return {}
+    return {
+        str(item.get("STATUS_ID") or ""): str(item.get("NAME") or "").strip()
+        for item in result
+        if "DEAL_STAGE" in str(item.get("ENTITY_ID") or "") and item.get("STATUS_ID")
+    }
+
+
+def fetch_deal_category_names(session: requests.Session, settings: Settings) -> dict[str, str]:
+    try:
+        payload = execute_bitrix_method(session, settings, "crm.dealcategory.list")
+    except Exception:
+        return {}
+    result = payload.get("result", [])
+    if not isinstance(result, list):
+        return {}
+    return {
+        str(item.get("ID") or ""): str(item.get("NAME") or "").strip()
+        for item in result
+        if item.get("ID") is not None
+    }
+
+
+def classify_activity(record: dict[str, Any]) -> str:
+    type_id = str(record.get("TYPE_ID") or "").strip()
+    provider_id = normalize_key(record.get("PROVIDER_ID"))
+    provider_type = normalize_key(record.get("PROVIDER_TYPE_ID"))
+    subject = normalize_key(record.get("SUBJECT"))
+    haystack = " ".join((provider_id, provider_type, subject))
+
+    if any(marker in haystack for marker in ("подбор", "selection", "презентац")):
+        return "selections"
+    if type_id == "2" or "call" in provider_id or "call" in provider_type:
+        return "calls"
+    if type_id == "1" or "meeting" in provider_id or "meeting" in provider_type or "встреч" in subject:
+        return "meetings"
+    if type_id == "4" or "email" in provider_id or "mail" in provider_id:
+        return "emails"
+    if type_id in {"3", "6"} or any(marker in provider_id for marker in ("task", "todo")):
+        return "tasks"
+    return "other"
+
+
+def activity_date(record: dict[str, Any], timezone_name: str) -> date | None:
+    for field_name in ("START_TIME", "CREATED", "END_TIME", "LAST_UPDATED"):
+        current_date = parse_bitrix_date(record.get(field_name), timezone_name)
+        if current_date:
+            return current_date
+    return None
+
+
+def bitrix_command(method_name: str, params: list[tuple[str, Any]]) -> str:
+    return f"{method_name}?{urlencode(params, doseq=True)}"
+
+
+def execute_bitrix_batch(
+    session: requests.Session,
+    settings: Settings,
+    commands: dict[str, str],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    if not commands:
+        return {}, {}, {}
+    params: list[tuple[str, Any]] = [("halt", 0)]
+    for key, command in commands.items():
+        params.append((f"cmd[{key}]", command))
+    payload = execute_bitrix_post_method(session, settings, "batch", params)
+    result = payload.get("result", {})
+    if not isinstance(result, dict):
+        return {}, {}, {}
+    return (
+        result.get("result", {}) if isinstance(result.get("result"), dict) else {},
+        result.get("result_next", {}) if isinstance(result.get("result_next"), dict) else {},
+        result.get("result_error", {}) if isinstance(result.get("result_error"), dict) else {},
+    )
+
+
+def fetch_deal_activity_events_batch(
+    session: requests.Session,
+    settings: Settings,
+    deal_ids: list[str],
+    window: ReportWindow,
+) -> dict[str, list[ActiveDealActivity]]:
+    events_by_deal: dict[str, list[ActiveDealActivity]] = {deal_id: [] for deal_id in deal_ids}
+    pending: list[tuple[str, int]] = [(deal_id, 0) for deal_id in deal_ids]
+    while pending:
+        batch_items = pending[:50]
+        pending = pending[50:]
+        commands: dict[str, str] = {}
+        key_to_deal: dict[str, str] = {}
+        for index, (deal_id, start) in enumerate(batch_items):
+            key = f"a{index}"
+            key_to_deal[key] = deal_id
+            params: list[tuple[str, Any]] = [
+                ("start", start),
+                ("filter[OWNER_TYPE_ID]", CRM_DEAL_OWNER_TYPE_ID),
+                ("filter[OWNER_ID]", deal_id),
+            ]
+            for field_name in ACTIVITY_SELECT_FIELDS:
+                params.append(("select[]", field_name))
+            commands[key] = bitrix_command("crm.activity.list", params)
+
+        result, result_next, result_error = execute_bitrix_batch(session, settings, commands)
+        if result_error:
+            failed = ", ".join(str(key_to_deal.get(key, key)) for key in result_error)
+            raise RuntimeError(f"crm.activity.list batch failed for deals: {failed}")
+
+        for key, records in result.items():
+            deal_id = key_to_deal.get(key)
+            if not deal_id or not isinstance(records, list):
+                continue
+            for record in records:
+                current_date = activity_date(record, settings.report_timezone)
+                if current_date is None or current_date > window.end.date():
+                    continue
+                events_by_deal.setdefault(deal_id, []).append(
+                    ActiveDealActivity(
+                        date=current_date,
+                        kind=classify_activity(record),
+                        completed=str(record.get("COMPLETED") or "").upper() == "Y",
+                    )
+                )
+            if key in result_next:
+                pending.append((deal_id, int(result_next[key])))
+
+    for events in events_by_deal.values():
+        events.sort(key=lambda event: event.date)
+    return events_by_deal
 
 
 def key_for_mop_id(mop_id: str) -> str:
@@ -1278,11 +1525,171 @@ def build_report_rows(data: MopReportData, mop_settings: MopSettings) -> BuiltRe
     )
 
 
+def build_active_deals_payload(
+    data: MopReportData,
+    service: Any,
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> dict[str, Any]:
+    select_fields = unique_fields(
+        ACTIVE_DEAL_BASE_FIELDS
+        + [
+            mop_settings.assigned_field,
+            settings.bitrix_approved_mortgage_field,
+            settings.bitrix_reservation_field,
+            mop_settings.approved_mortgage_date_field,
+            mop_settings.reservation_date_field,
+        ]
+    )
+    known_user_names = {
+        identity.mop_id: identity.mop_name
+        for identity in data.identities.values()
+        if identity.mop_id and identity.mop_name
+    }
+    filter_user_ids: set[str] = set()
+    for filter_value in set(mop_settings.include_users) | set(mop_settings.exclude_users):
+        raw_value = filter_value[3:] if filter_value.startswith("id:") else filter_value
+        if raw_value.isdigit():
+            filter_user_ids.add(raw_value)
+
+    target_user_ids = set(known_user_names) | filter_user_ids
+    if not target_user_ids:
+        data.warnings.append("Активные сделки не загружены: не удалось сопоставить МОПов с ID пользователей Bitrix.")
+        return {"rows": [], "mopNames": [], "minDate": window.start.date().isoformat(), "maxDate": window.end.date().isoformat()}
+
+    deals: list[dict[str, Any]] = []
+    try:
+        for user_id in sorted(target_user_ids, key=lambda item: int(item) if item.isdigit() else item):
+            deals.extend(
+                fetch_deal_list(
+                    session,
+                    settings,
+                    {
+                        "CLOSED": "N",
+                        "ASSIGNED_BY_ID": user_id,
+                        "<=DATE_CREATE": window.end.isoformat(timespec="seconds"),
+                    },
+                    select_fields,
+                )
+            )
+    except Exception as exc:
+        data.warnings.append(f"Активные сделки не загружены: {safe_error_text(exc)}")
+        return {"rows": [], "mopNames": [], "minDate": window.start.date().isoformat(), "maxDate": window.end.date().isoformat()}
+
+    user_ids_to_fetch = (filter_user_ids - set(known_user_names)) if filter_user_ids else set()
+    user_names = fetch_bitrix_user_names(session, settings, user_ids_to_fetch) if user_ids_to_fetch else {}
+    user_names.update(known_user_names)
+    stage_names = fetch_deal_stage_names(session, settings)
+    category_names = fetch_deal_category_names(session, settings)
+
+    meeting_events_by_deal: dict[str, list[ActiveDealActivity]] = defaultdict(list)
+    if service is not None:
+        try:
+            for entry in build_successful_meeting_entries(service, settings):
+                if entry.meeting_date <= window.end.date():
+                    meeting_events_by_deal[entry.deal_id].append(
+                        ActiveDealActivity(date=entry.meeting_date, kind="meetings", completed=True)
+                    )
+        except Exception as exc:
+            data.warnings.append(f"Встречи по активным сделкам не загружены: {safe_error_text(exc)}")
+
+    allowed_records: list[tuple[dict[str, Any], str, str, str]] = []
+    for record in deals:
+        deal_id = str(record.get("ID") or "").strip()
+        if not deal_id:
+            continue
+        mop_id = extract_assigned_user_id(record, mop_settings)
+        mop_name = user_names.get(mop_id, f"Пользователь {mop_id}" if mop_id else mop_settings.unknown_mop_name)
+        if not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        allowed_records.append((record, deal_id, mop_id, mop_name))
+
+    try:
+        activity_events_by_deal = fetch_deal_activity_events_batch(
+            session,
+            settings,
+            [deal_id for _, deal_id, _, _ in allowed_records],
+            window,
+        )
+    except Exception as exc:
+        data.warnings.append(f"Активности по активным сделкам не загружены: {safe_error_text(exc)}")
+        activity_events_by_deal = {}
+
+    rows: list[dict[str, Any]] = []
+    mop_names: set[str] = set()
+    for record, deal_id, mop_id, mop_name in allowed_records:
+        activity_events = list(activity_events_by_deal.get(deal_id, []))
+        activity_events.extend(meeting_events_by_deal.get(deal_id, []))
+        activity_events.sort(key=lambda event: event.date)
+
+        approved = resolve_boolean_field(record.get(settings.bitrix_approved_mortgage_field))
+        reservation = resolve_non_empty_field(record.get(settings.bitrix_reservation_field))
+        approved_date = (
+            parse_bitrix_date(record.get(mop_settings.approved_mortgage_date_field), settings.report_timezone)
+            or parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        )
+        reservation_date = (
+            parse_bitrix_date(record.get(mop_settings.reservation_date_field), settings.report_timezone)
+            or parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        )
+        create_date = parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        close_date = parse_bitrix_date(record.get("CLOSEDATE"), settings.report_timezone)
+        modify_date = parse_bitrix_date(record.get("DATE_MODIFY"), settings.report_timezone)
+        stage_id = str(record.get("STAGE_ID") or "").strip()
+        category_id = str(record.get("CATEGORY_ID") or "").strip()
+
+        mop_names.add(mop_name)
+        rows.append(
+            {
+                "dealId": deal_id,
+                "dealUrl": bitrix_deal_url(settings, deal_id),
+                "title": str(record.get("TITLE") or f"Сделка {deal_id}").strip(),
+                "mopId": mop_id,
+                "mopName": mop_name,
+                "stageId": stage_id,
+                "stageName": stage_names.get(stage_id, stage_id),
+                "stageSemanticId": str(record.get("STAGE_SEMANTIC_ID") or "").strip(),
+                "categoryId": category_id,
+                "categoryName": category_names.get(category_id, category_id),
+                "dateCreate": date_iso(create_date),
+                "dateModify": date_iso(modify_date),
+                "closeDate": date_iso(close_date),
+                "closed": str(record.get("CLOSED") or "").upper() == "Y",
+                "amount": parse_number(record.get("OPPORTUNITY")),
+                "currency": str(record.get("CURRENCY_ID") or "").strip(),
+                "approvedMortgage": approved,
+                "approvedMortgageDate": date_iso(approved_date),
+                "reservation": reservation,
+                "reservationDate": date_iso(reservation_date),
+                "activities": [
+                    {"date": event.date.isoformat(), "kind": event.kind, "completed": event.completed}
+                    for event in activity_events
+                ],
+            }
+        )
+
+    rows.sort(key=lambda row: (row["mopName"], row["dateCreate"], int(row["dealId"]) if row["dealId"].isdigit() else row["dealId"]))
+    configured_mop_names = {
+        label
+        for label in mop_settings.include_user_labels
+        if label and not normalize_key(label).isdigit() and not normalize_key(label).startswith("id:")
+    }
+    return {
+        "rows": rows,
+        "mopNames": sorted(mop_names | configured_mop_names),
+        "minDate": window.start.date().isoformat(),
+        "maxDate": window.end.date().isoformat(),
+    }
+
+
 def build_dashboard_payload(
     data: MopReportData,
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
+    active_deals_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -1319,6 +1726,11 @@ def build_dashboard_payload(
             rows.append(row)
 
     generated_at = datetime.now(ZoneInfo(settings.report_timezone)).isoformat()
+    configured_mop_names = {
+        label
+        for label in mop_settings.include_user_labels
+        if label and not normalize_key(label).isdigit() and not normalize_key(label).startswith("id:")
+    }
     return {
         "report": {
             "name": "Отчет по МОПам",
@@ -1329,7 +1741,7 @@ def build_dashboard_payload(
         },
         "generatedAt": generated_at,
         "filters": {
-            "mopNames": sorted(mop_names),
+            "mopNames": sorted(mop_names | configured_mop_names),
             "weeks": sorted(weeks),
             "minWeek": min(weeks) if weeks else "",
             "maxWeek": max(weeks) if weeks else "",
@@ -1341,6 +1753,12 @@ def build_dashboard_payload(
             "airTimeFact": format_duration(totals_fact.air_seconds),
         },
         "overview": {"mopCount": len(mop_names), "weekCount": len(weeks)},
+        "activeDeals": active_deals_payload or {
+            "rows": [],
+            "mopNames": [],
+            "minDate": window.start.date().isoformat(),
+            "maxDate": window.end.date().isoformat(),
+        },
         "warnings": data.warnings,
         "baseRows": rows,
     }
@@ -1393,8 +1811,9 @@ def main() -> int:
         plan_entries = load_plan_entries(service, settings, mop_settings, window)
         apply_plan_entries(data, plan_entries, user_names)
 
+        active_deals_payload = build_active_deals_payload(data, service, session, settings, mop_settings, window)
         built_report = build_report_rows(data, mop_settings)
-        payload = build_dashboard_payload(data, settings, mop_settings, window)
+        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload)
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
         print_summary(built_report, payload)

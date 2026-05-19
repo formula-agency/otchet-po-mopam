@@ -1,15 +1,20 @@
 let data = null;
 
 const state = {
+  view: 'summary',
   mopName: 'all',
   month: '',
   sprint: '',
   search: '',
+  activeDate: '',
+  activeMopName: '',
 };
 
 const els = {
   siteHeader: document.querySelector('.site-header'),
   navLinks: [...document.querySelectorAll('.site-nav a')],
+  viewLinks: [...document.querySelectorAll('[data-view-link]')],
+  viewPanels: [...document.querySelectorAll('[data-view-panel]')],
   mop: document.getElementById('filter-mop'),
   month: document.getElementById('filter-month'),
   sprint: document.getElementById('filter-sprint'),
@@ -35,6 +40,17 @@ const els = {
   kpiAirRate: document.getElementById('kpi-air-rate'),
   detailCaption: document.getElementById('detail-caption'),
   detailBody: document.getElementById('detail-body'),
+  activeDealDate: document.getElementById('active-deal-date'),
+  activeDealMop: document.getElementById('active-deal-mop'),
+  activeDealCaption: document.getElementById('active-deal-caption'),
+  activeDealSummary: document.getElementById('active-deal-summary'),
+  activeDealBody: document.getElementById('active-deal-body'),
+  activeDealCount: document.getElementById('active-deal-count'),
+  activeActivityCount: document.getElementById('active-activity-count'),
+  activeMeetingCount: document.getElementById('active-meeting-count'),
+  activeSelectionCount: document.getElementById('active-selection-count'),
+  activeCallCount: document.getElementById('active-call-count'),
+  activeReservationCount: document.getElementById('active-reservation-count'),
   exportCsv: document.getElementById('export-csv'),
   warnings: document.getElementById('warnings'),
   warningsList: document.getElementById('warnings-list'),
@@ -318,6 +334,94 @@ function selectedOption(options, value) {
   return options.find((option) => option.value === value);
 }
 
+function activeDealsData() {
+  return data.activeDeals || { rows: [], mopNames: [], minDate: data.report?.from || '', maxDate: data.report?.to || '' };
+}
+
+function activeMopOptions() {
+  const names = activeDealsData().mopNames?.length
+    ? activeDealsData().mopNames
+    : (data.filters?.mopNames || []);
+  return names.map((name) => ({ value: name, label: name }));
+}
+
+function defaultActiveDate() {
+  return activeDealsData().maxDate || data.report?.to || isoDate(referenceDate());
+}
+
+function setDefaultActiveDeals() {
+  const options = activeMopOptions();
+  state.activeDate = defaultActiveDate();
+  state.activeMopName = options.some((option) => option.value === state.mopName)
+    ? state.mopName
+    : (options[0]?.value || '');
+}
+
+function formatDate(value) {
+  const parsed = parseISODate(value);
+  return parsed ? fullDate(parsed) : '—';
+}
+
+function isDateOnOrBefore(value, selectedDate) {
+  return Boolean(value) && value <= selectedDate;
+}
+
+function dealIsActiveOnDate(deal, selectedDate) {
+  if (deal.dateCreate && deal.dateCreate > selectedDate) return false;
+  if (!deal.closed) return true;
+  const closeDate = deal.closeDate || deal.dateModify;
+  return closeDate ? closeDate > selectedDate : false;
+}
+
+function emptyDealCounters() {
+  return {
+    meetings: 0,
+    approvedMortgages: 0,
+    reservations: 0,
+    selections: 0,
+    calls: 0,
+    tasks: 0,
+    emails: 0,
+    other: 0,
+    total: 0,
+  };
+}
+
+function dealCounters(deal, selectedDate) {
+  const counters = emptyDealCounters();
+  if (deal.approvedMortgage && (!deal.approvedMortgageDate || isDateOnOrBefore(deal.approvedMortgageDate, selectedDate))) {
+    counters.approvedMortgages += 1;
+  }
+  if (deal.reservation && (!deal.reservationDate || isDateOnOrBefore(deal.reservationDate, selectedDate))) {
+    counters.reservations += 1;
+  }
+
+  for (const event of deal.activities || []) {
+    if (!event.date || event.date > selectedDate) continue;
+    const kind = counters[event.kind] === undefined ? 'other' : event.kind;
+    counters[kind] += 1;
+  }
+
+  counters.total = counters.meetings
+    + counters.approvedMortgages
+    + counters.reservations
+    + counters.selections
+    + counters.calls
+    + counters.tasks
+    + counters.emails
+    + counters.other;
+  return counters;
+}
+
+function filteredActiveDeals() {
+  const selectedDate = state.activeDate || defaultActiveDate();
+  return (activeDealsData().rows || [])
+    .filter((deal) => !state.activeMopName || deal.mopName === state.activeMopName)
+    .filter((deal) => dealIsActiveOnDate(deal, selectedDate))
+    .map((deal) => ({ ...deal, counters: dealCounters(deal, selectedDate) }))
+    .sort((a, b) => b.counters.total - a.counters.total || a.title.localeCompare(b.title));
+}
+
 function filteredRows() {
   const query = normalizeSearch(state.search);
   return (data.baseRows || []).filter((row) => {
@@ -443,6 +547,53 @@ function renderDetailTable(rows) {
       </tr>
     `)
     .join('');
+}
+
+function renderActiveDeals() {
+  const rows = filteredActiveDeals();
+  const summary = rows.reduce((acc, row) => {
+    for (const key of Object.keys(acc)) acc[key] += row.counters[key] || 0;
+    return acc;
+  }, emptyDealCounters());
+
+  els.activeDealCaption.textContent = `${formatNumber(rows.length)} активных сделок`;
+  els.activeDealSummary.textContent = `Дата: ${formatDate(state.activeDate)} · МОП: ${state.activeMopName || '—'} · Активностей: ${formatNumber(summary.total)}`;
+  els.activeDealCount.textContent = formatNumber(rows.length);
+  els.activeActivityCount.textContent = formatNumber(summary.total);
+  els.activeMeetingCount.textContent = formatNumber(summary.meetings);
+  els.activeSelectionCount.textContent = formatNumber(summary.selections);
+  els.activeCallCount.textContent = formatNumber(summary.calls);
+  els.activeReservationCount.textContent = formatNumber(summary.reservations);
+
+  if (!rows.length) {
+    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="12">Нет активных сделок для выбранной даты и МОПа</td></tr>';
+    return;
+  }
+
+  els.activeDealBody.innerHTML = rows.map((deal) => {
+    const counters = deal.counters;
+    const category = deal.categoryName ? `<span>${escapeHtml(deal.categoryName)}</span>` : '';
+    const title = `#${deal.dealId} ${deal.title || 'Без названия'}`;
+    return `
+      <tr>
+        <td class="deal-cell">
+          <a class="deal-link" href="${escapeHtml(deal.dealUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a>
+          ${category}
+        </td>
+        <td>${escapeHtml(deal.stageName || deal.stageId || '—')}</td>
+        <td>${formatDate(deal.dateCreate)}</td>
+        <td>${formatNumber(counters.meetings)}</td>
+        <td>${formatNumber(counters.approvedMortgages)}</td>
+        <td>${formatNumber(counters.reservations)}</td>
+        <td>${formatNumber(counters.selections)}</td>
+        <td>${formatNumber(counters.calls)}</td>
+        <td>${formatNumber(counters.tasks)}</td>
+        <td>${formatNumber(counters.emails)}</td>
+        <td>${formatNumber(counters.other)}</td>
+        <td>${formatNumber(counters.total)}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 function ensureCharts() {
@@ -617,6 +768,22 @@ function render() {
   renderActiveState(rows);
   renderDetailTable(rows);
   renderCharts(rows);
+  renderActiveDeals();
+}
+
+function setView(view, updateHash = true) {
+  state.view = view === 'deals' ? 'deals' : 'summary';
+  for (const panel of els.viewPanels) {
+    const isActive = panel.dataset.viewPanel === state.view;
+    panel.hidden = !isActive;
+    panel.classList.toggle('is-active', isActive);
+  }
+  for (const link of els.viewLinks) {
+    link.classList.toggle('is-active', link.dataset.viewLink === state.view);
+  }
+  if (updateHash && window.history) {
+    window.history.replaceState(null, '', state.view === 'deals' ? '#deals' : '#summary');
+  }
 }
 
 function bindHeaderState() {
@@ -642,6 +809,15 @@ function bindHeaderState() {
   window.addEventListener('scroll', syncHeader, { passive: true });
 }
 
+function bindViewNavigation() {
+  for (const link of els.viewLinks) {
+    link.addEventListener('click', () => setView(link.dataset.viewLink));
+  }
+  window.addEventListener('hashchange', () => {
+    setView(location.hash === '#deals' || location.hash === '#active-deals' ? 'deals' : 'summary', false);
+  });
+}
+
 function bindControls() {
   els.mop.addEventListener('change', () => {
     state.mopName = els.mop.value;
@@ -660,6 +836,14 @@ function bindControls() {
     state.search = els.search.value;
     render();
   });
+  els.activeDealDate.addEventListener('change', () => {
+    state.activeDate = els.activeDealDate.value || defaultActiveDate();
+    renderActiveDeals();
+  });
+  els.activeDealMop.addEventListener('change', () => {
+    state.activeMopName = els.activeDealMop.value;
+    renderActiveDeals();
+  });
   els.reset.addEventListener('click', () => {
     state.mopName = 'all';
     state.search = '';
@@ -676,13 +860,21 @@ function bindControls() {
 function init() {
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
   setDefaultPeriod();
+  setDefaultActiveDeals();
   populateSelect(els.month, monthOptions(), '', false);
   els.month.value = state.month;
   syncSprintSelect(true);
+  populateSelect(els.activeDealMop, activeMopOptions(), '', false);
+  els.activeDealMop.value = state.activeMopName;
+  els.activeDealDate.min = activeDealsData().minDate || data.report?.from || '';
+  els.activeDealDate.max = activeDealsData().maxDate || data.report?.to || '';
+  els.activeDealDate.value = state.activeDate;
   bindControls();
+  bindViewNavigation();
   bindHeaderState();
   renderWarnings();
   render();
+  setView(location.hash === '#deals' || location.hash === '#active-deals' ? 'deals' : 'summary', false);
 }
 
 async function loadData() {
