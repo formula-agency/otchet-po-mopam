@@ -407,9 +407,7 @@ function dealCounters(deal, selectedDate) {
     + counters.reservations
     + counters.selections
     + counters.calls
-    + counters.tasks
-    + counters.emails
-    + counters.other;
+    + counters.tasks;
   return counters;
 }
 
@@ -566,7 +564,7 @@ function renderActiveDeals() {
   els.activeReservationCount.textContent = formatNumber(summary.reservations);
 
   if (!rows.length) {
-    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="12">Нет активных сделок для выбранной даты и МОПа</td></tr>';
+    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет активных сделок для выбранной даты и МОПа</td></tr>';
     return;
   }
 
@@ -588,9 +586,6 @@ function renderActiveDeals() {
         <td>${formatNumber(counters.selections)}</td>
         <td>${formatNumber(counters.calls)}</td>
         <td>${formatNumber(counters.tasks)}</td>
-        <td>${formatNumber(counters.emails)}</td>
-        <td>${formatNumber(counters.other)}</td>
-        <td>${formatNumber(counters.total)}</td>
       </tr>
     `;
   }).join('');

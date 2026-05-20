@@ -485,7 +485,7 @@ select {
 }
 
 .active-deals-table {
-  min-width: 1180px;
+  min-width: 980px;
 }
 
 .active-deals-table td:nth-child(2),
