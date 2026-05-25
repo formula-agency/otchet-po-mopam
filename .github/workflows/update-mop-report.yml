@@ -67,7 +67,9 @@ jobs:
 
       - name: Import MegaFon VATS calls
         run: |
-          if [ -f manual-data/megafon-vats-calls.xlsx ]; then
+          if [ -f manual-data/megafon-vats-history.xlsx ]; then
+            python scripts/import_megafon_calls.py manual-data/megafon-vats-history.xlsx
+          elif [ -f manual-data/megafon-vats-calls.xlsx ]; then
             python scripts/import_megafon_calls.py manual-data/megafon-vats-calls.xlsx
           fi
 

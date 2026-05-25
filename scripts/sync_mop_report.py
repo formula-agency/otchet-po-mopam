@@ -37,6 +37,7 @@ DEFAULT_INCLUDED_MOPS = (
     "Жуков Лев",
     "Гавриленко Елена",
 )
+DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
     "ID",
@@ -204,6 +205,7 @@ class MopSettings:
     include_users: frozenset[str]
     exclude_users: frozenset[str]
     call_min_duration_seconds: int
+    active_deal_category_names: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -423,6 +425,10 @@ def load_mop_settings(settings: Settings) -> MopSettings:
         include_users=read_filter_tokens("MOP_INCLUDE_USERS", DEFAULT_INCLUDED_MOPS),
         exclude_users=read_filter_tokens("MOP_EXCLUDE_USERS"),
         call_min_duration_seconds=read_non_negative_int_env("MOP_CALL_MIN_DURATION_SECONDS", 0),
+        active_deal_category_names=read_filter_labels(
+            "MOP_ACTIVE_DEAL_CATEGORY_NAMES",
+            DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES,
+        ),
     )
 
 
@@ -1050,6 +1056,17 @@ def fetch_deal_category_names(session: requests.Session, settings: Settings) -> 
     }
 
 
+def active_deal_category_ids(category_names: dict[str, str], mop_settings: MopSettings) -> set[str]:
+    allowed_names = {normalize_key(name) for name in mop_settings.active_deal_category_names if normalize_key(name)}
+    if not allowed_names:
+        return set()
+    return {
+        category_id
+        for category_id, category_name in category_names.items()
+        if normalize_key(category_name) in allowed_names
+    }
+
+
 def classify_activity(record: dict[str, Any]) -> str:
     type_id = str(record.get("TYPE_ID") or "").strip()
     provider_id = normalize_key(record.get("PROVIDER_ID"))
@@ -1554,35 +1571,45 @@ def build_active_deals_payload(
         if raw_value.isdigit():
             filter_user_ids.add(raw_value)
 
-    target_user_ids = set(known_user_names) | filter_user_ids
-    if not target_user_ids:
-        data.warnings.append("Активные сделки не загружены: не удалось сопоставить МОПов с ID пользователей Bitrix.")
-        return {"rows": [], "mopNames": [], "minDate": window.start.date().isoformat(), "maxDate": window.end.date().isoformat()}
-
     deals: list[dict[str, Any]] = []
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    base_filters: dict[str, Any] = {
+        "CLOSED": "N",
+        "<=DATE_CREATE": window.end.isoformat(timespec="seconds"),
+    }
     try:
-        for user_id in sorted(target_user_ids, key=lambda item: int(item) if item.isdigit() else item):
-            deals.extend(
-                fetch_deal_list(
-                    session,
-                    settings,
-                    {
-                        "CLOSED": "N",
-                        "ASSIGNED_BY_ID": user_id,
-                        "<=DATE_CREATE": window.end.isoformat(timespec="seconds"),
-                    },
-                    select_fields,
-                )
-            )
+        if category_ids:
+            for category_id in sorted(category_ids, key=lambda item: int(item) if item.isdigit() else item):
+                deals.extend(fetch_deal_list(session, settings, {**base_filters, "CATEGORY_ID": category_id}, select_fields))
+        else:
+            deals = fetch_deal_list(session, settings, base_filters, select_fields)
     except Exception as exc:
         data.warnings.append(f"Активные сделки не загружены: {safe_error_text(exc)}")
         return {"rows": [], "mopNames": [], "minDate": window.start.date().isoformat(), "maxDate": window.end.date().isoformat()}
 
-    user_ids_to_fetch = (filter_user_ids - set(known_user_names)) if filter_user_ids else set()
-    user_names = fetch_bitrix_user_names(session, settings, user_ids_to_fetch) if user_ids_to_fetch else {}
+    if mop_settings.active_deal_category_names and not category_ids:
+        data.warnings.append(
+            "Активные сделки: не найдена воронка "
+            + ", ".join(mop_settings.active_deal_category_names)
+            + "; сделки загружены по всем воронкам."
+        )
+
+    unique_deals: dict[str, dict[str, Any]] = {}
+    for record in deals:
+        deal_id = str(record.get("ID") or "").strip()
+        if deal_id and deal_id not in unique_deals:
+            unique_deals[deal_id] = record
+    deals = list(unique_deals.values())
+
+    assigned_user_ids = {
+        extract_assigned_user_id(record, mop_settings)
+        for record in deals
+        if extract_assigned_user_id(record, mop_settings)
+    }
+    user_names = fetch_bitrix_user_names(session, settings, assigned_user_ids | filter_user_ids)
     user_names.update(known_user_names)
     stage_names = fetch_deal_stage_names(session, settings)
-    category_names = fetch_deal_category_names(session, settings)
 
     meeting_events_by_deal: dict[str, list[ActiveDealActivity]] = defaultdict(list)
     if service is not None:
@@ -1623,6 +1650,7 @@ def build_active_deals_payload(
         activity_events = list(activity_events_by_deal.get(deal_id, []))
         activity_events.extend(meeting_events_by_deal.get(deal_id, []))
         activity_events.sort(key=lambda event: event.date)
+        last_activity_date = max((event.date for event in activity_events), default=None)
 
         approved = resolve_boolean_field(record.get(settings.bitrix_approved_mortgage_field))
         reservation = resolve_non_empty_field(record.get(settings.bitrix_reservation_field))
@@ -1663,6 +1691,7 @@ def build_active_deals_payload(
                 "approvedMortgageDate": date_iso(approved_date),
                 "reservation": reservation,
                 "reservationDate": date_iso(reservation_date),
+                "lastActivityDate": date_iso(last_activity_date),
                 "activities": [
                     {"date": event.date.isoformat(), "kind": event.kind, "completed": event.completed}
                     for event in activity_events

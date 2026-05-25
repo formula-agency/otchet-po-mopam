@@ -411,6 +411,14 @@ function dealCounters(deal, selectedDate) {
   return counters;
 }
 
+function lastDealActivityDate(deal, selectedDate) {
+  const dates = (deal.activities || [])
+    .map((event) => event.date)
+    .filter((date) => date && date <= selectedDate)
+    .sort();
+  return dates.length ? dates[dates.length - 1] : '';
+}
+
 function filteredActiveDeals() {
   const selectedDate = state.activeDate || defaultActiveDate();
   return (activeDealsData().rows || [])
@@ -565,12 +573,13 @@ function renderActiveDeals() {
   els.activeReservationCount.textContent = formatNumber(summary.reservations);
 
   if (!rows.length) {
-    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет активных сделок для выбранной даты и МОПа</td></tr>';
+    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="10">Нет активных сделок для выбранной даты и МОПа</td></tr>';
     return;
   }
 
   els.activeDealBody.innerHTML = rows.map((deal) => {
     const counters = deal.counters;
+    const selectedDate = state.activeDate || defaultActiveDate();
     const category = deal.categoryName ? `<span>${escapeHtml(deal.categoryName)}</span>` : '';
     const title = `#${deal.dealId} ${deal.title || 'Без названия'}`;
     return `
@@ -581,6 +590,7 @@ function renderActiveDeals() {
         </td>
         <td>${escapeHtml(deal.stageName || deal.stageId || '—')}</td>
         <td>${formatDate(deal.dateCreate)}</td>
+        <td>${formatDate(lastDealActivityDate(deal, selectedDate))}</td>
         <td>${formatNumber(counters.meetings)}</td>
         <td>${formatNumber(counters.approvedMortgages)}</td>
         <td>${formatNumber(counters.reservations)}</td>
