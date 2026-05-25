@@ -37,6 +37,18 @@ DEFAULT_INCLUDED_MOPS = (
     "Жуков Лев",
     "Гавриленко Елена",
 )
+DEFAULT_MOP_NAMES_BY_ID = {
+    "39": "Погребинский Артем",
+    "159": "Черткова Ирина",
+    "160": "Газисова Мария",
+    "161": "Попова Олеся",
+    "174": "Губайдулина Заррина",
+    "189": "Камболин Александр",
+    "190": "Тончу Ростислав",
+    "194": "Жуков Лев",
+    "195": "Попова Юлия",
+    "197": "Гавриленко Елена",
+}
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
@@ -1227,7 +1239,7 @@ def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_
                 result = raw_result
                 break
         if not result:
-            user_names[user_id] = f"Пользователь {user_id}"
+            user_names[user_id] = DEFAULT_MOP_NAMES_BY_ID.get(user_id, f"Пользователь {user_id}")
             continue
 
         user = result[0]
@@ -1237,7 +1249,11 @@ def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_
             str(user.get("SECOND_NAME") or "").strip(),
         ]
         full_name = " ".join(part for part in name_parts if part)
-        user_names[user_id] = full_name or str(user.get("LOGIN") or user.get("EMAIL") or f"Пользователь {user_id}")
+        user_names[user_id] = (
+            DEFAULT_MOP_NAMES_BY_ID.get(user_id)
+            or full_name
+            or str(user.get("LOGIN") or user.get("EMAIL") or f"Пользователь {user_id}")
+        )
     return user_names
 
 
@@ -1565,6 +1581,7 @@ def build_active_deals_payload(
         for identity in data.identities.values()
         if identity.mop_id and identity.mop_name
     }
+    known_user_names.update(DEFAULT_MOP_NAMES_BY_ID)
     filter_user_ids: set[str] = set()
     for filter_value in set(mop_settings.include_users) | set(mop_settings.exclude_users):
         raw_value = filter_value[3:] if filter_value.startswith("id:") else filter_value
