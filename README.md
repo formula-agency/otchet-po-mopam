@@ -78,6 +78,16 @@ python scripts/sync_mop_report.py --env-file bitrix.env
 
 Dashboard открывается через `dashboard/index.html`.
 
+## Ручная загрузка звонков из ВАТС МегаФон
+
+Если Bitrix не отдает телефонию, можно загрузить Excel-выгрузку МегаФона в уже собранные данные dashboard:
+
+```powershell
+python scripts/import_megafon_calls.py manual-data/megafon-vats-calls.xlsx
+```
+
+Скрипт читает лист `По ДНЯМ за 13 месяцев`, группирует звонки по спринтам и добавляет строку `ВАТС МегаФон (общий итог)`. В текущей выгрузке нет разбивки по МОП и эфирного времени, поэтому звонки попадают только в общий итог, а эфир не меняется.
+
 ## Важные настройки
 
 - `BITRIX_APPROVED_MORTGAGE_FIELD` - поле сделки для одобренной ипотеки

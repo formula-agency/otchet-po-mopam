@@ -473,7 +473,7 @@ function summarizeByWeek(rows) {
 
 function summarizeByMop(rows) {
   const groups = new Map();
-  for (const row of rows) {
+  for (const row of rows.filter((item) => !item.manualAggregate)) {
     if (!groups.has(row.mopName)) groups.set(row.mopName, []);
     groups.get(row.mopName).push(row);
   }
@@ -484,7 +484,7 @@ function summarizeByMop(rows) {
 
 function renderHero(rows) {
   const summary = summarizeRows(rows);
-  els.heroMops.textContent = formatNumber(new Set(rows.map((row) => row.mopName)).size);
+  els.heroMops.textContent = formatNumber(new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size);
   els.heroWeeks.textContent = formatNumber(new Set(rows.map((row) => row.weekStart)).size);
   els.heroMeetings.textContent = pair(summary.meetingsFact, summary.meetingsPlan);
   els.heroReservations.textContent = pair(summary.reservationsFact, summary.reservationsPlan);
@@ -520,7 +520,8 @@ function renderActiveState(rows) {
     : '<span class="chip">Все данные</span>';
 
   const summary = summarizeRows(rows);
-  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(new Set(rows.map((row) => row.mopName)).size)} · Встречи: ${pair(summary.meetingsFact, summary.meetingsPlan)}`;
+  const mopCount = new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size;
+  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(mopCount)} · Встречи: ${pair(summary.meetingsFact, summary.meetingsPlan)}`;
 }
 
 function renderDetailTable(rows) {
@@ -534,7 +535,7 @@ function renderDetailTable(rows) {
     .slice()
     .sort((a, b) => a.weekStart.localeCompare(b.weekStart) || a.mopName.localeCompare(b.mopName))
     .map((row) => `
-      <tr>
+      <tr${row.manualAggregate ? ' class="manual-row"' : ''}>
         <td>${escapeHtml(row.weekLabel)}</td>
         <td>${escapeHtml(row.mopName)}</td>
         <td>${pair(row.meetingsFact, row.meetingsPlan)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>

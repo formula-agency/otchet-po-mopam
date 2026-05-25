@@ -484,6 +484,11 @@ select {
   text-align: right;
 }
 
+.data-table tr.manual-row td {
+  background: #fff8e6;
+  font-weight: 700;
+}
+
 .active-deals-table {
   min-width: 980px;
 }

@@ -8,7 +8,9 @@ on:
     paths:
       - ".github/workflows/update-mop-report.yml"
       - "dashboard/**"
+      - "manual-data/**"
       - "requirements.txt"
+      - "scripts/import_megafon_calls.py"
       - "scripts/sync_mop_report.py"
   schedule:
     - cron: "0 1 * * *"
@@ -62,6 +64,12 @@ jobs:
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
         run: python scripts/sync_mop_report.py
+
+      - name: Import MegaFon VATS calls
+        run: |
+          if [ -f manual-data/megafon-vats-calls.xlsx ]; then
+            python scripts/import_megafon_calls.py manual-data/megafon-vats-calls.xlsx
+          fi
 
       - name: Upload dashboard artifact
         uses: actions/upload-pages-artifact@v3
