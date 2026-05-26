@@ -94,6 +94,7 @@ const MONTH_NAMES = [
 let weeklyChart;
 let mopChart;
 let factChart;
+let airtimeChart;
 
 const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v1';
 const PLAN_METRIC_FIELDS = [
@@ -114,6 +115,16 @@ function formatDuration(seconds) {
   const minutes = Math.floor((safeSeconds % 3600) / 60);
   const rest = Math.floor(safeSeconds % 60);
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
+}
+
+function formatDurationCompact(seconds) {
+  const safeSeconds = Math.max(0, Math.round(Number(seconds || 0)));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const rest = safeSeconds % 60;
+  if (hours > 0) return `${hours} ч ${String(minutes).padStart(2, '0')} мин`;
+  if (minutes > 0) return `${minutes} мин ${String(rest).padStart(2, '0')} сек`;
+  return `${rest} сек`;
 }
 
 function completion(fact, plan) {
@@ -992,6 +1003,139 @@ function renderActiveDeals() {
   }).join('');
 }
 
+const airtimeValueLabelsPlugin = {
+  id: 'airtimeValueLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx, chartArea } = chart;
+    const meta = chart.getDatasetMeta(0);
+    const values = chart.data.datasets[0]?.data || [];
+    if (!values.length) return;
+
+    ctx.save();
+    ctx.font = '700 18px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = '#161414';
+    ctx.textBaseline = 'middle';
+
+    meta.data.forEach((bar, index) => {
+      const label = formatDurationCompact(values[index]);
+      const width = ctx.measureText(label).width;
+      const x = Math.min(bar.x + 14, chartArea.right - width - 4);
+      ctx.fillText(label, x, bar.y);
+    });
+
+    ctx.restore();
+  },
+  afterDraw(chart) {
+    if (chart.data.labels?.length) return;
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    ctx.fillStyle = '#68717b';
+    ctx.font = '700 22px "Segoe UI", Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Нет данных за текущий месяц', (chartArea.left + chartArea.right) / 2, (chartArea.top + chartArea.bottom) / 2);
+    ctx.restore();
+  },
+};
+
+function currentAirTimeMonth() {
+  const currentMonth = monthKey(referenceDate());
+  const hasCurrentMonthRows = reportRows().some((row) => (
+    !row.manualAggregate
+    && sprintBelongsToMonth(row.weekStart, currentMonth)
+  ));
+  if (hasCurrentMonthRows) return currentMonth;
+
+  const months = reportRows()
+    .filter((row) => !row.manualAggregate && row.weekStart)
+    .map((row) => parseISODate(row.weekStart))
+    .filter(Boolean)
+    .map(monthKey)
+    .sort();
+  return months.at(-1) || currentMonth;
+}
+
+function airTimeCompetitionRows() {
+  const targetMonth = currentAirTimeMonth();
+  const byMop = new Map((data.filters?.mopNames || []).map((name) => [name, 0]));
+
+  for (const row of reportRows()) {
+    if (row.manualAggregate || !sprintBelongsToMonth(row.weekStart, targetMonth)) continue;
+    if (!byMop.has(row.mopName)) byMop.set(row.mopName, 0);
+    byMop.set(row.mopName, byMop.get(row.mopName) + Number(row.airTimeFactSeconds || 0));
+  }
+
+  return [...byMop.entries()]
+    .map(([mopName, airTimeFactSeconds]) => ({ mopName, airTimeFactSeconds }))
+    .sort((a, b) => b.airTimeFactSeconds - a.airTimeFactSeconds || a.mopName.localeCompare(b.mopName));
+}
+
+function ensureAirTimeChart() {
+  if (airtimeChart) return;
+
+  airtimeChart = new Chart(document.getElementById('airtime-chart'), {
+    type: 'bar',
+    data: { labels: [], datasets: [] },
+    plugins: [airtimeValueLabelsPlugin],
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      responsive: true,
+      animation: false,
+      layout: { padding: { top: 8, right: 124, bottom: 8, left: 4 } },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: 'rgba(22, 20, 20, 0.08)' },
+          ticks: {
+            color: '#68717b',
+            font: { size: 14, weight: 700 },
+            maxTicksLimit: 7,
+            callback: (value) => formatDurationCompact(Number(value)),
+          },
+        },
+        y: {
+          grid: { display: false },
+          ticks: {
+            color: '#161414',
+            font: { size: 19, weight: 700 },
+          },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label(context) {
+              return formatDuration(context.parsed.x);
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+function renderAirTimeCompetition() {
+  ensureAirTimeChart();
+  const rows = airTimeCompetitionRows();
+  const maxValue = Math.max(...rows.map((row) => row.airTimeFactSeconds), 0);
+  const colors = [palette.blue, palette.green, palette.violet, palette.amber, palette.coral];
+
+  airtimeChart.data.labels = rows.map((row, index) => `${index + 1}. ${row.mopName}`);
+  airtimeChart.data.datasets = [{
+    data: rows.map((row) => row.airTimeFactSeconds),
+    backgroundColor: rows.map((_, index) => `${colors[index % colors.length]}D9`),
+    borderColor: rows.map((_, index) => colors[index % colors.length]),
+    borderWidth: 1,
+    borderRadius: 5,
+    barPercentage: 0.7,
+    categoryPercentage: 0.84,
+  }];
+  airtimeChart.options.scales.x.suggestedMax = Math.max(3600, Math.ceil(maxValue * 1.18));
+  airtimeChart.update();
+}
+
 function ensureCharts() {
   if (!weeklyChart) {
     weeklyChart = new Chart(document.getElementById('weekly-chart'), {
@@ -1168,7 +1312,7 @@ function render() {
 }
 
 function setView(view, updateHash = true) {
-  state.view = view === 'deals' ? 'deals' : 'summary';
+  state.view = ['summary', 'deals', 'airtime'].includes(view) ? view : 'summary';
   for (const panel of els.viewPanels) {
     const isActive = panel.dataset.viewPanel === state.view;
     panel.hidden = !isActive;
@@ -1178,8 +1322,9 @@ function setView(view, updateHash = true) {
     link.classList.toggle('is-active', link.dataset.viewLink === state.view);
   }
   if (updateHash && window.history) {
-    window.history.replaceState(null, '', state.view === 'deals' ? '#deals' : '#summary');
+    window.history.replaceState(null, '', state.view === 'summary' ? '#summary' : `#${state.view}`);
   }
+  if (state.view === 'airtime') renderAirTimeCompetition();
 }
 
 function bindHeaderState() {
@@ -1210,8 +1355,14 @@ function bindViewNavigation() {
     link.addEventListener('click', () => setView(link.dataset.viewLink));
   }
   window.addEventListener('hashchange', () => {
-    setView(location.hash === '#deals' || location.hash === '#active-deals' ? 'deals' : 'summary', false);
+    setView(viewFromHash(), false);
   });
+}
+
+function viewFromHash() {
+  if (location.hash === '#deals' || location.hash === '#active-deals') return 'deals';
+  if (location.hash === '#airtime') return 'airtime';
+  return 'summary';
 }
 
 function bindControls() {
@@ -1290,7 +1441,7 @@ function init() {
   renderWarnings();
   renderPlanUploadStatus();
   render();
-  setView(location.hash === '#deals' || location.hash === '#active-deals' ? 'deals' : 'summary', false);
+  setView(viewFromHash(), false);
 }
 
 async function loadData() {

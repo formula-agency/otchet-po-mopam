@@ -475,6 +475,23 @@ select {
   height: 100% !important;
 }
 
+.airtime-view {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.airtime-stage {
+  position: relative;
+  width: 100%;
+  height: calc(100vh - 36px);
+  padding: 26px 30px 18px;
+}
+
+.airtime-stage canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .table-wrap {
   max-height: 620px;
   overflow: auto;
@@ -623,7 +640,7 @@ select {
   }
 
   .side-nav {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .side-nav__item {
@@ -668,6 +685,11 @@ select {
   .chart-frame,
   .chart-frame--weekly {
     height: 240px;
+  }
+
+  .airtime-stage {
+    height: calc(100vh - 112px);
+    padding: 14px 10px;
   }
 
   .active-deal-tools {

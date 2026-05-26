@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260526-2">
+  <link rel="stylesheet" href="./styles.css?v=20260526-3">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script defer src="./data/mop-report-data.js?v=20260526-2"></script>
-  <script defer src="./app.js?v=20260526-2"></script>
+  <script defer src="./data/mop-report-data.js?v=20260526-3"></script>
+  <script defer src="./app.js?v=20260526-3"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -17,6 +17,7 @@
       <nav class="side-nav">
         <button class="side-nav__item is-active" type="button" data-view-link="summary">План-факт</button>
         <button class="side-nav__item" type="button" data-view-link="deals">Сделки</button>
+        <button class="side-nav__item" type="button" data-view-link="airtime">Эфир</button>
       </nav>
     </aside>
 
@@ -188,6 +189,12 @@
             </div>
           </section>
         </div>
+      </div>
+
+      <div class="view airtime-view" data-view-panel="airtime" hidden>
+        <section class="airtime-stage" aria-label="Эфирное время МОПов за текущий месяц">
+          <canvas id="airtime-chart"></canvas>
+        </section>
       </div>
     </main>
   </div>
