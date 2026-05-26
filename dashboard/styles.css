@@ -265,7 +265,7 @@ select {
 
 .filters-band {
   display: grid;
-  grid-template-columns: minmax(180px, 1.1fr) minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(220px, 1.2fr) auto;
+  grid-template-columns: minmax(170px, 1fr) minmax(145px, 0.8fr) minmax(150px, 0.9fr) minmax(190px, 1fr) auto minmax(280px, 1.4fr);
   gap: 12px;
   align-items: end;
   padding: 16px;
@@ -294,6 +294,33 @@ select {
   outline: none;
   border-color: rgba(47, 140, 255, 0.48);
   box-shadow: 0 0 0 4px rgba(47, 140, 255, 0.12);
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.plan-upload-field {
+  gap: 7px;
+}
+
+.plan-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-upload-status {
+  min-height: 16px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .active-state {

@@ -4,10 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260525-3">
+  <link rel="stylesheet" href="./styles.css?v=20260526-1">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script defer src="./data/mop-report-data.js?v=20260525-3"></script>
-  <script defer src="./app.js?v=20260525-3"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script defer src="./data/mop-report-data.js?v=20260526-1"></script>
+  <script defer src="./app.js?v=20260526-1"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -55,6 +56,15 @@
           <input id="filter-search" type="search" placeholder="МОП">
         </label>
         <button id="reset-filters" class="ghost-button" type="button">Сбросить</button>
+        <div class="field plan-upload-field">
+          <span>План</span>
+          <input id="plan-file-input" class="file-input-hidden" type="file" accept=".xlsx,.xls,.csv">
+          <div class="plan-upload-actions">
+            <button id="plan-upload-button" class="ghost-button" type="button">Загрузить план</button>
+            <button id="clear-plan-upload" class="ghost-button" type="button" hidden>Сбросить план</button>
+          </div>
+          <div id="plan-upload-status" class="plan-upload-status" aria-live="polite">План не загружен</div>
+        </div>
       </section>
 
       <section class="active-state" aria-live="polite">

@@ -8,6 +8,7 @@ const state = {
   search: '',
   activeDate: '',
   activeMopName: '',
+  planUpload: null,
 };
 
 const els = {
@@ -20,6 +21,10 @@ const els = {
   sprint: document.getElementById('filter-sprint'),
   search: document.getElementById('filter-search'),
   reset: document.getElementById('reset-filters'),
+  planFile: document.getElementById('plan-file-input'),
+  planUploadButton: document.getElementById('plan-upload-button'),
+  clearPlanUpload: document.getElementById('clear-plan-upload'),
+  planUploadStatus: document.getElementById('plan-upload-status'),
   activeFilters: document.getElementById('active-filters'),
   selectionSummary: document.getElementById('selection-summary'),
   heroMops: document.getElementById('hero-mops'),
@@ -90,6 +95,15 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
+const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v1';
+const PLAN_METRIC_FIELDS = [
+  'meetingsPlan',
+  'reservationsPlan',
+  'approvedMortgagesPlan',
+  'callsPlan',
+  'airTimePlanSeconds',
+];
+
 function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
 }
@@ -134,6 +148,60 @@ function csvEscape(value) {
   const text = String(value ?? '');
   if (/[;"\r\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
   return text;
+}
+
+function normalizeNameKey(value) {
+  return String(value ?? '')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/ё/g, 'е')
+    .toLowerCase();
+}
+
+function normalizePlanLabel(value) {
+  return normalizeNameKey(value)
+    .replace(/[()]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function canonicalMopName(value) {
+  const key = normalizeNameKey(value);
+  if (!key || key === 'none' || key === 'null') return '';
+  return (data.filters?.mopNames || []).find((name) => normalizeNameKey(name) === key) || '';
+}
+
+function reportRowKey(row) {
+  return `${row.weekStart}|${normalizeNameKey(row.mopName)}`;
+}
+
+function parsePlanNumber(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  const text = String(value ?? '')
+    .replace(/\u00a0/g, '')
+    .replace(/\s+/g, '')
+    .replace(',', '.')
+    .replace(/[^\d.-]/g, '');
+  const parsed = Number(text);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function parsePlanDurationSeconds(value) {
+  const text = String(value ?? '').trim();
+  const timeMatch = text.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+  if (timeMatch) {
+    const [, hours, minutes, seconds = '0'] = timeMatch;
+    return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+  }
+  return Math.round(parsePlanNumber(value) * 60);
+}
+
+function splitMonthlyPlanValue(value, parts = 4) {
+  const total = Math.max(0, Math.round(Number(value || 0)));
+  const base = Math.floor(total / parts);
+  const result = Array(parts).fill(base);
+  result[parts - 1] += total - base * parts;
+  return result;
 }
 
 function populateSelect(select, options, allLabel, includeAll = true) {
@@ -214,6 +282,25 @@ function formatMonthLabel(key) {
   return `${MONTH_NAMES[month - 1] || key} ${year}`;
 }
 
+function parsePlanMonthDate(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), 1));
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const date = new Date(Date.UTC(1899, 11, 30) + Math.round(value) * DAY_MS);
+    return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+  }
+
+  const text = String(value ?? '').trim();
+  let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (match) return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
+
+  match = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+  if (match) return new Date(Date.UTC(Number(match[3]), Number(match[2]) - 1, 1));
+
+  return null;
+}
+
 function referenceDate() {
   return parseISODate(data.generatedAt) || parseISODate(data.report?.to) || todayUTC();
 }
@@ -243,9 +330,61 @@ function sprintBelongsToMonth(weekStartValue, selectedMonth) {
   return monthKey(weekStart) === selectedMonth;
 }
 
+function emptyPlanRow(planRow) {
+  return {
+    weekStart: planRow.weekStart,
+    weekLabel: planRow.weekLabel || formatWeekLabel(planRow.weekStart),
+    mopName: planRow.mopName,
+    meetingsPlan: 0,
+    meetingsFact: 0,
+    reservationsPlan: 0,
+    reservationsFact: 0,
+    approvedMortgagesPlan: 0,
+    approvedMortgagesFact: 0,
+    callsPlan: 0,
+    callsFact: 0,
+    airTimePlanSeconds: 0,
+    airTimeFactSeconds: 0,
+  };
+}
+
+function reportRows() {
+  const uploadedRows = state.planUpload?.rows || [];
+  if (!uploadedRows.length) return data.baseRows || [];
+
+  const uploadedByKey = new Map(uploadedRows.map((row) => [reportRowKey(row), row]));
+  const result = (data.baseRows || []).map((row) => {
+    const plan = uploadedByKey.get(reportRowKey(row));
+    if (!plan) return row;
+    return {
+      ...row,
+      meetingsPlan: plan.meetingsPlan,
+      reservationsPlan: plan.reservationsPlan,
+      approvedMortgagesPlan: plan.approvedMortgagesPlan,
+      callsPlan: plan.callsPlan,
+      airTimePlanSeconds: plan.airTimePlanSeconds,
+      planSource: 'uploaded',
+    };
+  });
+
+  const existingKeys = new Set(result.map(reportRowKey));
+  for (const plan of uploadedRows) {
+    const key = reportRowKey(plan);
+    if (existingKeys.has(key)) continue;
+    result.push({
+      ...emptyPlanRow(plan),
+      ...plan,
+      manualAggregate: false,
+      planSource: 'uploaded',
+    });
+  }
+
+  return result;
+}
+
 function allWeekOptions() {
   const byWeek = new Map();
-  for (const row of data.baseRows || []) {
+  for (const row of reportRows()) {
     const rowStart = parseISODate(row.weekStart);
     if (rowStart && isoDate(sprintStartForDate(rowStart)) === row.weekStart) {
       byWeek.set(row.weekStart, row.weekLabel);
@@ -430,13 +569,264 @@ function filteredActiveDeals() {
 
 function filteredRows() {
   const query = normalizeSearch(state.search);
-  return (data.baseRows || []).filter((row) => {
+  return reportRows().filter((row) => {
     if (state.mopName !== 'all' && row.mopName !== state.mopName) return false;
     if (state.sprint && row.weekStart !== state.sprint) return false;
     if (!state.sprint && state.month && !sprintBelongsToMonth(row.weekStart, state.month)) return false;
     if (!query) return true;
     return normalizeSearch(row.mopName).includes(query);
   });
+}
+
+function planFieldForLabel(value) {
+  const label = normalizePlanLabel(value);
+  if (!label) return '';
+  if (label.includes('проведенные встречи')) return 'meetingsPlan';
+  if (label === 'брони') return 'reservationsPlan';
+  if (label.includes('одобрен') && label.includes('ипотек')) return 'approvedMortgagesPlan';
+  if (label === 'количество звонков') return 'callsPlan';
+  if (label.includes('эфирное целевое время')) return 'airTimePlanSeconds';
+  return '';
+}
+
+function tableCell(rows, rowIndex, columnIndex) {
+  return rows[rowIndex]?.[columnIndex] ?? '';
+}
+
+function findPlanMonth(rows) {
+  for (let rowIndex = 0; rowIndex < Math.min(rows.length, 25); rowIndex += 1) {
+    const row = rows[rowIndex] || [];
+    for (let columnIndex = 0; columnIndex < Math.min(row.length, 8); columnIndex += 1) {
+      if (!normalizePlanLabel(row[columnIndex]).startsWith('месяц')) continue;
+      for (let offset = 1; offset <= 4; offset += 1) {
+        const parsed = parsePlanMonthDate(row[columnIndex + offset]);
+        if (parsed) return parsed;
+      }
+    }
+  }
+  return null;
+}
+
+function isSprintHeaderRow(row) {
+  const sprintColumns = [1, 4, 7, 10];
+  return sprintColumns.every((columnIndex, index) => {
+    const text = normalizePlanLabel(row?.[columnIndex]);
+    return text.includes('спринт') && text.includes(String(index + 1));
+  });
+}
+
+function findPlanColumn(row) {
+  const columnIndex = (row || []).findIndex((cell) => normalizePlanLabel(cell).includes('план'));
+  return columnIndex >= 0 ? columnIndex : 13;
+}
+
+function findPlanBlocks(rows) {
+  const starts = [];
+  for (let index = 0; index < rows.length - 1; index += 1) {
+    const rawName = String(tableCell(rows, index, 1) ?? '').trim();
+    if (!rawName || normalizePlanLabel(rawName).includes('спринт')) continue;
+    if (isSprintHeaderRow(rows[index + 1])) starts.push(index);
+  }
+  return starts;
+}
+
+function sprintStartsForMonth(monthDate) {
+  return [1, 8, 15, 22].map((day) => new Date(Date.UTC(
+    monthDate.getUTCFullYear(),
+    monthDate.getUTCMonth(),
+    day,
+  )));
+}
+
+function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
+  const splitPlans = {
+    meetingsPlan: splitMonthlyPlanValue(monthlyPlan.meetingsPlan),
+    reservationsPlan: splitMonthlyPlanValue(monthlyPlan.reservationsPlan),
+    approvedMortgagesPlan: splitMonthlyPlanValue(monthlyPlan.approvedMortgagesPlan),
+    callsPlan: splitMonthlyPlanValue(monthlyPlan.callsPlan),
+    airTimePlanSeconds: splitMonthlyPlanValue(monthlyPlan.airTimePlanSeconds),
+  };
+
+  return sprintStartsForMonth(monthDate).map((date, sprintIndex) => {
+    const weekStart = isoDate(date);
+    return {
+      weekStart,
+      weekLabel: formatWeekLabel(weekStart),
+      mopName,
+      meetingsPlan: splitPlans.meetingsPlan[sprintIndex],
+      reservationsPlan: splitPlans.reservationsPlan[sprintIndex],
+      approvedMortgagesPlan: splitPlans.approvedMortgagesPlan[sprintIndex],
+      callsPlan: splitPlans.callsPlan[sprintIndex],
+      airTimePlanSeconds: splitPlans.airTimePlanSeconds[sprintIndex],
+    };
+  });
+}
+
+function parsePlanWorkbook(workbook, fileName) {
+  const sheetName = workbook.SheetNames.find((name) => normalizeNameKey(name) === 'сводная за месяц');
+  if (!sheetName) throw new Error('не найден лист "Сводная за месяц"');
+
+  const sheet = workbook.Sheets[sheetName];
+  const rows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
+  const monthDate = findPlanMonth(rows);
+  if (!monthDate) throw new Error('не найден месяц плана');
+
+  const blockStarts = findPlanBlocks(rows);
+  const importedRows = [];
+  const skippedNames = new Set();
+  const importedMops = new Set();
+
+  for (let blockIndex = 0; blockIndex < blockStarts.length; blockIndex += 1) {
+    const start = blockStarts[blockIndex];
+    const end = blockStarts[blockIndex + 1] ?? rows.length;
+    const rawName = String(tableCell(rows, start, 1) ?? '').trim();
+    if (normalizePlanLabel(rawName).startsWith('итого')) continue;
+
+    const mopName = canonicalMopName(rawName);
+    if (!mopName) {
+      const skippedKey = normalizeNameKey(rawName);
+      if (rawName && skippedKey !== 'none' && skippedKey !== 'null') skippedNames.add(rawName);
+      continue;
+    }
+
+    const planColumn = findPlanColumn(rows[start + 1]);
+    const valueColumn = planColumn + 1;
+    const monthlyPlan = {
+      meetingsPlan: 0,
+      reservationsPlan: 0,
+      approvedMortgagesPlan: 0,
+      callsPlan: 0,
+      airTimePlanSeconds: 0,
+    };
+
+    for (let rowIndex = start + 2; rowIndex < end; rowIndex += 1) {
+      const field = planFieldForLabel(tableCell(rows, rowIndex, planColumn));
+      if (!field) continue;
+      monthlyPlan[field] = field === 'airTimePlanSeconds'
+        ? parsePlanDurationSeconds(tableCell(rows, rowIndex, valueColumn))
+        : parsePlanNumber(tableCell(rows, rowIndex, valueColumn));
+    }
+
+    if (!PLAN_METRIC_FIELDS.some((field) => Number(monthlyPlan[field] || 0) > 0)) continue;
+    importedMops.add(mopName);
+    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate));
+  }
+
+  if (!importedRows.length) {
+    throw new Error('не найден план по МОПам из этого отчета');
+  }
+
+  return {
+    fileName,
+    month: monthKey(monthDate),
+    importedAt: new Date().toISOString(),
+    managerCount: importedMops.size,
+    skippedNames: [...skippedNames],
+    rows: importedRows,
+  };
+}
+
+async function readPlanUploadFile(file) {
+  if (!window.XLSX) throw new Error('парсер XLSX не загрузился');
+  const buffer = await file.arrayBuffer();
+  const workbook = window.XLSX.read(buffer, { type: 'array', cellDates: true });
+  return parsePlanWorkbook(workbook, file.name);
+}
+
+function normalizeStoredPlanUpload(upload) {
+  if (!upload || !Array.isArray(upload.rows) || !upload.rows.length) return null;
+  const rows = upload.rows
+    .filter((row) => row.weekStart && row.mopName)
+    .map((row) => ({
+      weekStart: row.weekStart,
+      weekLabel: row.weekLabel || formatWeekLabel(row.weekStart),
+      mopName: row.mopName,
+      meetingsPlan: parsePlanNumber(row.meetingsPlan),
+      reservationsPlan: parsePlanNumber(row.reservationsPlan),
+      approvedMortgagesPlan: parsePlanNumber(row.approvedMortgagesPlan),
+      callsPlan: parsePlanNumber(row.callsPlan),
+      airTimePlanSeconds: parsePlanNumber(row.airTimePlanSeconds),
+    }));
+  if (!rows.length) return null;
+  return {
+    fileName: upload.fileName || 'Загруженный файл',
+    month: upload.month || monthKey(parseISODate(rows[0].weekStart)),
+    importedAt: upload.importedAt || '',
+    managerCount: Number(upload.managerCount || new Set(rows.map((row) => row.mopName)).size),
+    skippedNames: Array.isArray(upload.skippedNames) ? upload.skippedNames : [],
+    rows,
+  };
+}
+
+function loadStoredPlanUpload() {
+  try {
+    return normalizeStoredPlanUpload(JSON.parse(localStorage.getItem(PLAN_UPLOAD_STORAGE_KEY)));
+  } catch (error) {
+    return null;
+  }
+}
+
+function savePlanUpload(upload) {
+  try {
+    localStorage.setItem(PLAN_UPLOAD_STORAGE_KEY, JSON.stringify(upload));
+  } catch (error) {
+    // The dashboard still works for the current session if browser storage is unavailable.
+  }
+}
+
+function removeStoredPlanUpload() {
+  try {
+    localStorage.removeItem(PLAN_UPLOAD_STORAGE_KEY);
+  } catch (error) {
+    // No action needed.
+  }
+}
+
+function refreshPeriodControls(preserveSelection = true) {
+  const months = monthOptions();
+  if (!months.some((option) => option.value === state.month)) {
+    state.month = months.at(-1)?.value || '';
+  }
+  populateSelect(els.month, months, '', false);
+  els.month.value = state.month;
+  syncSprintSelect(preserveSelection);
+}
+
+function renderPlanUploadStatus(message = '') {
+  if (message) {
+    els.planUploadStatus.textContent = message;
+    return;
+  }
+
+  if (!state.planUpload) {
+    els.planUploadStatus.textContent = 'План не загружен';
+    els.clearPlanUpload.hidden = true;
+    return;
+  }
+
+  const skippedCount = state.planUpload.skippedNames?.length || 0;
+  const skippedText = skippedCount ? ` · пропущено: ${formatNumber(skippedCount)}` : '';
+  els.planUploadStatus.textContent = `${formatMonthLabel(state.planUpload.month)} · МОП: ${formatNumber(state.planUpload.managerCount)}${skippedText}`;
+  els.clearPlanUpload.hidden = false;
+}
+
+function applyPlanUpload(upload, focusMonth = false) {
+  state.planUpload = upload;
+  if (focusMonth && upload.month) {
+    state.month = upload.month;
+    state.sprint = defaultSprintForMonth(state.month);
+  }
+  refreshPeriodControls(true);
+  renderPlanUploadStatus();
+  render();
+}
+
+function clearPlanUpload() {
+  state.planUpload = null;
+  removeStoredPlanUpload();
+  refreshPeriodControls(false);
+  renderPlanUploadStatus();
+  render();
 }
 
 function summarizeRows(rows) {
@@ -842,6 +1232,24 @@ function bindControls() {
     state.search = els.search.value;
     render();
   });
+  els.planUploadButton.addEventListener('click', () => {
+    els.planFile.click();
+  });
+  els.planFile.addEventListener('change', async () => {
+    const file = els.planFile.files?.[0];
+    if (!file) return;
+    renderPlanUploadStatus('Читаю план...');
+    try {
+      const upload = await readPlanUploadFile(file);
+      savePlanUpload(upload);
+      applyPlanUpload(upload, true);
+    } catch (error) {
+      renderPlanUploadStatus(`Не удалось загрузить план: ${error.message}`);
+    } finally {
+      els.planFile.value = '';
+    }
+  });
+  els.clearPlanUpload.addEventListener('click', clearPlanUpload);
   els.activeDealDate.addEventListener('change', () => {
     state.activeDate = els.activeDealDate.value || defaultActiveDate();
     renderActiveDeals();
@@ -864,6 +1272,7 @@ function bindControls() {
 }
 
 function init() {
+  state.planUpload = loadStoredPlanUpload();
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
   setDefaultPeriod();
   setDefaultActiveDeals();
@@ -879,6 +1288,7 @@ function init() {
   bindViewNavigation();
   bindHeaderState();
   renderWarnings();
+  renderPlanUploadStatus();
   render();
   setView(location.hash === '#deals' || location.hash === '#active-deals' ? 'deals' : 'summary', false);
 }
