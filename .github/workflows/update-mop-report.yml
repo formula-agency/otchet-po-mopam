@@ -10,6 +10,7 @@ on:
       - "dashboard/**"
       - "manual-data/**"
       - "requirements.txt"
+      - "scripts/import_beeline_calls.py"
       - "scripts/import_megafon_calls.py"
       - "scripts/sync_mop_report.py"
   schedule:
@@ -71,6 +72,12 @@ jobs:
             python scripts/import_megafon_calls.py manual-data/megafon-vats-history.xlsx
           elif [ -f manual-data/megafon-vats-calls.xlsx ]; then
             python scripts/import_megafon_calls.py manual-data/megafon-vats-calls.xlsx
+          fi
+
+      - name: Import Beeline calls
+        run: |
+          if [ -f manual-data/beeline-stat.xls ]; then
+            python scripts/import_beeline_calls.py manual-data/beeline-stat.xls
           fi
 
       - name: Upload dashboard artifact
