@@ -593,10 +593,10 @@ function planFieldForLabel(value) {
   const label = normalizePlanLabel(value);
   if (!label) return '';
   if (label.includes('проведенные встречи')) return 'meetingsPlan';
-  if (label === 'брони') return 'reservationsPlan';
+  if (label === 'брони' || label.includes('созданные брони')) return 'reservationsPlan';
   if (label.includes('одобрен') && label.includes('ипотек')) return 'approvedMortgagesPlan';
   if (label === 'количество звонков') return 'callsPlan';
-  if (label.includes('эфирное целевое время')) return 'airTimePlanSeconds';
+  if (label.includes('эфир') && label.includes('время')) return 'airTimePlanSeconds';
   return '';
 }
 
@@ -673,6 +673,75 @@ function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
   });
 }
 
+function simplePlanHeaderMap(row) {
+  const found = {};
+  for (let index = 0; index < row.length; index += 1) {
+    const label = normalizePlanLabel(row[index]);
+    if (!label) continue;
+    if (label === 'моп' || label === 'менеджер') {
+      found.mopName = index;
+      continue;
+    }
+    const field = planFieldForLabel(label);
+    if (field) found[field] = index;
+  }
+  return found;
+}
+
+function parseSimplePlanRows(rows, monthDate) {
+  let header = null;
+  let headerIndex = -1;
+  for (let index = 0; index < Math.min(rows.length, 40); index += 1) {
+    const candidate = simplePlanHeaderMap(rows[index] || []);
+    if (candidate.mopName !== undefined && PLAN_METRIC_FIELDS.some((field) => candidate[field] !== undefined)) {
+      header = candidate;
+      headerIndex = index;
+      break;
+    }
+  }
+  if (!header) return null;
+
+  const importedRows = [];
+  const skippedNames = new Set();
+  const importedMops = new Set();
+
+  for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex] || [];
+    const rawName = String(row[header.mopName] ?? '').trim();
+    if (!rawName) continue;
+    const mopName = canonicalMopName(rawName);
+    if (!mopName) {
+      skippedNames.add(rawName);
+      continue;
+    }
+
+    const monthlyPlan = {
+      meetingsPlan: 0,
+      reservationsPlan: 0,
+      approvedMortgagesPlan: 0,
+      callsPlan: 0,
+      airTimePlanSeconds: 0,
+    };
+    for (const field of PLAN_METRIC_FIELDS) {
+      const columnIndex = header[field];
+      if (columnIndex === undefined) continue;
+      monthlyPlan[field] = field === 'airTimePlanSeconds'
+        ? parsePlanDurationSeconds(row[columnIndex])
+        : parsePlanNumber(row[columnIndex]);
+    }
+
+    importedMops.add(mopName);
+    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate));
+  }
+
+  if (!importedRows.length) return null;
+  return {
+    rows: importedRows,
+    managerCount: importedMops.size,
+    skippedNames: [...skippedNames],
+  };
+}
+
 function parsePlanWorkbook(workbook, fileName) {
   const sheetName = workbook.SheetNames.find((name) => normalizeNameKey(name) === 'сводная за месяц');
   if (!sheetName) throw new Error('не найден лист "Сводная за месяц"');
@@ -681,6 +750,18 @@ function parsePlanWorkbook(workbook, fileName) {
   const rows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
   const monthDate = findPlanMonth(rows);
   if (!monthDate) throw new Error('не найден месяц плана');
+
+  const simplePlan = parseSimplePlanRows(rows, monthDate);
+  if (simplePlan) {
+    return {
+      fileName,
+      month: monthKey(monthDate),
+      importedAt: new Date().toISOString(),
+      managerCount: simplePlan.managerCount,
+      skippedNames: simplePlan.skippedNames,
+      rows: simplePlan.rows,
+    };
+  }
 
   const blockStarts = findPlanBlocks(rows);
   const importedRows = [];
