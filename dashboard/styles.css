@@ -212,6 +212,13 @@ select {
   font-weight: 500;
 }
 
+.summary-band__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
 .summary-band__stats {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -265,7 +272,7 @@ select {
 
 .filters-band {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(145px, 0.8fr) minmax(150px, 0.9fr) minmax(190px, 1fr) auto minmax(280px, 1.4fr);
+  grid-template-columns: minmax(180px, 1.1fr) minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(220px, 1.2fr) auto;
   gap: 12px;
   align-items: end;
   padding: 16px;
@@ -305,6 +312,7 @@ select {
 }
 
 .plan-upload-field {
+  width: min(360px, 100%);
   gap: 7px;
 }
 
@@ -313,6 +321,10 @@ select {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.plan-upload-actions .ghost-button {
+  min-width: 150px;
 }
 
 .plan-upload-status {
@@ -636,6 +648,15 @@ select {
   .summary-band,
   .page-shell {
     width: min(100% - 20px, var(--max));
+  }
+
+  .summary-band__head {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .plan-upload-field {
+    width: 100%;
   }
 
   .summary-band__stats,
