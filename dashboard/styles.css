@@ -477,19 +477,189 @@ select {
 
 .airtime-view {
   min-height: 100vh;
+  background: #f3f7fb;
+}
+
+.airtime-scoreboard {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: calc(100vh - 36px);
+  padding: 14px 28px 10px;
+}
+
+.airtime-scoreboard__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+}
+
+.airtime-scoreboard h1 {
+  margin: 4px 0 6px;
+  font-size: clamp(32px, 3.6vw, 52px);
+  line-height: 0.95;
+}
+
+.airtime-period {
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(14px, 1.08vw, 18px);
+  font-weight: 700;
+}
+
+.airtime-controls {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(230px, 320px);
+  gap: 12px;
+  width: min(560px, 100%);
+}
+
+.airtime-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.airtime-summary article {
+  min-height: 58px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 14px 28px rgba(22, 20, 20, 0.06);
+}
+
+.airtime-summary span,
+.airtime-row__metric span,
+.airtime-row__person span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.airtime-summary strong {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(16px, 1.25vw, 21px);
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.airtime-summary small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.airtime-rows {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.airtime-row {
+  display: grid;
+  grid-template-columns: 44px minmax(190px, 1fr) minmax(120px, 0.7fr) repeat(5, minmax(108px, 0.55fr));
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-left: 7px solid var(--coral);
+  border-radius: var(--radius);
   background: var(--paper);
 }
 
-.airtime-stage {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 36px);
-  padding: 26px 30px 18px;
+.airtime-row.is-close {
+  border-left-color: var(--amber);
 }
 
-.airtime-stage canvas {
-  width: 100% !important;
-  height: 100% !important;
+.airtime-row.is-done {
+  border-left-color: var(--green);
+}
+
+.airtime-row.is-unplanned {
+  border-left-color: var(--blue);
+}
+
+.airtime-row.is-empty {
+  opacity: 0.62;
+}
+
+.airtime-row__rank {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #edf3fb;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.airtime-row__person strong {
+  display: block;
+  font-size: clamp(16px, 1.25vw, 21px);
+  line-height: 1.05;
+}
+
+.airtime-row__person span {
+  display: block;
+  margin-top: 3px;
+}
+
+.airtime-row__bar {
+  position: relative;
+  height: 13px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7edf3;
+}
+
+.airtime-row__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.airtime-row.is-close .airtime-row__bar span {
+  background: var(--amber);
+}
+
+.airtime-row.is-done .airtime-row__bar span {
+  background: var(--green);
+}
+
+.airtime-row__metric strong {
+  display: block;
+  margin-top: 2px;
+  font-size: clamp(14px, 0.95vw, 17px);
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.airtime-row__rate {
+  justify-self: end;
+  font-size: clamp(22px, 2.1vw, 34px);
+  font-weight: 800;
+}
+
+.airtime-empty {
+  padding: 36px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
 }
 
 .table-wrap {
@@ -694,9 +864,34 @@ select {
     height: 240px;
   }
 
-  .airtime-stage {
-    height: calc(100vh - 112px);
+  .airtime-scoreboard {
+    min-height: calc(100vh - 112px);
     padding: 14px 10px;
+  }
+
+  .airtime-scoreboard__top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .airtime-controls,
+  .airtime-summary {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .airtime-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .airtime-row__bar,
+  .airtime-row__metric,
+  .airtime-row__rate {
+    grid-column: 2;
+  }
+
+  .airtime-row__rate {
+    justify-self: start;
   }
 
   .active-deal-tools {

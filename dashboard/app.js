@@ -8,6 +8,8 @@ const state = {
   search: '',
   activeDate: '',
   activeMopName: '',
+  airtimeMonth: '',
+  airtimeSprint: '',
   planUpload: null,
 };
 
@@ -56,6 +58,11 @@ const els = {
   activeSelectionCount: document.getElementById('active-selection-count'),
   activeCallCount: document.getElementById('active-call-count'),
   activeReservationCount: document.getElementById('active-reservation-count'),
+  airtimeMonth: document.getElementById('airtime-month'),
+  airtimeSprint: document.getElementById('airtime-sprint'),
+  airtimePeriodLabel: document.getElementById('airtime-period-label'),
+  scoreboardSummary: document.getElementById('scoreboard-summary'),
+  airtimeRows: document.getElementById('airtime-rows'),
   exportCsv: document.getElementById('export-csv'),
   warnings: document.getElementById('warnings'),
   warningsList: document.getElementById('warnings-list'),
@@ -94,7 +101,6 @@ const MONTH_NAMES = [
 let weeklyChart;
 let mopChart;
 let factChart;
-let airtimeChart;
 
 const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v1';
 const PLAN_METRIC_FIELDS = [
@@ -103,6 +109,13 @@ const PLAN_METRIC_FIELDS = [
   'approvedMortgagesPlan',
   'callsPlan',
   'airTimePlanSeconds',
+];
+const SCOREBOARD_METRICS = [
+  { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
+  { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
+  { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
+  { label: 'Звонки', plan: 'callsPlan', fact: 'callsFact', kind: 'number', weight: 1 },
+  { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
 ];
 const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
@@ -125,16 +138,6 @@ function formatDuration(seconds) {
   const minutes = Math.floor((safeSeconds % 3600) / 60);
   const rest = Math.floor(safeSeconds % 60);
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`;
-}
-
-function formatDurationCompact(seconds) {
-  const safeSeconds = Math.max(0, Math.round(Number(seconds || 0)));
-  const hours = Math.floor(safeSeconds / 3600);
-  const minutes = Math.floor((safeSeconds % 3600) / 60);
-  const rest = safeSeconds % 60;
-  if (hours > 0) return `${hours} ч ${String(minutes).padStart(2, '0')} мин`;
-  if (minutes > 0) return `${minutes} мин ${String(rest).padStart(2, '0')} сек`;
-  return `${rest} сек`;
 }
 
 function completion(fact, plan) {
@@ -484,10 +487,21 @@ function syncSprintSelect(preserveSelection = false) {
   els.sprint.value = state.sprint;
 }
 
+function syncAirTimeSprintSelect(preserveSelection = false) {
+  const sprints = sprintOptionsForMonth(state.airtimeMonth);
+  if (!preserveSelection || !sprints.some((option) => option.value === state.airtimeSprint)) {
+    state.airtimeSprint = defaultSprintForMonth(state.airtimeMonth);
+  }
+  populateSelect(els.airtimeSprint, sprints, '', false);
+  els.airtimeSprint.value = state.airtimeSprint;
+}
+
 function setDefaultPeriod() {
   const defaults = defaultPeriod();
   state.month = defaults.month;
   state.sprint = defaults.sprint;
+  state.airtimeMonth = defaults.month;
+  state.airtimeSprint = defaults.sprint;
 }
 
 function selectedOption(options, value) {
@@ -921,9 +935,15 @@ function refreshPeriodControls(preserveSelection = true) {
   if (!months.some((option) => option.value === state.month)) {
     state.month = months.at(-1)?.value || '';
   }
+  if (!months.some((option) => option.value === state.airtimeMonth)) {
+    state.airtimeMonth = state.month;
+  }
   populateSelect(els.month, months, '', false);
   els.month.value = state.month;
   syncSprintSelect(preserveSelection);
+  populateSelect(els.airtimeMonth, months, '', false);
+  els.airtimeMonth.value = state.airtimeMonth;
+  syncAirTimeSprintSelect(preserveSelection);
 }
 
 function renderPlanUploadStatus(message = '') {
@@ -949,6 +969,8 @@ function applyPlanUpload(upload, focusMonth = false) {
   if (focusMonth && upload.month) {
     state.month = upload.month;
     state.sprint = defaultSprintForMonth(state.month);
+    state.airtimeMonth = upload.month;
+    state.airtimeSprint = defaultSprintForMonth(state.airtimeMonth);
   }
   refreshPeriodControls(true);
   renderPlanUploadStatus();
@@ -1128,137 +1150,123 @@ function renderActiveDeals() {
   }).join('');
 }
 
-const airtimeValueLabelsPlugin = {
-  id: 'airtimeValueLabels',
-  afterDatasetsDraw(chart) {
-    const { ctx, chartArea } = chart;
-    const meta = chart.getDatasetMeta(0);
-    const values = chart.data.datasets[0]?.data || [];
-    if (!values.length) return;
-
-    ctx.save();
-    ctx.font = '700 18px "Segoe UI", Arial, sans-serif';
-    ctx.fillStyle = '#161414';
-    ctx.textBaseline = 'middle';
-
-    meta.data.forEach((bar, index) => {
-      const label = formatDurationCompact(values[index]);
-      const width = ctx.measureText(label).width;
-      const x = Math.min(bar.x + 14, chartArea.right - width - 4);
-      ctx.fillText(label, x, bar.y);
-    });
-
-    ctx.restore();
-  },
-  afterDraw(chart) {
-    if (chart.data.labels?.length) return;
-    const { ctx, chartArea } = chart;
-    ctx.save();
-    ctx.fillStyle = '#68717b';
-    ctx.font = '700 22px "Segoe UI", Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Нет данных за текущий месяц', (chartArea.left + chartArea.right) / 2, (chartArea.top + chartArea.bottom) / 2);
-    ctx.restore();
-  },
-};
-
-function currentAirTimeMonth() {
-  const currentMonth = monthKey(referenceDate());
-  const hasCurrentMonthRows = reportRows().some((row) => (
-    !row.manualAggregate
-    && sprintBelongsToMonth(row.weekStart, currentMonth)
-  ));
-  if (hasCurrentMonthRows) return currentMonth;
-
-  const months = reportRows()
-    .filter((row) => !row.manualAggregate && row.weekStart)
-    .map((row) => parseISODate(row.weekStart))
-    .filter(Boolean)
-    .map(monthKey)
-    .sort();
-  return months.at(-1) || currentMonth;
+function emptyScoreboardRow(mopName) {
+  const row = { mopName };
+  for (const metric of SCOREBOARD_METRICS) {
+    row[metric.plan] = 0;
+    row[metric.fact] = 0;
+  }
+  return row;
 }
 
-function airTimeCompetitionRows() {
-  const targetMonth = currentAirTimeMonth();
-  const byMop = new Map((data.filters?.mopNames || []).map((name) => [name, 0]));
+function formatMetricValue(value, metric) {
+  return metric.kind === 'duration' ? formatDuration(value) : formatNumber(value);
+}
+
+function metricPair(row, metric) {
+  return `${formatMetricValue(row[metric.plan], metric)} / ${formatMetricValue(row[metric.fact], metric)}`;
+}
+
+function scoreboardFactScore(row) {
+  return SCOREBOARD_METRICS.reduce((sum, metric) => sum + Number(row[metric.fact] || 0) * metric.weight, 0);
+}
+
+function scoreboardRatio(row) {
+  const ratios = SCOREBOARD_METRICS
+    .filter((metric) => Number(row[metric.plan] || 0) > 0)
+    .map((metric) => Number(row[metric.fact] || 0) / Number(row[metric.plan] || 0));
+  if (!ratios.length) return null;
+  return ratios.reduce((sum, value) => sum + value, 0) / ratios.length;
+}
+
+function scoreboardRows() {
+  const rowsByMop = new Map((data.filters?.mopNames || []).map((name) => [name, emptyScoreboardRow(name)]));
 
   for (const row of reportRows()) {
-    if (row.manualAggregate || !sprintBelongsToMonth(row.weekStart, targetMonth)) continue;
-    if (!byMop.has(row.mopName)) byMop.set(row.mopName, 0);
-    byMop.set(row.mopName, byMop.get(row.mopName) + Number(row.airTimeFactSeconds || 0));
+    if (row.manualAggregate || row.weekStart !== state.airtimeSprint) continue;
+    if (!rowsByMop.has(row.mopName)) {
+      rowsByMop.set(row.mopName, emptyScoreboardRow(row.mopName));
+    }
+    const target = rowsByMop.get(row.mopName);
+    for (const metric of SCOREBOARD_METRICS) {
+      target[metric.plan] += Number(row[metric.plan] || 0);
+      target[metric.fact] += Number(row[metric.fact] || 0);
+    }
   }
 
-  return [...byMop.entries()]
-    .map(([mopName, airTimeFactSeconds]) => ({ mopName, airTimeFactSeconds }))
-    .sort((a, b) => b.airTimeFactSeconds - a.airTimeFactSeconds || a.mopName.localeCompare(b.mopName));
+  return [...rowsByMop.values()]
+    .map((row) => {
+      const ratio = scoreboardRatio(row);
+      const factScore = scoreboardFactScore(row);
+      return {
+        ...row,
+        ratio,
+        factScore,
+      };
+    })
+    .sort((a, b) => (b.ratio ?? -1) - (a.ratio ?? -1) || b.factScore - a.factScore || a.mopName.localeCompare(b.mopName));
 }
 
-function ensureAirTimeChart() {
-  if (airtimeChart) return;
-
-  airtimeChart = new Chart(document.getElementById('airtime-chart'), {
-    type: 'bar',
-    data: { labels: [], datasets: [] },
-    plugins: [airtimeValueLabelsPlugin],
-    options: {
-      indexAxis: 'y',
-      maintainAspectRatio: false,
-      responsive: true,
-      animation: false,
-      layout: { padding: { top: 8, right: 124, bottom: 8, left: 4 } },
-      scales: {
-        x: {
-          beginAtZero: true,
-          grid: { color: 'rgba(22, 20, 20, 0.08)' },
-          ticks: {
-            color: '#68717b',
-            font: { size: 14, weight: 700 },
-            maxTicksLimit: 7,
-            callback: (value) => formatDurationCompact(Number(value)),
-          },
-        },
-        y: {
-          grid: { display: false },
-          ticks: {
-            color: '#161414',
-            font: { size: 19, weight: 700 },
-          },
-        },
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label(context) {
-              return formatDuration(context.parsed.x);
-            },
-          },
-        },
-      },
-    },
-  });
+function scoreboardStatusClass(row) {
+  if (row.ratio === null && row.factScore <= 0) return 'is-empty';
+  if (row.ratio === null) return 'is-unplanned';
+  if (row.ratio >= 1) return 'is-done';
+  if (row.ratio >= 0.75) return 'is-close';
+  return 'is-behind';
 }
 
-function renderAirTimeCompetition() {
-  ensureAirTimeChart();
-  const rows = airTimeCompetitionRows();
-  const maxValue = Math.max(...rows.map((row) => row.airTimeFactSeconds), 0);
-  const colors = [palette.blue, palette.green, palette.violet, palette.amber, palette.coral];
+function renderAirTimePlanFact() {
+  const rows = scoreboardRows();
+  const maxFactScore = Math.max(...rows.map((row) => row.factScore), 0);
+  const totals = rows.reduce((acc, row) => {
+    for (const metric of SCOREBOARD_METRICS) {
+      acc[metric.plan] += Number(row[metric.plan] || 0);
+      acc[metric.fact] += Number(row[metric.fact] || 0);
+    }
+    return acc;
+  }, emptyScoreboardRow('Итого'));
+  const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
 
-  airtimeChart.data.labels = rows.map((row, index) => `${index + 1}. ${row.mopName}`);
-  airtimeChart.data.datasets = [{
-    data: rows.map((row) => row.airTimeFactSeconds),
-    backgroundColor: rows.map((_, index) => `${colors[index % colors.length]}D9`),
-    borderColor: rows.map((_, index) => colors[index % colors.length]),
-    borderWidth: 1,
-    borderRadius: 5,
-    barPercentage: 0.7,
-    categoryPercentage: 0.84,
-  }];
-  airtimeChart.options.scales.x.suggestedMax = Math.max(3600, Math.ceil(maxValue * 1.18));
-  airtimeChart.update();
+  els.airtimePeriodLabel.textContent = selectedSprint
+    ? `${formatMonthLabel(state.airtimeMonth)} · ${selectedSprint.label}`
+    : formatMonthLabel(state.airtimeMonth);
+  els.scoreboardSummary.innerHTML = SCOREBOARD_METRICS.map((metric) => `
+    <article>
+      <span>${escapeHtml(metric.label)}</span>
+      <strong>${metricPair(totals, metric)}</strong>
+      <small>${completion(totals[metric.fact], totals[metric.plan])}</small>
+    </article>
+  `).join('');
+
+  if (!rows.length) {
+    els.airtimeRows.innerHTML = '<div class="airtime-empty">Нет данных по выбранному спринту</div>';
+    return;
+  }
+
+  els.airtimeRows.innerHTML = rows.map((row, index) => {
+    const progress = row.ratio !== null
+      ? Math.min(100, Math.round(row.ratio * 100))
+      : Math.round((row.factScore / Math.max(maxFactScore, 1)) * 100);
+    const scoreLabel = row.ratio === null ? 'План не задан' : `Выполнение: ${percentFormatter.format(row.ratio)}`;
+    return `
+      <article class="airtime-row ${scoreboardStatusClass(row)}">
+        <div class="airtime-row__rank">${index + 1}</div>
+        <div class="airtime-row__person">
+          <strong>${escapeHtml(row.mopName)}</strong>
+          <span>${escapeHtml(scoreLabel)}</span>
+        </div>
+        <div class="airtime-row__bar" aria-label="${escapeHtml(scoreLabel)}">
+          <span style="width: ${progress}%"></span>
+        </div>
+        ${SCOREBOARD_METRICS.map((metric) => `
+          <div class="airtime-row__metric">
+            <span>${escapeHtml(metric.label)}</span>
+            <strong>${metricPair(row, metric)}</strong>
+          </div>
+        `).join('')}
+      </article>
+    `;
+  }).join('');
 }
 
 function ensureCharts() {
@@ -1434,6 +1442,7 @@ function render() {
   renderDetailTable(rows);
   renderCharts(rows);
   renderActiveDeals();
+  if (state.view === 'airtime') renderAirTimePlanFact();
 }
 
 function setView(view, updateHash = true) {
@@ -1449,7 +1458,7 @@ function setView(view, updateHash = true) {
   if (updateHash && window.history) {
     window.history.replaceState(null, '', state.view === 'summary' ? '#summary' : `#${state.view}`);
   }
-  if (state.view === 'airtime') renderAirTimeCompetition();
+  if (state.view === 'airtime') renderAirTimePlanFact();
 }
 
 function bindHeaderState() {
@@ -1534,6 +1543,15 @@ function bindControls() {
     state.activeMopName = els.activeDealMop.value;
     renderActiveDeals();
   });
+  els.airtimeMonth.addEventListener('change', () => {
+    state.airtimeMonth = els.airtimeMonth.value;
+    syncAirTimeSprintSelect(false);
+    renderAirTimePlanFact();
+  });
+  els.airtimeSprint.addEventListener('change', () => {
+    state.airtimeSprint = els.airtimeSprint.value;
+    renderAirTimePlanFact();
+  });
   els.reset.addEventListener('click', () => {
     state.mopName = 'all';
     state.search = '';
@@ -1541,6 +1559,8 @@ function bindControls() {
     els.mop.value = 'all';
     els.month.value = state.month;
     syncSprintSelect(true);
+    els.airtimeMonth.value = state.airtimeMonth;
+    syncAirTimeSprintSelect(true);
     els.search.value = '';
     render();
   });
@@ -1555,6 +1575,9 @@ function init() {
   populateSelect(els.month, monthOptions(), '', false);
   els.month.value = state.month;
   syncSprintSelect(true);
+  populateSelect(els.airtimeMonth, monthOptions(), '', false);
+  els.airtimeMonth.value = state.airtimeMonth;
+  syncAirTimeSprintSelect(true);
   populateSelect(els.activeDealMop, activeMopOptions(), '', false);
   els.activeDealMop.value = state.activeMopName;
   els.activeDealDate.min = activeDealsData().minDate || data.report?.from || '';
