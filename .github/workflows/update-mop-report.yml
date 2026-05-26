@@ -5,14 +5,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - ".github/workflows/update-mop-report.yml"
-      - "dashboard/**"
-      - "manual-data/**"
-      - "requirements.txt"
-      - "scripts/import_beeline_calls.py"
-      - "scripts/import_megafon_calls.py"
-      - "scripts/sync_mop_report.py"
   schedule:
     - cron: "0 1 * * *"
 
