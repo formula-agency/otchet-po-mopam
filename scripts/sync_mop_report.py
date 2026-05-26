@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import time as time_module
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -569,16 +570,30 @@ def build_sheets_service(settings: Settings):
     return build("sheets", "v4", credentials=credentials, cache_discovery=False)
 
 
+def execute_google_request(request: Any) -> dict[str, Any]:
+    from googleapiclient.errors import HttpError
+
+    transient_statuses = {429, 500, 502, 503, 504}
+    for attempt in range(1, 5):
+        try:
+            return request.execute(num_retries=2)
+        except HttpError as exc:
+            status = getattr(exc.resp, "status", None)
+            if status not in transient_statuses or attempt == 4:
+                raise
+            time_module.sleep(min(2 ** attempt, 10))
+    return {}
+
+
 def quote_sheet_title(sheet_title: str) -> str:
     escaped_title = sheet_title.replace("'", "''")
     return sheet_title if re.fullmatch(r"[A-Za-z0-9_]+", sheet_title) else f"'{escaped_title}'"
 
 
 def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str) -> str:
-    metadata = (
+    metadata = execute_google_request(
         service.spreadsheets()
         .get(spreadsheetId=spreadsheet_id, fields="properties(title),sheets(properties(title))")
-        .execute()
     )
     sheets = metadata.get("sheets", [])
     if not sheets:
@@ -792,7 +807,7 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         settings.google_meeting_log_sheet_id,
         settings.google_meeting_log_sheet_name,
     )
-    values = (
+    values = execute_google_request(
         service.spreadsheets()
         .values()
         .get(
@@ -800,9 +815,7 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
             range=f"{quote_sheet_title(sheet_title)}!A:Z",
             majorDimension="ROWS",
         )
-        .execute()
-        .get("values", [])
-    )
+    ).get("values", [])
     if not values:
         return []
 
@@ -1425,7 +1438,7 @@ def load_plan_entries(
             raise
         return []
 
-    values = (
+    values = execute_google_request(
         service.spreadsheets()
         .values()
         .get(
@@ -1433,9 +1446,7 @@ def load_plan_entries(
             range=f"{quote_sheet_title(sheet_title)}!A:Z",
             majorDimension="ROWS",
         )
-        .execute()
-        .get("values", [])
-    )
+    ).get("values", [])
     if not values:
         return []
 
