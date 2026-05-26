@@ -134,12 +134,12 @@ function completion(fact, plan) {
   return percentFormatter.format(factValue / planValue);
 }
 
-function pair(fact, plan) {
-  return `${formatNumber(fact)} / ${formatNumber(plan)}`;
+function pair(plan, fact) {
+  return `${formatNumber(plan)} / ${formatNumber(fact)}`;
 }
 
-function durationPair(fact, plan) {
-  return `${formatDuration(fact)} / ${formatDuration(plan)}`;
+function durationPair(plan, fact) {
+  return `${formatDuration(plan)} / ${formatDuration(fact)}`;
 }
 
 function normalizeSearch(value) {
@@ -976,23 +976,23 @@ function renderHero(rows) {
   const summary = summarizeRows(rows);
   els.heroMops.textContent = formatNumber(new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size);
   els.heroWeeks.textContent = formatNumber(new Set(rows.map((row) => row.weekStart)).size);
-  els.heroMeetings.textContent = pair(summary.meetingsFact, summary.meetingsPlan);
-  els.heroReservations.textContent = pair(summary.reservationsFact, summary.reservationsPlan);
-  els.heroMortgages.textContent = pair(summary.approvedMortgagesFact, summary.approvedMortgagesPlan);
-  els.heroAir.textContent = durationPair(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
+  els.heroMeetings.textContent = pair(summary.meetingsPlan, summary.meetingsFact);
+  els.heroReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
+  els.heroMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
+  els.heroAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
 }
 
 function renderKpis(rows) {
   const summary = summarizeRows(rows);
-  els.kpiMeetings.textContent = pair(summary.meetingsFact, summary.meetingsPlan);
+  els.kpiMeetings.textContent = pair(summary.meetingsPlan, summary.meetingsFact);
   els.kpiMeetingsRate.textContent = completion(summary.meetingsFact, summary.meetingsPlan);
-  els.kpiReservations.textContent = pair(summary.reservationsFact, summary.reservationsPlan);
+  els.kpiReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
   els.kpiReservationsRate.textContent = completion(summary.reservationsFact, summary.reservationsPlan);
-  els.kpiMortgages.textContent = pair(summary.approvedMortgagesFact, summary.approvedMortgagesPlan);
+  els.kpiMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
   els.kpiMortgagesRate.textContent = completion(summary.approvedMortgagesFact, summary.approvedMortgagesPlan);
-  els.kpiCalls.textContent = pair(summary.callsFact, summary.callsPlan);
+  els.kpiCalls.textContent = pair(summary.callsPlan, summary.callsFact);
   els.kpiCallsRate.textContent = completion(summary.callsFact, summary.callsPlan);
-  els.kpiAir.textContent = durationPair(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
+  els.kpiAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
   els.kpiAirRate.textContent = completion(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
 }
 
@@ -1011,7 +1011,7 @@ function renderActiveState(rows) {
 
   const summary = summarizeRows(rows);
   const mopCount = new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size;
-  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(mopCount)} · Встречи: ${pair(summary.meetingsFact, summary.meetingsPlan)}`;
+  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(mopCount)} · Встречи: ${pair(summary.meetingsPlan, summary.meetingsFact)}`;
 }
 
 function renderDetailTable(rows) {
@@ -1028,11 +1028,11 @@ function renderDetailTable(rows) {
       <tr${row.manualAggregate ? ' class="manual-row"' : ''}>
         <td>${escapeHtml(row.weekLabel)}</td>
         <td>${escapeHtml(row.mopName)}</td>
-        <td>${pair(row.meetingsFact, row.meetingsPlan)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>
-        <td>${pair(row.reservationsFact, row.reservationsPlan)} <span>${completion(row.reservationsFact, row.reservationsPlan)}</span></td>
-        <td>${pair(row.approvedMortgagesFact, row.approvedMortgagesPlan)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
-        <td>${pair(row.callsFact, row.callsPlan)} <span>${completion(row.callsFact, row.callsPlan)}</span></td>
-        <td>${durationPair(row.airTimeFactSeconds, row.airTimePlanSeconds)} <span>${completion(row.airTimeFactSeconds, row.airTimePlanSeconds)}</span></td>
+        <td>${pair(row.meetingsPlan, row.meetingsFact)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>
+        <td>${pair(row.reservationsPlan, row.reservationsFact)} <span>${completion(row.reservationsFact, row.reservationsPlan)}</span></td>
+        <td>${pair(row.approvedMortgagesPlan, row.approvedMortgagesFact)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
+        <td>${pair(row.callsPlan, row.callsFact)} <span>${completion(row.callsFact, row.callsPlan)}</span></td>
+        <td>${durationPair(row.airTimePlanSeconds, row.airTimeFactSeconds)} <span>${completion(row.airTimeFactSeconds, row.airTimePlanSeconds)}</span></td>
       </tr>
     `)
     .join('');
@@ -1289,12 +1289,6 @@ function renderCharts(rows) {
   weeklyChart.data.labels = weeklyRows.map((row) => row.weekLabel);
   weeklyChart.data.datasets = [
     {
-      label: 'Встречи факт',
-      data: weeklyRows.map((row) => row.meetingsFact),
-      backgroundColor: `${palette.blue}B3`,
-      borderRadius: 4,
-    },
-    {
       label: 'Встречи план',
       data: weeklyRows.map((row) => row.meetingsPlan),
       borderColor: palette.blue,
@@ -1302,6 +1296,12 @@ function renderCharts(rows) {
       type: 'line',
       tension: 0.25,
       pointRadius: 3,
+    },
+    {
+      label: 'Встречи факт',
+      data: weeklyRows.map((row) => row.meetingsFact),
+      backgroundColor: `${palette.blue}B3`,
+      borderRadius: 4,
     },
     {
       label: 'Брони факт',
@@ -1322,15 +1322,15 @@ function renderCharts(rows) {
   mopChart.data.labels = mopRows.map((row) => row.mopName);
   mopChart.data.datasets = [
     {
-      label: 'Факт',
-      data: mopRows.map((row) => row.meetingsFact),
-      backgroundColor: palette.blue,
-      borderRadius: 4,
-    },
-    {
       label: 'План',
       data: mopRows.map((row) => row.meetingsPlan),
       backgroundColor: `${palette.blue}45`,
+      borderRadius: 4,
+    },
+    {
+      label: 'Факт',
+      data: mopRows.map((row) => row.meetingsFact),
+      backgroundColor: palette.blue,
       borderRadius: 4,
     },
   ];
