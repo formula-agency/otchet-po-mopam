@@ -104,6 +104,16 @@ const PLAN_METRIC_FIELDS = [
   'callsPlan',
   'airTimePlanSeconds',
 ];
+const ACTIVE_ACTIVITY_LABELS = {
+  meetings: 'Встреча',
+  approvedMortgages: 'Ипотека',
+  reservations: 'Бронь',
+  selections: 'Подборка',
+  calls: 'Звонок',
+  tasks: 'Задача',
+  emails: 'Письмо',
+  other: 'Другая активность',
+};
 
 function formatNumber(value) {
   return numberFormatter.format(Number(value || 0));
@@ -561,12 +571,44 @@ function dealCounters(deal, selectedDate) {
   return counters;
 }
 
-function lastDealActivityDate(deal, selectedDate) {
-  const dates = (deal.activities || [])
-    .map((event) => event.date)
-    .filter((date) => date && date <= selectedDate)
-    .sort();
-  return dates.length ? dates[dates.length - 1] : '';
+function activityKindLabel(kind) {
+  return ACTIVE_ACTIVITY_LABELS[kind] || ACTIVE_ACTIVITY_LABELS.other;
+}
+
+function dealActivityTimeline(deal, selectedDate) {
+  const events = (deal.activities || [])
+    .filter((event) => event.date && event.date <= selectedDate)
+    .map((event) => ({ date: event.date, kind: event.kind || 'other' }));
+
+  if (deal.approvedMortgage) {
+    const date = deal.approvedMortgageDate || deal.dateCreate || '';
+    if (date && date <= selectedDate) events.push({ date, kind: 'approvedMortgages' });
+  }
+
+  if (deal.reservation) {
+    const date = deal.reservationDate || deal.dateCreate || '';
+    if (date && date <= selectedDate) events.push({ date, kind: 'reservations' });
+  }
+
+  return events.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function lastDealActivity(deal, selectedDate) {
+  const events = dealActivityTimeline(deal, selectedDate);
+  const lastDate = events.length ? events[events.length - 1].date : '';
+  if (!lastDate) return { date: '', type: '' };
+
+  const labels = [];
+  const seen = new Set();
+  for (const event of events.filter((item) => item.date === lastDate)) {
+    const label = activityKindLabel(event.kind);
+    if (!seen.has(label)) {
+      labels.push(label);
+      seen.add(label);
+    }
+  }
+
+  return { date: lastDate, type: labels.join(', ') || ACTIVE_ACTIVITY_LABELS.other };
 }
 
 function filteredActiveDeals() {
@@ -1055,13 +1097,14 @@ function renderActiveDeals() {
   els.activeReservationCount.textContent = formatNumber(summary.reservations);
 
   if (!rows.length) {
-    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="10">Нет активных сделок для выбранной даты и МОПа</td></tr>';
+    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="11">Нет активных сделок для выбранной даты и МОПа</td></tr>';
     return;
   }
 
   els.activeDealBody.innerHTML = rows.map((deal) => {
     const counters = deal.counters;
     const selectedDate = state.activeDate || defaultActiveDate();
+    const lastActivity = lastDealActivity(deal, selectedDate);
     const category = deal.categoryName ? `<span>${escapeHtml(deal.categoryName)}</span>` : '';
     const title = `#${deal.dealId} ${deal.title || 'Без названия'}`;
     return `
@@ -1072,7 +1115,8 @@ function renderActiveDeals() {
         </td>
         <td>${escapeHtml(deal.stageName || deal.stageId || '—')}</td>
         <td>${formatDate(deal.dateCreate)}</td>
-        <td>${formatDate(lastDealActivityDate(deal, selectedDate))}</td>
+        <td>${formatDate(lastActivity.date)}</td>
+        <td class="activity-type-cell">${escapeHtml(lastActivity.type || '—')}</td>
         <td>${formatNumber(counters.meetings)}</td>
         <td>${formatNumber(counters.approvedMortgages)}</td>
         <td>${formatNumber(counters.reservations)}</td>
