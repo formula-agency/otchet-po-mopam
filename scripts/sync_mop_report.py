@@ -1351,7 +1351,10 @@ def build_deal_metric_facts(
         for record, current_date in records_by_id.values():
             if not resolver(record.get(metric_field)):
                 continue
-            event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
+            if metric_name == "reservations":
+                event_datetime = parse_bitrix_datetime(record.get("DATE_CREATE"), settings.report_timezone)
+            else:
+                event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
             if event_datetime is None:
                 for fallback_date_field in fallback_date_fields:
                     event_datetime = parse_bitrix_datetime(record.get(fallback_date_field), settings.report_timezone)
