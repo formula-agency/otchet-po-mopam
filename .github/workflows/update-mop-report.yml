@@ -48,10 +48,10 @@ jobs:
           MOP_DEAL_DATE_FIELD: ${{ secrets.MOP_DEAL_DATE_FIELD }}
           MOP_APPROVED_MORTGAGE_DATE_FIELD: ${{ secrets.MOP_APPROVED_MORTGAGE_DATE_FIELD }}
           MOP_RESERVATION_DATE_FIELD: ${{ secrets.MOP_RESERVATION_DATE_FIELD }}
-          MOP_ASSIGNED_FIELD: ${{ secrets.MOP_ASSIGNED_FIELD }}
+          MOP_ASSIGNED_FIELD: ASSIGNED_BY_ID
           MOP_UNKNOWN_USER: ${{ secrets.MOP_UNKNOWN_USER }}
-          MOP_INCLUDE_USERS: ${{ secrets.MOP_INCLUDE_USERS }}
-          MOP_EXCLUDE_USERS: ${{ secrets.MOP_EXCLUDE_USERS }}
+          MOP_INCLUDE_USERS: Черткова Ирина,Газисова Мария,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена
+          MOP_EXCLUDE_USERS: ""
           MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
