@@ -1295,25 +1295,72 @@ def build_deal_metric_facts(
     window: ReportWindow,
 ) -> None:
     metric_specs = [
-        ("approved_mortgages", settings.bitrix_approved_mortgage_field, mop_settings.approved_mortgage_date_field, resolve_boolean_field),
-        ("reservations", settings.bitrix_reservation_field, mop_settings.reservation_date_field, resolve_non_empty_field),
+        (
+            "approved_mortgages",
+            "Ипотеки",
+            settings.bitrix_approved_mortgage_field,
+            mop_settings.approved_mortgage_date_field,
+            [],
+            resolve_boolean_field,
+        ),
+        (
+            "reservations",
+            "Брони",
+            settings.bitrix_reservation_field,
+            mop_settings.reservation_date_field,
+            ["DATE_CREATE"],
+            resolve_non_empty_field,
+        ),
     ]
-    for metric_name, metric_field, date_field, resolver in metric_specs:
+    for metric_name, metric_label, metric_field, date_field, fallback_date_fields, resolver in metric_specs:
         if not metric_field:
             continue
-        select_fields = ["ID", "ASSIGNED_BY_ID", date_field, metric_field]
+        select_fields = unique_fields(["ID", "ASSIGNED_BY_ID", date_field, *fallback_date_fields, metric_field])
         if mop_settings.assigned_field not in select_fields:
             select_fields.append(mop_settings.assigned_field)
 
+        if metric_name == "reservations":
+            filter_date_fields = ["DATE_CREATE"]
+        else:
+            filter_date_fields = unique_fields([date_field, *fallback_date_fields])
+        failed_filter_fields: set[str] = set()
+        records_by_id: dict[str, tuple[dict[str, Any], date]] = {}
+        missing_id_index = 0
+
         for current_date in iterate_report_dates(window):
             day_start, day_end = day_bounds(current_date, window)
-            records = fetch_day_deals(session, settings, date_field, day_start, day_end, select_fields)
-            for record in records:
-                if not resolver(record.get(metric_field)):
+            for filter_date_field in filter_date_fields:
+                if filter_date_field in failed_filter_fields:
                     continue
-                event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
-                event_date = event_datetime.date() if event_datetime else current_date
-                add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), metric_name, 1)
+                try:
+                    records = fetch_day_deals(session, settings, filter_date_field, day_start, day_end, select_fields)
+                except Exception as exc:
+                    failed_filter_fields.add(filter_date_field)
+                    data.warnings.append(
+                        f"{metric_label}: не удалось загрузить сделки по полю {filter_date_field}: {safe_error_text(exc)}"
+                    )
+                    continue
+                for record in records:
+                    deal_id = str(record.get("ID") or "").strip()
+                    if deal_id:
+                        records_by_id.setdefault(deal_id, (record, current_date))
+                    else:
+                        missing_id_index += 1
+                        records_by_id[f"__missing_id__{missing_id_index}"] = (record, current_date)
+
+        for record, current_date in records_by_id.values():
+            if not resolver(record.get(metric_field)):
+                continue
+            event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
+            if event_datetime is None:
+                for fallback_date_field in fallback_date_fields:
+                    event_datetime = parse_bitrix_datetime(record.get(fallback_date_field), settings.report_timezone)
+                    if event_datetime is not None:
+                        break
+            event_date = event_datetime.date() if event_datetime else current_date
+            if event_date < window.start.date() or event_date > window.end.date():
+                continue
+            add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), metric_name, 1)
 
 
 def build_meeting_facts(
