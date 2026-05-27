@@ -1272,8 +1272,13 @@ def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_
 
 def hydrate_fact_identities(data: MopReportData, user_names: dict[str, str]) -> None:
     for identity in data.identities.values():
-        if identity.mop_id and not identity.mop_name:
-            identity.mop_name = user_names.get(identity.mop_id, f"Пользователь {identity.mop_id}")
+        if identity.mop_id:
+            identity.mop_name = (
+                DEFAULT_MOP_NAMES_BY_ID.get(identity.mop_id)
+                or user_names.get(identity.mop_id)
+                or identity.mop_name
+                or f"Пользователь {identity.mop_id}"
+            )
         elif not identity.mop_name:
             identity.mop_name = "Без ответственного"
 
