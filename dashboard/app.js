@@ -649,7 +649,13 @@ function planFieldForLabel(value) {
   const label = normalizePlanLabel(value);
   if (!label) return '';
   if (label.includes('проведенные встречи')) return 'meetingsPlan';
-  if (label === 'брони' || label.includes('созданные брони')) return 'reservationsPlan';
+  if (
+    label === 'брони'
+    || label.includes('созданные брони')
+    || label.includes('план по сделкам')
+    || label.includes('сделки план')
+    || label === 'сделки'
+  ) return 'reservationsPlan';
   if (label.includes('одобрен') && label.includes('ипотек')) return 'approvedMortgagesPlan';
   if (label === 'количество звонков') return 'callsPlan';
   if (label.includes('эфир') && label.includes('время')) return 'airTimePlanSeconds';
