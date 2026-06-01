@@ -104,6 +104,7 @@ let mopChart;
 let factChart;
 
 const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v1';
+const DASHBOARD_DATA_VERSION = '20260601-1';
 const PLAN_METRIC_FIELDS = [
   'meetingsPlan',
   'reservationsPlan',
@@ -1617,7 +1618,9 @@ function init() {
 
 async function loadData() {
   try {
-    const response = await fetch('./data/mop-report-data.json', { cache: 'no-store' });
+    const response = await fetch(`./data/mop-report-data.json?v=${DASHBOARD_DATA_VERSION}-${Date.now()}`, {
+      cache: 'no-store',
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return await response.json();
   } catch (error) {
