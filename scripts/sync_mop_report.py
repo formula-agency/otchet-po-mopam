@@ -842,11 +842,11 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
             deal_link_index = column_map.get("deal_link")
             if deal_link_index is not None and deal_link_index < len(row):
                 deal_id = extract_deal_id_from_link(row[deal_link_index])
-        if deal_id:
-            responsible_index = column_map.get("responsible")
-            mop_name = ""
-            if responsible_index is not None and responsible_index < len(row):
-                mop_name = str(row[responsible_index] or "").strip()
+        responsible_index = column_map.get("responsible")
+        mop_name = ""
+        if responsible_index is not None and responsible_index < len(row):
+            mop_name = str(row[responsible_index] or "").strip()
+        if deal_id or mop_name:
             entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id, mop_name))
     return entries
 
@@ -1029,6 +1029,32 @@ def mop_is_allowed(mop_id: str, mop_name: str, settings: MopSettings) -> bool:
     ):
         return False
     return True
+
+
+def canonical_mop_label(mop_name: str, settings: MopSettings) -> str:
+    normalized = normalize_key(mop_name)
+    if not normalized:
+        return ""
+
+    normalized_parts = sorted(part for part in normalized.split() if part)
+    partial_matches: list[str] = []
+    for label in settings.include_user_labels:
+        normalized_label = normalize_key(label)
+        if not normalized_label:
+            continue
+        if normalized == normalized_label:
+            return label
+        label_parts = sorted(part for part in normalized_label.split() if part)
+        if normalized_parts and normalized_parts == label_parts:
+            return label
+        if normalized_parts and (
+            set(normalized_parts).issubset(set(label_parts))
+            or set(label_parts).issubset(set(normalized_parts))
+        ):
+            partial_matches.append(label)
+    if len(partial_matches) == 1:
+        return partial_matches[0]
+    return mop_name.strip()
 
 
 def unique_fields(fields: list[str]) -> list[str]:
@@ -1395,13 +1421,18 @@ def build_meeting_facts(
     for entry in meeting_entries:
         if entry.meeting_date < window.start.date() or entry.meeting_date > window.end.date():
             continue
+        entry_mop_name = canonical_mop_label(entry.mop_name, mop_settings)
+        if entry_mop_name:
+            add_fact(data, entry.meeting_date, "", "meetings", 1, mop_name=entry_mop_name)
+            continue
+        if not entry.deal_id:
+            continue
         deal = deal_cache.get(entry.deal_id)
         if deal is None:
             try:
                 deal = execute_bitrix_deal_get(session, settings, entry.deal_id)
             except Exception as exc:
                 data.warnings.append(f"Не удалось получить сделку {entry.deal_id} для встречи: {safe_error_text(exc)}")
-                add_fact(data, entry.meeting_date, "", "meetings", 1, mop_name=entry.mop_name)
                 continue
             deal_cache[entry.deal_id] = deal
         add_fact(
