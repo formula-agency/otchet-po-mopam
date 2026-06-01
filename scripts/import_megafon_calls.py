@@ -33,8 +33,8 @@ DEFAULT_MOP_NAMES = (
     "Гавриленко Елена",
 )
 METRIC_ZEROES = {
-    "dealsPlan": 0,
-    "dealsFact": 0,
+    "salesPlan": 0,
+    "salesFact": 0,
     "meetingsPlan": 0,
     "meetingsFact": 0,
     "reservationsPlan": 0,

@@ -85,9 +85,9 @@ ACTIVITY_SELECT_FIELDS = [
 MOP_REPORT_HEADERS = [
     "Спринт",
     "МОП",
-    "Сделки план",
-    "Сделки факт",
-    "Сделки %",
+    "Продажи план",
+    "Продажи факт",
+    "Продажи %",
     "Встречи план",
     "Встречи факт",
     "Встречи %",
@@ -142,13 +142,17 @@ PLAN_HEADER_ALIASES = {
         "проведенные встречи план",
         "meetings plan",
     },
-    "deal_plan": {
+    "sale_plan": {
+        "продажи",
+        "продажи план",
+        "план продаж",
         "сделки",
         "сделки план",
         "план сделок",
         "план по сделкам",
         "созданные сделки план",
         "deals plan",
+        "sales plan",
     },
     "reservation_plan": {
         "брони",
@@ -211,6 +215,8 @@ class Settings:
     bitrix_request_timeout: int
     bitrix_approved_mortgage_field: str
     bitrix_reservation_field: str
+    bitrix_stage_field: str
+    bitrix_success_stage_ids: tuple[str, ...]
     google_service_account_file: str | None
     google_service_account_json: str | None
     google_meeting_log_sheet_id: str
@@ -254,7 +260,7 @@ class ActiveDealActivity:
 
 @dataclass
 class MopMetricSet:
-    deals: int = 0
+    sales: int = 0
     meetings: int = 0
     reservations: int = 0
     approved_mortgages: int = 0
@@ -262,7 +268,7 @@ class MopMetricSet:
     air_seconds: int = 0
 
     def add(self, other: "MopMetricSet") -> None:
-        self.deals += other.deals
+        self.sales += other.sales
         self.meetings += other.meetings
         self.reservations += other.reservations
         self.approved_mortgages += other.approved_mortgages
@@ -271,7 +277,7 @@ class MopMetricSet:
 
     def as_dict(self, suffix: str) -> dict[str, int]:
         return {
-            f"deals{suffix}": self.deals,
+            f"sales{suffix}": self.sales,
             f"meetings{suffix}": self.meetings,
             f"reservations{suffix}": self.reservations,
             f"approvedMortgages{suffix}": self.approved_mortgages,
@@ -402,6 +408,10 @@ def read_filter_labels(name: str, default_values: tuple[str, ...] = ()) -> tuple
 def load_settings() -> Settings:
     google_service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip() or None
     google_service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip() or None
+    raw_success_stages = os.getenv("BITRIX_SUCCESS_STAGE_IDS", "").strip() or "WON,CLOSED"
+    bitrix_success_stage_ids = tuple(
+        normalize_key(stage) for stage in raw_success_stages.split(",") if stage.strip()
+    )
 
     if not google_service_account_file:
         credentials_dir = Path.cwd() / "Credentials"
@@ -420,6 +430,8 @@ def load_settings() -> Settings:
             os.getenv("BITRIX_RESERVATION_FIELD", DEFAULT_DEAL_RESERVATION_FIELD).strip()
             or DEFAULT_DEAL_RESERVATION_FIELD
         ),
+        bitrix_stage_field=os.getenv("BITRIX_STAGE_FIELD", "STAGE_ID").strip() or "STAGE_ID",
+        bitrix_success_stage_ids=bitrix_success_stage_ids,
         google_service_account_file=google_service_account_file,
         google_service_account_json=google_service_account_json,
         google_meeting_log_sheet_id=(
@@ -1022,6 +1034,15 @@ def resolve_non_empty_field(value: Any) -> bool:
     return bool(value)
 
 
+def resolve_deal_closed(record: dict[str, Any], settings: Settings) -> bool:
+    if normalize_key(record.get("STAGE_SEMANTIC_ID")) == "s":
+        return True
+    stage_value = record.get(settings.bitrix_stage_field)
+    if stage_value is None:
+        return False
+    return normalize_key(stage_value) in settings.bitrix_success_stage_ids
+
+
 def normalize_mop_token(mop_id: str, mop_name: str) -> set[str]:
     tokens = set()
     if mop_id:
@@ -1366,6 +1387,9 @@ def build_deal_metric_facts(
             deal_date_field,
             "DATE_CREATE",
             "CATEGORY_ID",
+            "STAGE_ID",
+            "STAGE_SEMANTIC_ID",
+            settings.bitrix_stage_field,
         ]
     )
     category_names = fetch_deal_category_names(session, settings)
@@ -1375,9 +1399,9 @@ def build_deal_metric_facts(
 
     if mop_settings.active_deal_category_names and not category_ids:
         data.warnings.append(
-            "Сделки: не найдена воронка "
+            "Продажи: не найдена воронка "
             + ", ".join(mop_settings.active_deal_category_names)
-            + "; сделки посчитаны по всем воронкам."
+            + "; продажи посчитаны по всем воронкам."
         )
 
     for current_date in iterate_report_dates(window):
@@ -1402,7 +1426,7 @@ def build_deal_metric_facts(
                 records = fetch_deal_list(session, settings, base_filters, deal_select_fields)
         except Exception as exc:
             data.warnings.append(
-                f"Сделки: не удалось загрузить сделки за {current_date.isoformat()}: {safe_error_text(exc)}"
+                f"Продажи: не удалось загрузить сделки за {current_date.isoformat()}: {safe_error_text(exc)}"
             )
             continue
 
@@ -1415,13 +1439,15 @@ def build_deal_metric_facts(
                 deal_records_by_id[f"__missing_deal_id__{missing_deal_id_index}"] = (record, current_date)
 
     for record, current_date in deal_records_by_id.values():
+        if not resolve_deal_closed(record, settings):
+            continue
         event_datetime = parse_bitrix_datetime(record.get(deal_date_field), settings.report_timezone)
         if event_datetime is None and deal_date_field != "DATE_CREATE":
             event_datetime = parse_bitrix_datetime(record.get("DATE_CREATE"), settings.report_timezone)
         event_date = event_datetime.date() if event_datetime else current_date
         if event_date < window.start.date() or event_date > window.end.date():
             continue
-        add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), "deals", 1)
+        add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), "sales", 1)
 
     metric_specs = [
         (
@@ -1588,7 +1614,7 @@ def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
         raise ConfigError("В листе планов не найдена колонка 'Неделя' или 'Начало недели'.")
     if "mop_id" not in column_map and "mop_name" not in column_map:
         raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
-    if not {"deal_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(
+    if not {"sale_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(
         column_map
     ):
         raise ConfigError("В листе планов не найдены плановые колонки по метрикам.")
@@ -1650,7 +1676,7 @@ def load_plan_entries(
         if not mop_id and not mop_name:
             continue
         metrics = MopMetricSet(
-            deals=parse_number(cell(row, column_map, "deal_plan")),
+            sales=parse_number(cell(row, column_map, "sale_plan")),
             meetings=parse_number(cell(row, column_map, "meeting_plan")),
             reservations=parse_number(cell(row, column_map, "reservation_plan")),
             approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
@@ -1685,9 +1711,9 @@ def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: 
     return [
         sprint_label,
         mop_name,
-        plan.deals,
-        fact.deals,
-        completion_cell(plan.deals, fact.deals),
+        plan.sales,
+        fact.sales,
+        completion_cell(plan.sales, fact.sales),
         plan.meetings,
         fact.meetings,
         completion_cell(plan.meetings, fact.meetings),

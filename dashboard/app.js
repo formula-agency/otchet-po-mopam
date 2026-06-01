@@ -31,13 +31,13 @@ const els = {
   selectionSummary: document.getElementById('selection-summary'),
   heroMops: document.getElementById('hero-mops'),
   heroWeeks: document.getElementById('hero-weeks'),
-  heroDeals: document.getElementById('hero-deals'),
+  heroSales: document.getElementById('hero-sales'),
   heroMeetings: document.getElementById('hero-meetings'),
   heroReservations: document.getElementById('hero-reservations'),
   heroMortgages: document.getElementById('hero-mortgages'),
   heroAir: document.getElementById('hero-air'),
-  kpiDeals: document.getElementById('kpi-deals'),
-  kpiDealsRate: document.getElementById('kpi-deals-rate'),
+  kpiSales: document.getElementById('kpi-sales'),
+  kpiSalesRate: document.getElementById('kpi-sales-rate'),
   kpiMeetings: document.getElementById('kpi-meetings'),
   kpiMeetingsRate: document.getElementById('kpi-meetings-rate'),
   kpiReservations: document.getElementById('kpi-reservations'),
@@ -106,10 +106,10 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v2';
-const DASHBOARD_DATA_VERSION = '20260601-2';
+const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v3';
+const DASHBOARD_DATA_VERSION = '20260601-3';
 const PLAN_METRIC_FIELDS = [
-  'dealsPlan',
+  'salesPlan',
   'meetingsPlan',
   'reservationsPlan',
   'approvedMortgagesPlan',
@@ -117,12 +117,12 @@ const PLAN_METRIC_FIELDS = [
   'airTimePlanSeconds',
 ];
 const SCOREBOARD_METRICS = [
-  { label: 'Сделки', plan: 'dealsPlan', fact: 'dealsFact', kind: 'number', weight: 80 },
+  { label: 'Звонки', plan: 'callsPlan', fact: 'callsFact', kind: 'number', weight: 1 },
+  { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
   { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
   { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
-  { label: 'Звонки', plan: 'callsPlan', fact: 'callsFact', kind: 'number', weight: 1 },
-  { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
+  { label: 'Продажи', plan: 'salesPlan', fact: 'salesFact', kind: 'number', weight: 80 },
 ];
 const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
@@ -369,8 +369,8 @@ function emptyPlanRow(planRow) {
     weekStart: planRow.weekStart,
     weekLabel: planRow.weekLabel || formatWeekLabel(planRow.weekStart),
     mopName: planRow.mopName,
-    dealsPlan: 0,
-    dealsFact: 0,
+    salesPlan: 0,
+    salesFact: 0,
     meetingsPlan: 0,
     meetingsFact: 0,
     reservationsPlan: 0,
@@ -394,7 +394,7 @@ function reportRows() {
     if (!plan) return row;
     return {
       ...row,
-      dealsPlan: plan.dealsPlan,
+      salesPlan: plan.salesPlan,
       meetingsPlan: plan.meetingsPlan,
       reservationsPlan: plan.reservationsPlan,
       approvedMortgagesPlan: plan.approvedMortgagesPlan,
@@ -448,6 +448,9 @@ function monthOptions() {
     const start = parseISODate(week.value);
     if (!start) continue;
     months.set(monthKey(start), formatMonthLabel(monthKey(start)));
+  }
+  if (state.planUpload?.month) {
+    months.set(state.planUpload.month, formatMonthLabel(state.planUpload.month));
   }
   return [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -678,12 +681,15 @@ function planFieldForLabel(value) {
   const label = normalizePlanLabel(value);
   if (!label) return '';
   if (
-    label === 'сделки'
+    label === 'продажи'
+    || label.includes('продажи план')
+    || label.includes('план продаж')
+    || label === 'сделки'
     || label.includes('сделки план')
     || label.includes('план сделок')
     || label.includes('план по сделкам')
     || label.includes('созданные сделки')
-  ) return 'dealsPlan';
+  ) return 'salesPlan';
   if (
     label === 'встречи'
     || label.includes('встречи план')
@@ -768,7 +774,7 @@ function sprintStartsForMonth(monthDate) {
 
 function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
   const splitPlans = {
-    dealsPlan: splitMonthlyPlanValue(monthlyPlan.dealsPlan),
+    salesPlan: splitMonthlyPlanValue(monthlyPlan.salesPlan),
     meetingsPlan: splitMonthlyPlanValue(monthlyPlan.meetingsPlan),
     reservationsPlan: splitMonthlyPlanValue(monthlyPlan.reservationsPlan),
     approvedMortgagesPlan: splitMonthlyPlanValue(monthlyPlan.approvedMortgagesPlan),
@@ -782,7 +788,7 @@ function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
       weekStart,
       weekLabel: formatWeekLabel(weekStart),
       mopName,
-      dealsPlan: splitPlans.dealsPlan[sprintIndex],
+      salesPlan: splitPlans.salesPlan[sprintIndex],
       meetingsPlan: splitPlans.meetingsPlan[sprintIndex],
       reservationsPlan: splitPlans.reservationsPlan[sprintIndex],
       approvedMortgagesPlan: splitPlans.approvedMortgagesPlan[sprintIndex],
@@ -835,7 +841,7 @@ function parseSimplePlanRows(rows, monthDate) {
     }
 
     const monthlyPlan = {
-      dealsPlan: 0,
+      salesPlan: 0,
       meetingsPlan: 0,
       reservationsPlan: 0,
       approvedMortgagesPlan: 0,
@@ -904,7 +910,7 @@ function parsePlanWorkbook(workbook, fileName) {
     const planColumn = findPlanColumn(rows[start + 1]);
     const valueColumn = planColumn + 1;
     const monthlyPlan = {
-      dealsPlan: 0,
+      salesPlan: 0,
       meetingsPlan: 0,
       reservationsPlan: 0,
       approvedMortgagesPlan: 0,
@@ -954,7 +960,7 @@ function normalizeStoredPlanUpload(upload) {
       weekStart: row.weekStart,
       weekLabel: row.weekLabel || formatWeekLabel(row.weekStart),
       mopName: row.mopName,
-      dealsPlan: parsePlanNumber(row.dealsPlan),
+      salesPlan: parsePlanNumber(row.salesPlan ?? row.dealsPlan),
       meetingsPlan: parsePlanNumber(row.meetingsPlan),
       reservationsPlan: parsePlanNumber(row.reservationsPlan),
       approvedMortgagesPlan: parsePlanNumber(row.approvedMortgagesPlan),
@@ -1032,13 +1038,16 @@ function renderPlanUploadStatus(message = '') {
 
 function applyPlanUpload(upload, focusMonth = false) {
   state.planUpload = upload;
+  refreshPeriodControls(false);
   if (focusMonth && upload.month) {
     state.month = upload.month;
     state.sprint = defaultSprintForMonth(state.month);
     state.airtimeMonth = upload.month;
     state.airtimeSprint = defaultSprintForMonth(state.airtimeMonth);
+    refreshPeriodControls(false);
+  } else {
+    refreshPeriodControls(true);
   }
-  refreshPeriodControls(true);
   renderPlanUploadStatus();
   render();
 }
@@ -1053,8 +1062,8 @@ function clearPlanUpload() {
 
 function summarizeRows(rows) {
   return rows.reduce((acc, row) => {
-    acc.dealsPlan += Number(row.dealsPlan || 0);
-    acc.dealsFact += Number(row.dealsFact || 0);
+    acc.salesPlan += Number(row.salesPlan ?? row.dealsPlan ?? 0);
+    acc.salesFact += Number(row.salesFact ?? row.dealsFact ?? 0);
     acc.meetingsPlan += Number(row.meetingsPlan || 0);
     acc.meetingsFact += Number(row.meetingsFact || 0);
     acc.reservationsPlan += Number(row.reservationsPlan || 0);
@@ -1067,8 +1076,8 @@ function summarizeRows(rows) {
     acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
     return acc;
   }, {
-    dealsPlan: 0,
-    dealsFact: 0,
+    salesPlan: 0,
+    salesFact: 0,
     meetingsPlan: 0,
     meetingsFact: 0,
     reservationsPlan: 0,
@@ -1110,7 +1119,7 @@ function renderHero(rows) {
   const summary = summarizeRows(rows);
   els.heroMops.textContent = formatNumber(new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size);
   els.heroWeeks.textContent = formatNumber(new Set(rows.map((row) => row.weekStart)).size);
-  els.heroDeals.textContent = pair(summary.dealsPlan, summary.dealsFact);
+  els.heroSales.textContent = pair(summary.salesPlan, summary.salesFact);
   els.heroMeetings.textContent = pair(summary.meetingsPlan, summary.meetingsFact);
   els.heroReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
   els.heroMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
@@ -1119,8 +1128,8 @@ function renderHero(rows) {
 
 function renderKpis(rows) {
   const summary = summarizeRows(rows);
-  els.kpiDeals.textContent = pair(summary.dealsPlan, summary.dealsFact);
-  els.kpiDealsRate.textContent = completion(summary.dealsFact, summary.dealsPlan);
+  els.kpiSales.textContent = pair(summary.salesPlan, summary.salesFact);
+  els.kpiSalesRate.textContent = completion(summary.salesFact, summary.salesPlan);
   els.kpiMeetings.textContent = pair(summary.meetingsPlan, summary.meetingsFact);
   els.kpiMeetingsRate.textContent = completion(summary.meetingsFact, summary.meetingsPlan);
   els.kpiReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
@@ -1148,7 +1157,7 @@ function renderActiveState(rows) {
 
   const summary = summarizeRows(rows);
   const mopCount = new Set(rows.filter((row) => !row.manualAggregate).map((row) => row.mopName)).size;
-  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(mopCount)} · Сделки: ${pair(summary.dealsPlan, summary.dealsFact)} · Встречи: ${pair(summary.meetingsPlan, summary.meetingsFact)}`;
+  els.selectionSummary.textContent = `Строк: ${formatNumber(rows.length)} · МОП: ${formatNumber(mopCount)} · Продажи: ${pair(summary.salesPlan, summary.salesFact)} · Встречи: ${pair(summary.meetingsPlan, summary.meetingsFact)}`;
 }
 
 function renderDetailTable(rows) {
@@ -1165,7 +1174,7 @@ function renderDetailTable(rows) {
       <tr${row.manualAggregate ? ' class="manual-row"' : ''}>
         <td>${escapeHtml(row.weekLabel)}</td>
         <td>${escapeHtml(row.mopName)}</td>
-        <td>${pair(row.dealsPlan, row.dealsFact)} <span>${completion(row.dealsFact, row.dealsPlan)}</span></td>
+        <td>${pair(row.salesPlan ?? row.dealsPlan, row.salesFact ?? row.dealsFact)} <span>${completion(row.salesFact ?? row.dealsFact, row.salesPlan ?? row.dealsPlan)}</span></td>
         <td>${pair(row.meetingsPlan, row.meetingsFact)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>
         <td>${pair(row.reservationsPlan, row.reservationsFact)} <span>${completion(row.reservationsFact, row.reservationsPlan)}</span></td>
         <td>${pair(row.approvedMortgagesPlan, row.approvedMortgagesFact)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
@@ -1332,7 +1341,7 @@ function renderAirTimePlanFact() {
     const scoreLabel = row.ratio === null ? 'План не задан' : `Выполнение: ${percentFormatter.format(row.ratio)}`;
     return `
       <article class="airtime-row ${scoreboardStatusClass(row)} ${scoreboardRankClass(index, rows.length)}">
-        <div class="airtime-row__rank">${index + 1}</div>
+        <div class="airtime-row__rank">${index === 0 ? '<span class="airtime-row__crown" aria-hidden="true"></span>' : ''}${index + 1}</div>
         <div class="airtime-row__person">
           <strong>${escapeHtml(row.mopName)}</strong>
           <span>${escapeHtml(scoreLabel)}</span>
@@ -1423,8 +1432,8 @@ function renderCharts(rows) {
   weeklyChart.data.labels = weeklyRows.map((row) => row.weekLabel);
   weeklyChart.data.datasets = [
     {
-      label: 'Сделки факт',
-      data: weeklyRows.map((row) => row.dealsFact),
+      label: 'Продажи факт',
+      data: weeklyRows.map((row) => row.salesFact),
       backgroundColor: `${palette.coral}B3`,
       borderRadius: 4,
     },
@@ -1477,9 +1486,9 @@ function renderCharts(rows) {
   mopChart.update();
 
   const summary = summarizeRows(rows);
-  factChart.data.labels = ['Сделки', 'Встречи', 'Брони', 'Ипотеки', 'Звонки'];
+  factChart.data.labels = ['Продажи', 'Встречи', 'Брони', 'Ипотеки', 'Звонки'];
   factChart.data.datasets = [{
-    data: [summary.dealsFact, summary.meetingsFact, summary.reservationsFact, summary.approvedMortgagesFact, summary.callsFact],
+    data: [summary.salesFact, summary.meetingsFact, summary.reservationsFact, summary.approvedMortgagesFact, summary.callsFact],
     backgroundColor: [palette.coral, palette.blue, palette.green, palette.violet, palette.amber],
     borderWidth: 0,
   }];
@@ -1497,12 +1506,12 @@ function renderWarnings() {
 }
 
 function exportCsv(rows) {
-  const header = ['Спринт', 'МОП', 'Сделки план', 'Сделки факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки план', 'Звонки факт', 'Эфир план', 'Эфир факт'];
+  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки план', 'Звонки факт', 'Эфир план', 'Эфир факт'];
   const body = rows.map((row) => [
     row.weekLabel,
     row.mopName,
-    row.dealsPlan,
-    row.dealsFact,
+    row.salesPlan ?? row.dealsPlan,
+    row.salesFact ?? row.dealsFact,
     row.meetingsPlan,
     row.meetingsFact,
     row.reservationsPlan,

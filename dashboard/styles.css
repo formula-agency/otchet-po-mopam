@@ -593,20 +593,23 @@ select {
 }
 
 .airtime-row.rank-gold {
-  border-left-color: #d7a322;
-  background: linear-gradient(90deg, rgba(239, 189, 85, 0.18), var(--paper) 28%);
+  border-left-color: #7c4dff;
+  background: linear-gradient(90deg, rgba(124, 77, 255, 0.2), var(--paper) 30%);
 }
 
 .airtime-row.rank-green {
   border-left-color: var(--green);
+  background: linear-gradient(90deg, rgba(90, 166, 143, 0.17), var(--paper) 30%);
 }
 
 .airtime-row.rank-orange {
-  border-left-color: var(--amber);
+  border-left-color: #f08a24;
+  background: linear-gradient(90deg, rgba(240, 138, 36, 0.18), var(--paper) 30%);
 }
 
 .airtime-row.rank-red {
   border-left-color: var(--coral);
+  background: linear-gradient(90deg, rgba(214, 107, 98, 0.17), var(--paper) 30%);
 }
 
 .airtime-row__rank {
@@ -621,7 +624,9 @@ select {
 }
 
 .airtime-row.rank-gold .airtime-row__rank {
-  background: #f4d77c;
+  position: relative;
+  background: #ede7ff;
+  color: #38208c;
 }
 
 .airtime-row.rank-green .airtime-row__rank {
@@ -629,11 +634,33 @@ select {
 }
 
 .airtime-row.rank-orange .airtime-row__rank {
-  background: rgba(239, 189, 85, 0.22);
+  background: rgba(240, 138, 36, 0.18);
 }
 
 .airtime-row.rank-red .airtime-row__rank {
   background: rgba(214, 107, 98, 0.18);
+}
+
+.airtime-row__crown {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 24px;
+  height: 13px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #ffe677, #f2b705);
+  clip-path: polygon(0 100%, 0 38%, 22% 68%, 36% 0, 50% 66%, 64% 0, 78% 68%, 100% 38%, 100% 100%);
+  filter: drop-shadow(0 2px 2px rgba(22, 20, 20, 0.18));
+}
+
+.airtime-row__crown::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  left: 3px;
+  height: 2px;
+  background: rgba(118, 72, 0, 0.45);
 }
 
 .airtime-row__person strong {
@@ -671,7 +698,7 @@ select {
 }
 
 .airtime-row.rank-gold .airtime-row__bar span {
-  background: #d7a322;
+  background: #7c4dff;
 }
 
 .airtime-row.rank-green .airtime-row__bar span {
@@ -679,7 +706,7 @@ select {
 }
 
 .airtime-row.rank-orange .airtime-row__bar span {
-  background: var(--amber);
+  background: #f08a24;
 }
 
 .airtime-row.rank-red .airtime-row__bar span {
