@@ -83,6 +83,7 @@ const percentFormatter = new Intl.NumberFormat('ru-RU', {
   maximumFractionDigits: 0,
 });
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WHOLE_MONTH_VALUE = '__whole_month__';
 const MONTH_NAMES = [
   'Январь',
   'Февраль',
@@ -442,12 +443,19 @@ function monthOptions() {
 }
 
 function sprintOptionsForMonth(selectedMonth) {
-  return allWeekOptions()
+  const sprintOptions = allWeekOptions()
     .filter((week) => sprintBelongsToMonth(week.value, selectedMonth))
     .map((week, index) => ({
       value: week.value,
       label: `Спринт ${index + 1} · ${week.label}`,
     }));
+  return selectedMonth
+    ? [{ value: WHOLE_MONTH_VALUE, label: 'Весь месяц' }, ...sprintOptions]
+    : sprintOptions;
+}
+
+function sprintOnlyOptionsForMonth(selectedMonth) {
+  return sprintOptionsForMonth(selectedMonth).filter((option) => option.value !== WHOLE_MONTH_VALUE);
 }
 
 function currentSprintValue() {
@@ -467,7 +475,7 @@ function defaultPeriod() {
 }
 
 function defaultSprintForMonth(selectedMonth) {
-  const sprints = sprintOptionsForMonth(selectedMonth);
+  const sprints = sprintOnlyOptionsForMonth(selectedMonth);
   const currentSprint = currentSprintValue();
   if (monthKey(referenceDate()) === selectedMonth && sprints.some((option) => option.value === currentSprint)) {
     return currentSprint;
@@ -506,6 +514,16 @@ function setDefaultPeriod() {
 
 function selectedOption(options, value) {
   return options.find((option) => option.value === value);
+}
+
+function rowMatchesPeriod(row, selectedMonth, selectedSprint) {
+  if (selectedSprint && selectedSprint !== WHOLE_MONTH_VALUE) {
+    return row.weekStart === selectedSprint;
+  }
+  if (selectedMonth) {
+    return sprintBelongsToMonth(row.weekStart, selectedMonth);
+  }
+  return true;
 }
 
 function activeDealsData() {
@@ -638,8 +656,7 @@ function filteredRows() {
   const query = normalizeSearch(state.search);
   return reportRows().filter((row) => {
     if (state.mopName !== 'all' && row.mopName !== state.mopName) return false;
-    if (state.sprint && row.weekStart !== state.sprint) return false;
-    if (!state.sprint && state.month && !sprintBelongsToMonth(row.weekStart, state.month)) return false;
+    if (!rowMatchesPeriod(row, state.month, state.sprint)) return false;
     if (!query) return true;
     return normalizeSearch(row.mopName).includes(query);
   });
@@ -1072,7 +1089,7 @@ function renderActiveState(rows) {
   const sprint = selectedOption(sprintOptionsForMonth(state.month), state.sprint);
   if (state.mopName !== 'all') chips.push(`МОП: ${state.mopName}`);
   if (month) chips.push(`Месяц: ${month.label}`);
-  if (sprint) chips.push(`Спринт: ${sprint.label}`);
+  if (sprint) chips.push(`Период: ${sprint.label}`);
   if (normalizeSearch(state.search)) chips.push(`Поиск: ${state.search.trim()}`);
 
   els.activeFilters.innerHTML = chips.length
@@ -1189,7 +1206,7 @@ function scoreboardRows() {
   const rowsByMop = new Map((data.filters?.mopNames || []).map((name) => [name, emptyScoreboardRow(name)]));
 
   for (const row of reportRows()) {
-    if (row.manualAggregate || row.weekStart !== state.airtimeSprint) continue;
+    if (row.manualAggregate || !rowMatchesPeriod(row, state.airtimeMonth, state.airtimeSprint)) continue;
     if (!rowsByMop.has(row.mopName)) {
       rowsByMop.set(row.mopName, emptyScoreboardRow(row.mopName));
     }
@@ -1245,7 +1262,7 @@ function renderAirTimePlanFact() {
   `).join('');
 
   if (!rows.length) {
-    els.airtimeRows.innerHTML = '<div class="airtime-empty">Нет данных по выбранному спринту</div>';
+    els.airtimeRows.innerHTML = '<div class="airtime-empty">Нет данных по выбранному периоду</div>';
     return;
   }
 
