@@ -221,7 +221,7 @@ select {
 
 .summary-band__stats {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -415,7 +415,7 @@ select {
 .accent-coral { color: var(--coral); }
 
 .kpi-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .panel,
@@ -517,7 +517,7 @@ select {
 
 .airtime-summary {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -565,7 +565,7 @@ select {
 
 .airtime-row {
   display: grid;
-  grid-template-columns: 44px minmax(190px, 1fr) minmax(120px, 0.7fr) repeat(5, minmax(108px, 0.55fr));
+  grid-template-columns: 44px minmax(190px, 1fr) minmax(120px, 0.7fr) repeat(6, minmax(100px, 0.55fr));
   gap: 10px;
   align-items: center;
   min-height: 48px;
@@ -592,6 +592,23 @@ select {
   opacity: 0.62;
 }
 
+.airtime-row.rank-gold {
+  border-left-color: #d7a322;
+  background: linear-gradient(90deg, rgba(239, 189, 85, 0.18), var(--paper) 28%);
+}
+
+.airtime-row.rank-green {
+  border-left-color: var(--green);
+}
+
+.airtime-row.rank-orange {
+  border-left-color: var(--amber);
+}
+
+.airtime-row.rank-red {
+  border-left-color: var(--coral);
+}
+
 .airtime-row__rank {
   display: grid;
   place-items: center;
@@ -601,6 +618,22 @@ select {
   background: #edf3fb;
   font-size: 17px;
   font-weight: 800;
+}
+
+.airtime-row.rank-gold .airtime-row__rank {
+  background: #f4d77c;
+}
+
+.airtime-row.rank-green .airtime-row__rank {
+  background: rgba(90, 166, 143, 0.18);
+}
+
+.airtime-row.rank-orange .airtime-row__rank {
+  background: rgba(239, 189, 85, 0.22);
+}
+
+.airtime-row.rank-red .airtime-row__rank {
+  background: rgba(214, 107, 98, 0.18);
 }
 
 .airtime-row__person strong {
@@ -635,6 +668,22 @@ select {
 
 .airtime-row.is-done .airtime-row__bar span {
   background: var(--green);
+}
+
+.airtime-row.rank-gold .airtime-row__bar span {
+  background: #d7a322;
+}
+
+.airtime-row.rank-green .airtime-row__bar span {
+  background: var(--green);
+}
+
+.airtime-row.rank-orange .airtime-row__bar span {
+  background: var(--amber);
+}
+
+.airtime-row.rank-red .airtime-row__bar span {
+  background: var(--coral);
 }
 
 .airtime-row__metric strong {

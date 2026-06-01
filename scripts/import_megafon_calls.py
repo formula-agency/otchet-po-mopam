@@ -33,6 +33,8 @@ DEFAULT_MOP_NAMES = (
     "Гавриленко Елена",
 )
 METRIC_ZEROES = {
+    "dealsPlan": 0,
+    "dealsFact": 0,
     "meetingsPlan": 0,
     "meetingsFact": 0,
     "reservationsPlan": 0,
@@ -167,9 +169,8 @@ def format_week_label(week_start: date) -> str:
 
 
 def format_duration(seconds: int) -> str:
-    hours, remainder = divmod(max(0, seconds), 3600)
-    minutes, secs = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    minutes, secs = divmod(max(0, seconds), 60)
+    return f"{minutes:02d}:{secs:02d}"
 
 
 def column_index(cell_ref: str) -> int:
@@ -359,8 +360,8 @@ def empty_metric_row(
         "weekLabel": format_week_label(week_start),
         "mopId": mop_id,
         "mopName": mop_name,
-        "airTimePlan": "00:00:00",
-        "airTimeFact": "00:00:00",
+        "airTimePlan": "00:00",
+        "airTimeFact": "00:00",
         **METRIC_ZEROES,
     }
     if manual_aggregate:

@@ -85,6 +85,9 @@ ACTIVITY_SELECT_FIELDS = [
 MOP_REPORT_HEADERS = [
     "Спринт",
     "МОП",
+    "Сделки план",
+    "Сделки факт",
+    "Сделки %",
     "Встречи план",
     "Встречи факт",
     "Встречи %",
@@ -132,22 +135,31 @@ PLAN_HEADER_ALIASES = {
         "manager",
     },
     "meeting_plan": {
+        "встречи",
         "встречи план",
         "план встреч",
         "план встречи",
         "проведенные встречи план",
         "meetings plan",
     },
+    "deal_plan": {
+        "сделки",
+        "сделки план",
+        "план сделок",
+        "план по сделкам",
+        "созданные сделки план",
+        "deals plan",
+    },
     "reservation_plan": {
+        "брони",
         "брони план",
         "план броней",
         "план брони",
         "созданные брони план",
-        "план по сделкам",
-        "сделки план",
         "reservations plan",
     },
     "mortgage_plan": {
+        "ипотеки",
         "ипотеки план",
         "план ипотек",
         "план ипотеки",
@@ -155,6 +167,7 @@ PLAN_HEADER_ALIASES = {
         "mortgages plan",
     },
     "call_plan": {
+        "звонки",
         "звонки план",
         "план звонков",
         "количество звонков план",
@@ -162,6 +175,7 @@ PLAN_HEADER_ALIASES = {
         "calls plan",
     },
     "air_time_plan": {
+        "эфир",
         "эфир план",
         "план эфира",
         "эфирное время план",
@@ -240,6 +254,7 @@ class ActiveDealActivity:
 
 @dataclass
 class MopMetricSet:
+    deals: int = 0
     meetings: int = 0
     reservations: int = 0
     approved_mortgages: int = 0
@@ -247,6 +262,7 @@ class MopMetricSet:
     air_seconds: int = 0
 
     def add(self, other: "MopMetricSet") -> None:
+        self.deals += other.deals
         self.meetings += other.meetings
         self.reservations += other.reservations
         self.approved_mortgages += other.approved_mortgages
@@ -255,6 +271,7 @@ class MopMetricSet:
 
     def as_dict(self, suffix: str) -> dict[str, int]:
         return {
+            f"deals{suffix}": self.deals,
             f"meetings{suffix}": self.meetings,
             f"reservations{suffix}": self.reservations,
             f"approvedMortgages{suffix}": self.approved_mortgages,
@@ -952,10 +969,12 @@ def parse_duration_seconds(value: Any) -> int:
     text = str(value or "").strip().lower()
     if not text:
         return 0
-    time_match = re.fullmatch(r"(\d{1,3}):(\d{2})(?::(\d{2}))?", text)
+    time_match = re.fullmatch(r"(\d{1,5}):(\d{2})(?::(\d{2}))?", text)
     if time_match:
-        hours, minutes, seconds = time_match.groups()
-        return int(hours) * 3600 + int(minutes) * 60 + int(seconds or 0)
+        first, second, third = time_match.groups()
+        if third is not None:
+            return int(first) * 3600 + int(second) * 60 + int(third)
+        return int(first) * 60 + int(second)
 
     total = 0.0
     for multiplier, pattern in (
@@ -973,9 +992,8 @@ def parse_duration_seconds(value: Any) -> int:
 
 def format_duration(seconds: int) -> str:
     seconds = max(0, int(seconds or 0))
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    minutes, seconds = divmod(seconds, 60)
+    return f"{minutes:02d}:{seconds:02d}"
 
 
 def completion_cell(plan: int, fact: int) -> str:
@@ -1339,6 +1357,72 @@ def build_deal_metric_facts(
     mop_settings: MopSettings,
     window: ReportWindow,
 ) -> None:
+    deal_date_field = mop_settings.deal_date_field or "DATE_CREATE"
+    deal_select_fields = unique_fields(
+        [
+            "ID",
+            "ASSIGNED_BY_ID",
+            mop_settings.assigned_field,
+            deal_date_field,
+            "DATE_CREATE",
+            "CATEGORY_ID",
+        ]
+    )
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    deal_records_by_id: dict[str, tuple[dict[str, Any], date]] = {}
+    missing_deal_id_index = 0
+
+    if mop_settings.active_deal_category_names and not category_ids:
+        data.warnings.append(
+            "Сделки: не найдена воронка "
+            + ", ".join(mop_settings.active_deal_category_names)
+            + "; сделки посчитаны по всем воронкам."
+        )
+
+    for current_date in iterate_report_dates(window):
+        day_start, day_end = day_bounds(current_date, window)
+        base_filters: dict[str, Any] = {
+            f">={deal_date_field}": day_start.isoformat(timespec="seconds"),
+            f"<={deal_date_field}": day_end.isoformat(timespec="seconds"),
+        }
+        try:
+            if category_ids:
+                records: list[dict[str, Any]] = []
+                for category_id in sorted(category_ids, key=lambda item: int(item) if item.isdigit() else item):
+                    records.extend(
+                        fetch_deal_list(
+                            session,
+                            settings,
+                            {**base_filters, "CATEGORY_ID": category_id},
+                            deal_select_fields,
+                        )
+                    )
+            else:
+                records = fetch_deal_list(session, settings, base_filters, deal_select_fields)
+        except Exception as exc:
+            data.warnings.append(
+                f"Сделки: не удалось загрузить сделки за {current_date.isoformat()}: {safe_error_text(exc)}"
+            )
+            continue
+
+        for record in records:
+            deal_id = str(record.get("ID") or "").strip()
+            if deal_id:
+                deal_records_by_id.setdefault(deal_id, (record, current_date))
+            else:
+                missing_deal_id_index += 1
+                deal_records_by_id[f"__missing_deal_id__{missing_deal_id_index}"] = (record, current_date)
+
+    for record, current_date in deal_records_by_id.values():
+        event_datetime = parse_bitrix_datetime(record.get(deal_date_field), settings.report_timezone)
+        if event_datetime is None and deal_date_field != "DATE_CREATE":
+            event_datetime = parse_bitrix_datetime(record.get("DATE_CREATE"), settings.report_timezone)
+        event_date = event_datetime.date() if event_datetime else current_date
+        if event_date < window.start.date() or event_date > window.end.date():
+            continue
+        add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), "deals", 1)
+
     metric_specs = [
         (
             "approved_mortgages",
@@ -1504,7 +1588,9 @@ def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
         raise ConfigError("В листе планов не найдена колонка 'Неделя' или 'Начало недели'.")
     if "mop_id" not in column_map and "mop_name" not in column_map:
         raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
-    if not {"meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(column_map):
+    if not {"deal_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(
+        column_map
+    ):
         raise ConfigError("В листе планов не найдены плановые колонки по метрикам.")
     return max(matched_rows) if matched_rows else 0, column_map
 
@@ -1564,6 +1650,7 @@ def load_plan_entries(
         if not mop_id and not mop_name:
             continue
         metrics = MopMetricSet(
+            deals=parse_number(cell(row, column_map, "deal_plan")),
             meetings=parse_number(cell(row, column_map, "meeting_plan")),
             reservations=parse_number(cell(row, column_map, "reservation_plan")),
             approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
@@ -1598,6 +1685,9 @@ def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: 
     return [
         sprint_label,
         mop_name,
+        plan.deals,
+        fact.deals,
+        completion_cell(plan.deals, fact.deals),
         plan.meetings,
         fact.meetings,
         completion_cell(plan.meetings, fact.meetings),
