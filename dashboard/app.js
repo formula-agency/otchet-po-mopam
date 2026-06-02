@@ -107,7 +107,7 @@ let mopChart;
 let factChart;
 
 const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v3';
-const DASHBOARD_DATA_VERSION = '20260601-3';
+const DASHBOARD_DATA_VERSION = '20260602-1';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
   'meetingsPlan',
@@ -318,7 +318,8 @@ function formatMonthLabel(key) {
 
 function parsePlanMonthDate(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return new Date(Date.UTC(value.getFullYear(), value.getMonth(), 1));
+    const shifted = new Date(value.getTime() + 12 * 60 * 60 * 1000);
+    return new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), 1));
   }
   if (typeof value === 'number' && Number.isFinite(value)) {
     const date = new Date(Date.UTC(1899, 11, 30) + Math.round(value) * DAY_MS);
@@ -948,7 +949,7 @@ function parsePlanWorkbook(workbook, fileName) {
 async function readPlanUploadFile(file) {
   if (!window.XLSX) throw new Error('парсер XLSX не загрузился');
   const buffer = await file.arrayBuffer();
-  const workbook = window.XLSX.read(buffer, { type: 'array', cellDates: true });
+  const workbook = window.XLSX.read(buffer, { type: 'array', cellDates: false });
   return parsePlanWorkbook(workbook, file.name);
 }
 
