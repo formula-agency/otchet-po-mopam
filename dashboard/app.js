@@ -106,7 +106,7 @@ let mopChart;
 let factChart;
 
 const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v5';
-const DASHBOARD_DATA_VERSION = '20260603-3';
+const DASHBOARD_DATA_VERSION = '20260603-4';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
