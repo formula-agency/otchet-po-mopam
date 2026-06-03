@@ -565,8 +565,8 @@ select {
 
 .airtime-row {
   display: grid;
-  grid-template-columns: 44px minmax(190px, 1fr) minmax(120px, 0.7fr) repeat(6, minmax(100px, 0.55fr));
-  gap: 10px;
+  grid-template-columns: 44px minmax(180px, 1fr) minmax(100px, 0.7fr) repeat(6, minmax(88px, 0.55fr));
+  gap: 8px;
   align-items: center;
   min-height: 48px;
   padding: 6px 12px;

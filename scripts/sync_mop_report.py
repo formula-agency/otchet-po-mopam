@@ -97,9 +97,7 @@ MOP_REPORT_HEADERS = [
     "Ипотеки план",
     "Ипотеки факт",
     "Ипотеки %",
-    "Звонки план",
     "Звонки факт",
-    "Звонки %",
     "Эфир план",
     "Эфир факт",
     "Эфир %",
@@ -146,6 +144,7 @@ PLAN_HEADER_ALIASES = {
         "продажи",
         "продажи план",
         "план продаж",
+        "план по продажам",
         "сделки",
         "сделки план",
         "план сделок",
@@ -169,14 +168,6 @@ PLAN_HEADER_ALIASES = {
         "план ипотеки",
         "одобренные ипотеки план",
         "mortgages plan",
-    },
-    "call_plan": {
-        "звонки",
-        "звонки план",
-        "план звонков",
-        "количество звонков план",
-        "совершенные звонки план",
-        "calls plan",
     },
     "air_time_plan": {
         "эфир",
@@ -276,14 +267,16 @@ class MopMetricSet:
         self.air_seconds += other.air_seconds
 
     def as_dict(self, suffix: str) -> dict[str, int]:
-        return {
+        result = {
             f"sales{suffix}": self.sales,
             f"meetings{suffix}": self.meetings,
             f"reservations{suffix}": self.reservations,
             f"approvedMortgages{suffix}": self.approved_mortgages,
-            f"calls{suffix}": self.calls,
             f"airTime{suffix}Seconds": self.air_seconds,
         }
+        if suffix == "Fact":
+            result["callsFact"] = self.calls
+        return result
 
 
 @dataclass
@@ -1614,7 +1607,7 @@ def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
         raise ConfigError("В листе планов не найдена колонка 'Неделя' или 'Начало недели'.")
     if "mop_id" not in column_map and "mop_name" not in column_map:
         raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
-    if not {"sale_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "call_plan", "air_time_plan"} & set(
+    if not {"sale_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "air_time_plan"} & set(
         column_map
     ):
         raise ConfigError("В листе планов не найдены плановые колонки по метрикам.")
@@ -1680,7 +1673,6 @@ def load_plan_entries(
             meetings=parse_number(cell(row, column_map, "meeting_plan")),
             reservations=parse_number(cell(row, column_map, "reservation_plan")),
             approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
-            calls=parse_number(cell(row, column_map, "call_plan")),
             air_seconds=parse_duration_seconds(cell(row, column_map, "air_time_plan")),
         )
         entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
@@ -1723,9 +1715,7 @@ def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: 
         plan.approved_mortgages,
         fact.approved_mortgages,
         completion_cell(plan.approved_mortgages, fact.approved_mortgages),
-        plan.calls,
         fact.calls,
-        completion_cell(plan.calls, fact.calls),
         format_duration(plan.air_seconds),
         format_duration(fact.air_seconds),
         completion_cell(plan.air_seconds, fact.air_seconds),

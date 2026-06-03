@@ -45,7 +45,6 @@ const els = {
   kpiMortgages: document.getElementById('kpi-mortgages'),
   kpiMortgagesRate: document.getElementById('kpi-mortgages-rate'),
   kpiCalls: document.getElementById('kpi-calls'),
-  kpiCallsRate: document.getElementById('kpi-calls-rate'),
   kpiAir: document.getElementById('kpi-air'),
   kpiAirRate: document.getElementById('kpi-air-rate'),
   detailCaption: document.getElementById('detail-caption'),
@@ -106,18 +105,17 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v3';
-const DASHBOARD_DATA_VERSION = '20260602-1';
+const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v4';
+const DASHBOARD_DATA_VERSION = '20260603-1';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
   'meetingsPlan',
   'reservationsPlan',
   'approvedMortgagesPlan',
-  'callsPlan',
   'airTimePlanSeconds',
 ];
 const SCOREBOARD_METRICS = [
-  { label: 'Звонки', plan: 'callsPlan', fact: 'callsFact', kind: 'number', weight: 1 },
+  { label: 'Звонки', fact: 'callsFact', kind: 'number', weight: 1 },
   { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
   { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
@@ -378,7 +376,6 @@ function emptyPlanRow(planRow) {
     reservationsFact: 0,
     approvedMortgagesPlan: 0,
     approvedMortgagesFact: 0,
-    callsPlan: 0,
     callsFact: 0,
     airTimePlanSeconds: 0,
     airTimeFactSeconds: 0,
@@ -399,7 +396,6 @@ function reportRows() {
       meetingsPlan: plan.meetingsPlan,
       reservationsPlan: plan.reservationsPlan,
       approvedMortgagesPlan: plan.approvedMortgagesPlan,
-      callsPlan: plan.callsPlan,
       airTimePlanSeconds: plan.airTimePlanSeconds,
       planSource: 'uploaded',
     };
@@ -685,6 +681,7 @@ function planFieldForLabel(value) {
     label === 'продажи'
     || label.includes('продажи план')
     || label.includes('план продаж')
+    || label.includes('план по продаж')
     || label === 'сделки'
     || label.includes('сделки план')
     || label.includes('план сделок')
@@ -709,7 +706,6 @@ function planFieldForLabel(value) {
     || label.includes('план ипотек')
     || (label.includes('одобрен') && label.includes('ипотек'))
   ) return 'approvedMortgagesPlan';
-  if (label === 'звонки' || label.includes('количество звонков') || label.includes('план звон')) return 'callsPlan';
   if (label.includes('эфир') || label.includes('целевое эфирное время')) return 'airTimePlanSeconds';
   return '';
 }
@@ -779,7 +775,6 @@ function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
     meetingsPlan: splitMonthlyPlanValue(monthlyPlan.meetingsPlan),
     reservationsPlan: splitMonthlyPlanValue(monthlyPlan.reservationsPlan),
     approvedMortgagesPlan: splitMonthlyPlanValue(monthlyPlan.approvedMortgagesPlan),
-    callsPlan: splitMonthlyPlanValue(monthlyPlan.callsPlan),
     airTimePlanSeconds: splitMonthlyPlanValue(monthlyPlan.airTimePlanSeconds),
   };
 
@@ -793,7 +788,6 @@ function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
       meetingsPlan: splitPlans.meetingsPlan[sprintIndex],
       reservationsPlan: splitPlans.reservationsPlan[sprintIndex],
       approvedMortgagesPlan: splitPlans.approvedMortgagesPlan[sprintIndex],
-      callsPlan: splitPlans.callsPlan[sprintIndex],
       airTimePlanSeconds: splitPlans.airTimePlanSeconds[sprintIndex],
     };
   });
@@ -846,7 +840,6 @@ function parseSimplePlanRows(rows, monthDate) {
       meetingsPlan: 0,
       reservationsPlan: 0,
       approvedMortgagesPlan: 0,
-      callsPlan: 0,
       airTimePlanSeconds: 0,
     };
     for (const field of PLAN_METRIC_FIELDS) {
@@ -915,7 +908,6 @@ function parsePlanWorkbook(workbook, fileName) {
       meetingsPlan: 0,
       reservationsPlan: 0,
       approvedMortgagesPlan: 0,
-      callsPlan: 0,
       airTimePlanSeconds: 0,
     };
 
@@ -965,7 +957,6 @@ function normalizeStoredPlanUpload(upload) {
       meetingsPlan: parsePlanNumber(row.meetingsPlan),
       reservationsPlan: parsePlanNumber(row.reservationsPlan),
       approvedMortgagesPlan: parsePlanNumber(row.approvedMortgagesPlan),
-      callsPlan: parsePlanNumber(row.callsPlan),
       airTimePlanSeconds: parsePlanNumber(row.airTimePlanSeconds),
     }));
   if (!rows.length) return null;
@@ -1071,7 +1062,6 @@ function summarizeRows(rows) {
     acc.reservationsFact += Number(row.reservationsFact || 0);
     acc.approvedMortgagesPlan += Number(row.approvedMortgagesPlan || 0);
     acc.approvedMortgagesFact += Number(row.approvedMortgagesFact || 0);
-    acc.callsPlan += Number(row.callsPlan || 0);
     acc.callsFact += Number(row.callsFact || 0);
     acc.airTimePlanSeconds += Number(row.airTimePlanSeconds || 0);
     acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
@@ -1085,7 +1075,6 @@ function summarizeRows(rows) {
     reservationsFact: 0,
     approvedMortgagesPlan: 0,
     approvedMortgagesFact: 0,
-    callsPlan: 0,
     callsFact: 0,
     airTimePlanSeconds: 0,
     airTimeFactSeconds: 0,
@@ -1137,8 +1126,7 @@ function renderKpis(rows) {
   els.kpiReservationsRate.textContent = completion(summary.reservationsFact, summary.reservationsPlan);
   els.kpiMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
   els.kpiMortgagesRate.textContent = completion(summary.approvedMortgagesFact, summary.approvedMortgagesPlan);
-  els.kpiCalls.textContent = pair(summary.callsPlan, summary.callsFact);
-  els.kpiCallsRate.textContent = completion(summary.callsFact, summary.callsPlan);
+  els.kpiCalls.textContent = formatNumber(summary.callsFact);
   els.kpiAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
   els.kpiAirRate.textContent = completion(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
 }
@@ -1179,7 +1167,7 @@ function renderDetailTable(rows) {
         <td>${pair(row.meetingsPlan, row.meetingsFact)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>
         <td>${pair(row.reservationsPlan, row.reservationsFact)} <span>${completion(row.reservationsFact, row.reservationsPlan)}</span></td>
         <td>${pair(row.approvedMortgagesPlan, row.approvedMortgagesFact)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
-        <td>${pair(row.callsPlan, row.callsFact)} <span>${completion(row.callsFact, row.callsPlan)}</span></td>
+        <td>${formatNumber(row.callsFact)}</td>
         <td>${durationPair(row.airTimePlanSeconds, row.airTimeFactSeconds)} <span>${completion(row.airTimeFactSeconds, row.airTimePlanSeconds)}</span></td>
       </tr>
     `)
@@ -1237,7 +1225,7 @@ function renderActiveDeals() {
 function emptyScoreboardRow(mopName) {
   const row = { mopName };
   for (const metric of SCOREBOARD_METRICS) {
-    row[metric.plan] = 0;
+    if (metric.plan) row[metric.plan] = 0;
     row[metric.fact] = 0;
   }
   return row;
@@ -1248,6 +1236,7 @@ function formatMetricValue(value, metric) {
 }
 
 function metricPair(row, metric) {
+  if (!metric.plan) return formatMetricValue(row[metric.fact], metric);
   return `${formatMetricValue(row[metric.plan], metric)} / ${formatMetricValue(row[metric.fact], metric)}`;
 }
 
@@ -1257,7 +1246,7 @@ function scoreboardFactScore(row) {
 
 function scoreboardRatio(row) {
   const ratios = SCOREBOARD_METRICS
-    .filter((metric) => Number(row[metric.plan] || 0) > 0)
+    .filter((metric) => metric.plan && Number(row[metric.plan] || 0) > 0)
     .map((metric) => Number(row[metric.fact] || 0) / Number(row[metric.plan] || 0));
   if (!ratios.length) return null;
   return ratios.reduce((sum, value) => sum + value, 0) / ratios.length;
@@ -1273,7 +1262,7 @@ function scoreboardRows() {
     }
     const target = rowsByMop.get(row.mopName);
     for (const metric of SCOREBOARD_METRICS) {
-      target[metric.plan] += Number(row[metric.plan] || 0);
+      if (metric.plan) target[metric.plan] += Number(row[metric.plan] || 0);
       target[metric.fact] += Number(row[metric.fact] || 0);
     }
   }
@@ -1312,7 +1301,7 @@ function renderAirTimePlanFact() {
   const maxFactScore = Math.max(...rows.map((row) => row.factScore), 0);
   const totals = rows.reduce((acc, row) => {
     for (const metric of SCOREBOARD_METRICS) {
-      acc[metric.plan] += Number(row[metric.plan] || 0);
+      if (metric.plan) acc[metric.plan] += Number(row[metric.plan] || 0);
       acc[metric.fact] += Number(row[metric.fact] || 0);
     }
     return acc;
@@ -1326,7 +1315,7 @@ function renderAirTimePlanFact() {
     <article>
       <span>${escapeHtml(metric.label)}</span>
       <strong>${metricPair(totals, metric)}</strong>
-      <small>${completion(totals[metric.fact], totals[metric.plan])}</small>
+      <small>${metric.plan ? completion(totals[metric.fact], totals[metric.plan]) : 'Факт'}</small>
     </article>
   `).join('');
 
@@ -1507,7 +1496,7 @@ function renderWarnings() {
 }
 
 function exportCsv(rows) {
-  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки план', 'Звонки факт', 'Эфир план', 'Эфир факт'];
+  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт'];
   const body = rows.map((row) => [
     row.weekLabel,
     row.mopName,
@@ -1519,7 +1508,6 @@ function exportCsv(rows) {
     row.reservationsFact,
     row.approvedMortgagesPlan,
     row.approvedMortgagesFact,
-    row.callsPlan,
     row.callsFact,
     formatDuration(row.airTimePlanSeconds),
     formatDuration(row.airTimeFactSeconds),
