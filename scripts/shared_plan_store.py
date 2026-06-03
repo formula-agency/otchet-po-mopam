@@ -538,6 +538,21 @@ def apply_store_to_dashboard(store_path: Path, data_path: Path) -> None:
     recompute_totals(payload)
     update_overview(payload)
     write_payload(payload, data_path)
+    
+    # Also update the JavaScript data file
+    js_path = data_path.parent / data_path.name.replace('.json', '.js')
+    write_js_data(payload, js_path)
+
+
+def write_js_data(payload: dict[str, Any], js_path: Path) -> None:
+    """Write JSON payload as JavaScript variable assignment."""
+    try:
+        with open(js_path, 'w', encoding='utf-8') as f:
+            f.write('window.MOP_REPORT_DASHBOARD_DATA = ')
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+            f.write(';\n')
+    except (OSError, IOError) as exc:
+        raise SharedPlanError(f"Не удалось написать JS файл: {exc}") from exc
 
 
 def main() -> int:
