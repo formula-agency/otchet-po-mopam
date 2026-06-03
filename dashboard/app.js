@@ -113,7 +113,8 @@ const LEGACY_PLAN_UPLOAD_STORAGE_KEYS = [
 ];
 const SHARED_PLAN_ISSUE_URL = 'https://github.com/formula-agency/otchet-po-mopam/issues/new';
 const SHARED_PLAN_SUBMISSION_MARKER = 'MOP_REPORT_SHARED_PLAN_V1';
-const DASHBOARD_DATA_VERSION = '20260603-5';
+const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
+const DASHBOARD_DATA_VERSION = '20260603-6';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
@@ -1725,6 +1726,20 @@ async function loadData() {
   }
 }
 
+function sharedPlanVersion(payload) {
+  return String(payload?.sharedPlans?.updatedAt || '');
+}
+
+function watchSharedPlanUpdates() {
+  const currentVersion = sharedPlanVersion(data);
+  window.setInterval(async () => {
+    const nextData = await loadData();
+    if (nextData && sharedPlanVersion(nextData) !== currentVersion) {
+      window.location.reload();
+    }
+  }, SHARED_PLAN_REFRESH_INTERVAL_MS);
+}
+
 async function bootstrap() {
   data = await loadData();
   if (!data) {
@@ -1732,6 +1747,7 @@ async function bootstrap() {
     return;
   }
   init();
+  watchSharedPlanUpdates();
 }
 
 bootstrap();
