@@ -796,6 +796,7 @@ function parseSimplePlanRows(rows, monthDate) {
   const skippedNames = new Set();
   const importedMops = new Set();
   let hasAggregatePlan = false;
+  let hasIndividualMopPlans = false;
 
   for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex += 1) {
     const row = rows[rowIndex] || [];
@@ -807,6 +808,12 @@ function parseSimplePlanRows(rows, monthDate) {
       skippedNames.add(rawName);
       continue;
     }
+    
+    // Track if we have individual МОП plans
+    if (!aggregatePlan) {
+      hasIndividualMopPlans = true;
+    }
+    
     const aggregatePlanFields = aggregatePlan ? planInputFields(row, header) : [];
     if (aggregatePlan && !aggregatePlanFields.length) continue;
 
@@ -833,11 +840,20 @@ function parseSimplePlanRows(rows, monthDate) {
     importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate, { aggregatePlan, aggregatePlanFields }));
   }
 
+  // Validate that we have aggregate plan only
+  if (hasIndividualMopPlans) {
+    throw new Error('Шаблон должен содержать только строку "Общий план", без отдельных планов для каждого МОПа.');
+  }
+  
+  if (!hasAggregatePlan) {
+    throw new Error('Шаблон должен содержать строку "Общий план".');
+  }
+
   if (!importedRows.length) return null;
   return {
     rows: importedRows,
-    managerCount: importedMops.size,
-    hasAggregatePlan,
+    managerCount: 1,  // Always 1 for aggregate plan
+    hasAggregatePlan: true,
     skippedNames: [...skippedNames],
   };
 }
@@ -869,6 +885,7 @@ function parsePlanWorkbook(workbook, fileName) {
   const skippedNames = new Set();
   const importedMops = new Set();
   let hasAggregatePlan = false;
+  let hasIndividualMopPlans = false;
 
   for (let blockIndex = 0; blockIndex < blockStarts.length; blockIndex += 1) {
     const start = blockStarts[blockIndex];
@@ -881,6 +898,11 @@ function parsePlanWorkbook(workbook, fileName) {
       const skippedKey = normalizeNameKey(rawName);
       if (rawName && skippedKey !== 'none' && skippedKey !== 'null') skippedNames.add(rawName);
       continue;
+    }
+
+    // Track if we have individual МОП plans
+    if (!aggregatePlan) {
+      hasIndividualMopPlans = true;
     }
 
     const planColumn = findPlanColumn(rows[start + 1]);
@@ -912,6 +934,15 @@ function parsePlanWorkbook(workbook, fileName) {
     importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate, { aggregatePlan, aggregatePlanFields }));
   }
 
+  // Validate that we have aggregate plan only
+  if (hasIndividualMopPlans) {
+    throw new Error('Шаблон должен содержать только строку "Общий план", без отдельных планов для каждого МОПа.');
+  }
+  
+  if (!hasAggregatePlan) {
+    throw new Error('Шаблон должен содержать строку "Общий план".');
+  }
+
   if (!importedRows.length) {
     throw new Error('не найден план по МОПам из этого отчета');
   }
@@ -920,8 +951,8 @@ function parsePlanWorkbook(workbook, fileName) {
     fileName,
     month: monthKey(monthDate),
     importedAt: new Date().toISOString(),
-    managerCount: importedMops.size,
-    hasAggregatePlan,
+    managerCount: 1,  // Always 1 for aggregate plan
+    hasAggregatePlan: true,
     skippedNames: [...skippedNames],
     rows: importedRows,
   };

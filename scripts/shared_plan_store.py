@@ -41,6 +41,18 @@ MOP_NAMES = (
     "Жуков Лев",
     "Гавриленко Елена",
 )
+MOP_IDS_BY_NAME = {
+    "Погребинский Артем": "39",
+    "Черткова Ирина": "159",
+    "Газисова Мария": "160",
+    "Попова Олеся": "161",
+    "Губайдулина Заррина": "174",
+    "Камболин Александр": "189",
+    "Тончу Ростислав": "190",
+    "Жуков Лев": "194",
+    "Попова Юлия": "195",
+    "Гавриленко Елена": "197",
+}
 PLAN_FIELDS = (
     "salesPlan",
     "meetingsPlan",
@@ -244,6 +256,7 @@ def workbook_submission(path: Path) -> dict[str, Any]:
     header_index, mapping = find_header(rows)
     plans: list[dict[str, Any]] = []
     skipped_names: list[str] = []
+    has_individual_mop_plans = False
 
     for row in rows[header_index + 1 :]:
         raw_name = str(cell(row, mapping.get("mopName")) or "").strip()
@@ -254,6 +267,8 @@ def workbook_submission(path: Path) -> dict[str, Any]:
             skipped_names.append(raw_name)
             continue
         aggregate_plan = mop_name == AGGREGATE_PLAN_NAME
+        if not aggregate_plan:
+            has_individual_mop_plans = True
         aggregate_fields = [
             field for field in PLAN_FIELDS if field in mapping and str(cell(row, mapping.get(field)) or "").strip()
         ]
@@ -272,14 +287,23 @@ def workbook_submission(path: Path) -> dict[str, Any]:
 
     if not plans:
         raise SharedPlanError("В файле не найден план по МОПам.")
-    manager_count = len({plan["mopName"] for plan in plans if not plan["aggregatePlan"]})
+    
+    # Require aggregate plan only - no individual МОП plans allowed
+    if has_individual_mop_plans:
+        raise SharedPlanError("Шаблон должен содержать только строку 'Общий план', без отдельных планов для каждого МОПа.")
+    
+    aggregate_plan_count = sum(1 for plan in plans if plan["aggregatePlan"])
+    if aggregate_plan_count == 0:
+        raise SharedPlanError("Шаблон должен содержать строку 'Общий план'.")
+    
+    manager_count = 1  # Always 1 for aggregate plan
     return {
         "schemaVersion": SUBMISSION_SCHEMA_VERSION,
         "action": "upsert",
         "fileName": path.name,
         "month": month,
         "managerCount": manager_count,
-        "hasAggregatePlan": any(plan["aggregatePlan"] for plan in plans),
+        "hasAggregatePlan": True,
         "skippedNames": sorted(set(skipped_names)),
         "plans": plans,
     }
@@ -404,18 +428,37 @@ def build_shared_plan_rows(store: dict[str, Any]) -> list[dict[str, Any]]:
             mop_name = str(plan.get("mopName") or "")
             aggregate_plan = bool(plan.get("aggregatePlan"))
             split_values = {field: split_monthly_value(plan.get(field)) for field in PLAN_FIELDS}
+            
+            # Если это общий план, распределяем его между всеми МОПами
+            target_mops: list[tuple[str, str]] = []
+            if aggregate_plan and mop_name == AGGREGATE_PLAN_NAME:
+                # Распределяем равномерно между всеми МОПами
+                target_mops = [(name, MOP_IDS_BY_NAME.get(name, "")) for name in MOP_NAMES]
+            else:
+                # Обычный план для отдельного МОПа
+                mop_id = MOP_IDS_BY_NAME.get(mop_name, "")
+                target_mops = [(mop_name, mop_id)]
+            
             for sprint_index, week_start in enumerate(sprint_starts(month)):
-                row = empty_metric_row(week_start, mop_name=mop_name, mop_id="", manual_aggregate=False)
-                for field in PLAN_FIELDS:
-                    row[field] = split_values[field][sprint_index]
-                row["airTimePlan"] = format_duration(row["airTimePlanSeconds"])
-                row["planSource"] = SHARED_PLAN_SOURCE
-                row["sharedPlanOnlyRow"] = True
-                if aggregate_plan:
-                    row["manualAggregate"] = True
-                    row["aggregatePlan"] = True
-                    row["aggregatePlanFields"] = plan.get("aggregatePlanFields") or list(PLAN_FIELDS)
-                rows.append(row)
+                for target_mop_name, target_mop_id in target_mops:
+                    row = empty_metric_row(week_start, mop_name=target_mop_name, mop_id=target_mop_id, manual_aggregate=False)
+                    
+                    # Если общий план распределяется, то делим значения на количество МОПов
+                    if aggregate_plan and mop_name == AGGREGATE_PLAN_NAME:
+                        num_mops = len(MOP_NAMES)
+                        for field in PLAN_FIELDS:
+                            value = split_values[field][sprint_index]
+                            row[field] = value // num_mops if num_mops > 0 else 0
+                    else:
+                        for field in PLAN_FIELDS:
+                            row[field] = split_values[field][sprint_index]
+                    
+                    row["airTimePlan"] = format_duration(row["airTimePlanSeconds"])
+                    row["planSource"] = SHARED_PLAN_SOURCE
+                    row["sharedPlanOnlyRow"] = True
+                    if aggregate_plan and mop_name == AGGREGATE_PLAN_NAME:
+                        row["distributedAggregatePlan"] = True
+                    rows.append(row)
     return rows
 
 
