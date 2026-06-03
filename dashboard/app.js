@@ -10,7 +10,6 @@ const state = {
   activeMopName: '',
   airtimeMonth: '',
   airtimeSprint: '',
-  planUpload: null,
 };
 
 const els = {
@@ -105,8 +104,16 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v5';
-const DASHBOARD_DATA_VERSION = '20260603-4';
+const LEGACY_PLAN_UPLOAD_STORAGE_KEYS = [
+  'mopReportPlanUpload:v1',
+  'mopReportPlanUpload:v2',
+  'mopReportPlanUpload:v3',
+  'mopReportPlanUpload:v4',
+  'mopReportPlanUpload:v5',
+];
+const SHARED_PLAN_ISSUE_URL = 'https://github.com/formula-agency/otchet-po-mopam/issues/new';
+const SHARED_PLAN_SUBMISSION_MARKER = 'MOP_REPORT_SHARED_PLAN_V1';
+const DASHBOARD_DATA_VERSION = '20260603-5';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
@@ -203,10 +210,6 @@ function canonicalMopName(value) {
 function isAggregatePlanName(value) {
   const key = normalizeNameKey(value);
   return key === 'общий план' || key === 'общий' || key === 'итого' || key === 'все мопы';
-}
-
-function reportRowKey(row) {
-  return `${row.weekStart}|${normalizeNameKey(row.mopName)}`;
 }
 
 function parsePlanNumber(value) {
@@ -369,58 +372,8 @@ function sprintBelongsToMonth(weekStartValue, selectedMonth) {
   return monthKey(weekStart) === selectedMonth;
 }
 
-function emptyPlanRow(planRow) {
-  return {
-    weekStart: planRow.weekStart,
-    weekLabel: planRow.weekLabel || formatWeekLabel(planRow.weekStart),
-    mopName: planRow.mopName,
-    salesPlan: 0,
-    salesFact: 0,
-    meetingsPlan: 0,
-    meetingsFact: 0,
-    reservationsPlan: 0,
-    reservationsFact: 0,
-    approvedMortgagesPlan: 0,
-    approvedMortgagesFact: 0,
-    callsFact: 0,
-    airTimePlanSeconds: 0,
-    airTimeFactSeconds: 0,
-  };
-}
-
 function reportRows() {
-  const uploadedRows = state.planUpload?.rows || [];
-  if (!uploadedRows.length) return data.baseRows || [];
-
-  const uploadedByKey = new Map(uploadedRows.map((row) => [reportRowKey(row), row]));
-  const result = (data.baseRows || []).map((row) => {
-    const plan = uploadedByKey.get(reportRowKey(row));
-    if (!plan) return row;
-    return {
-      ...row,
-      salesPlan: plan.salesPlan,
-      meetingsPlan: plan.meetingsPlan,
-      reservationsPlan: plan.reservationsPlan,
-      approvedMortgagesPlan: plan.approvedMortgagesPlan,
-      airTimePlanSeconds: plan.airTimePlanSeconds,
-      planSource: 'uploaded',
-    };
-  });
-
-  const existingKeys = new Set(result.map(reportRowKey));
-  for (const plan of uploadedRows) {
-    const key = reportRowKey(plan);
-    if (existingKeys.has(key)) continue;
-    result.push({
-      ...emptyPlanRow(plan),
-      ...plan,
-      manualAggregate: Boolean(plan.manualAggregate),
-      aggregatePlan: Boolean(plan.aggregatePlan),
-      planSource: 'uploaded',
-    });
-  }
-
-  return result;
+  return data.baseRows || [];
 }
 
 function allWeekOptions() {
@@ -452,9 +405,6 @@ function monthOptions() {
     const start = parseISODate(week.value);
     if (!start) continue;
     months.set(monthKey(start), formatMonthLabel(monthKey(start)));
-  }
-  if (state.planUpload?.month) {
-    months.set(state.planUpload.month, formatMonthLabel(state.planUpload.month));
   }
   return [...months.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
@@ -983,57 +933,92 @@ async function readPlanUploadFile(file) {
   return parsePlanWorkbook(workbook, file.name);
 }
 
-function normalizeStoredPlanUpload(upload) {
-  if (!upload || !Array.isArray(upload.rows) || !upload.rows.length) return null;
-  const rows = upload.rows
-    .filter((row) => row.weekStart && row.mopName)
-    .map((row) => ({
-      weekStart: row.weekStart,
-      weekLabel: row.weekLabel || formatWeekLabel(row.weekStart),
-      mopName: row.mopName,
-      aggregatePlan: Boolean(row.aggregatePlan),
-      manualAggregate: Boolean(row.manualAggregate || row.aggregatePlan),
-      aggregatePlanFields: Array.isArray(row.aggregatePlanFields) ? row.aggregatePlanFields : undefined,
-      salesPlan: parsePlanNumber(row.salesPlan ?? row.dealsPlan),
-      meetingsPlan: parsePlanNumber(row.meetingsPlan),
-      reservationsPlan: parsePlanNumber(row.reservationsPlan),
-      approvedMortgagesPlan: parsePlanNumber(row.approvedMortgagesPlan),
-      airTimePlanSeconds: parsePlanNumber(row.airTimePlanSeconds),
-    }));
-  if (!rows.length) return null;
+function removeLegacyStoredPlanUploads() {
+  try {
+    for (const key of LEGACY_PLAN_UPLOAD_STORAGE_KEYS) localStorage.removeItem(key);
+  } catch (error) {
+    // Shared plans do not depend on browser storage.
+  }
+}
+
+function monthlyPlansFromUpload(upload) {
+  const plansByName = new Map();
+  for (const row of upload.rows || []) {
+    const mopName = row.aggregatePlan ? AGGREGATE_PLAN_NAME : canonicalMopName(row.mopName);
+    if (!mopName) continue;
+    const key = normalizeNameKey(mopName);
+    if (!plansByName.has(key)) {
+      plansByName.set(key, {
+        mopName,
+        aggregatePlan: Boolean(row.aggregatePlan),
+        aggregatePlanFields: [],
+        salesPlan: 0,
+        meetingsPlan: 0,
+        reservationsPlan: 0,
+        approvedMortgagesPlan: 0,
+        airTimePlanSeconds: 0,
+      });
+    }
+    const plan = plansByName.get(key);
+    for (const field of PLAN_METRIC_FIELDS) {
+      plan[field] += parsePlanNumber(row[field]);
+    }
+    if (row.aggregatePlan && Array.isArray(row.aggregatePlanFields)) {
+      plan.aggregatePlanFields.push(...row.aggregatePlanFields);
+    }
+  }
+
+  return [...plansByName.values()].map((plan) => ({
+    ...plan,
+    ...(plan.aggregatePlan ? {
+      aggregatePlanFields: [...new Set(plan.aggregatePlanFields.length ? plan.aggregatePlanFields : PLAN_METRIC_FIELDS)],
+    } : {}),
+  }));
+}
+
+function sharedPlanSubmission(upload) {
   return {
-    fileName: upload.fileName || 'Загруженный файл',
-    month: upload.month || monthKey(parseISODate(rows[0].weekStart)),
-    importedAt: upload.importedAt || '',
-    managerCount: Number(upload.managerCount || new Set(rows.filter((row) => !row.aggregatePlan).map((row) => row.mopName)).size),
-    hasAggregatePlan: Boolean(upload.hasAggregatePlan || rows.some((row) => row.aggregatePlan)),
+    schemaVersion: 1,
+    action: 'upsert',
+    fileName: upload.fileName || 'Загруженный план',
+    month: upload.month,
+    managerCount: Number(upload.managerCount || 0),
+    hasAggregatePlan: Boolean(upload.hasAggregatePlan),
     skippedNames: Array.isArray(upload.skippedNames) ? upload.skippedNames : [],
-    rows,
+    plans: monthlyPlansFromUpload(upload),
   };
 }
 
-function loadStoredPlanUpload() {
-  try {
-    return normalizeStoredPlanUpload(JSON.parse(localStorage.getItem(PLAN_UPLOAD_STORAGE_KEY)));
-  } catch (error) {
-    return null;
-  }
+function sharedPlanIssueUrl(submission) {
+  const removing = submission.action === 'remove';
+  const monthLabel = formatMonthLabel(submission.month);
+  const title = `[План МОП] ${removing ? 'Удалить' : 'Опубликовать'} ${monthLabel}`;
+  const body = [
+    removing
+      ? `Удаление общего плана за ${monthLabel}.`
+      : `Публикация общего плана за ${monthLabel}.`,
+    '',
+    'После создания этой задачи отчет будет пересобран для всех устройств.',
+    '',
+    `<!-- ${SHARED_PLAN_SUBMISSION_MARKER}`,
+    JSON.stringify(submission),
+    '-->',
+  ].join('\n');
+  return `${SHARED_PLAN_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
 }
 
-function savePlanUpload(upload) {
-  try {
-    localStorage.setItem(PLAN_UPLOAD_STORAGE_KEY, JSON.stringify(upload));
-  } catch (error) {
-    // The dashboard still works for the current session if browser storage is unavailable.
+function openSharedPlanIssue(submission, targetWindow = null) {
+  const url = sharedPlanIssueUrl(submission);
+  if (targetWindow) {
+    targetWindow.opener = null;
+    targetWindow.location.replace(url);
+    return;
   }
+  window.location.href = url;
 }
 
-function removeStoredPlanUpload() {
-  try {
-    localStorage.removeItem(PLAN_UPLOAD_STORAGE_KEY);
-  } catch (error) {
-    // No action needed.
-  }
+function sharedPlanForMonth(month = state.month) {
+  return (data.sharedPlans?.months || []).find((plan) => plan.month === month) || null;
 }
 
 function refreshPeriodControls(preserveSelection = true) {
@@ -1058,41 +1043,27 @@ function renderPlanUploadStatus(message = '') {
     return;
   }
 
-  if (!state.planUpload) {
-    els.planUploadStatus.textContent = 'План не загружен';
+  const sharedPlan = sharedPlanForMonth();
+  if (!sharedPlan) {
+    els.planUploadStatus.textContent = 'План на выбранный месяц не опубликован';
     els.clearPlanUpload.hidden = true;
     return;
   }
 
-  const skippedCount = state.planUpload.skippedNames?.length || 0;
+  const skippedCount = sharedPlan.skippedNames?.length || 0;
   const skippedText = skippedCount ? ` · пропущено: ${formatNumber(skippedCount)}` : '';
-  const aggregateText = state.planUpload.hasAggregatePlan ? ' · общий план: задан' : '';
-  els.planUploadStatus.textContent = `${formatMonthLabel(state.planUpload.month)} · МОП: ${formatNumber(state.planUpload.managerCount)}${aggregateText}${skippedText}`;
+  const aggregateText = sharedPlan.hasAggregatePlan ? ' · общий план: задан' : '';
+  els.planUploadStatus.textContent = `${formatMonthLabel(sharedPlan.month)} · МОП: ${formatNumber(sharedPlan.managerCount)}${aggregateText}${skippedText} · опубликован`;
   els.clearPlanUpload.hidden = false;
 }
 
-function applyPlanUpload(upload, focusMonth = false) {
-  state.planUpload = upload;
-  refreshPeriodControls(false);
-  if (focusMonth && upload.month) {
-    state.month = upload.month;
-    state.sprint = defaultSprintForMonth(state.month);
-    state.airtimeMonth = upload.month;
-    state.airtimeSprint = defaultSprintForMonth(state.airtimeMonth);
-    refreshPeriodControls(false);
-  } else {
-    refreshPeriodControls(true);
-  }
-  renderPlanUploadStatus();
-  render();
-}
-
-function clearPlanUpload() {
-  state.planUpload = null;
-  removeStoredPlanUpload();
-  refreshPeriodControls(false);
-  renderPlanUploadStatus();
-  render();
+function requestSharedPlanRemoval() {
+  if (!state.month || !sharedPlanForMonth()) return;
+  openSharedPlanIssue({
+    schemaVersion: 1,
+    action: 'remove',
+    month: state.month,
+  });
 }
 
 function summarizeRows(rows) {
@@ -1577,6 +1548,7 @@ function exportCsv(rows) {
 
 function render() {
   const rows = filteredRows();
+  renderPlanUploadStatus();
   renderHero(rows);
   renderKpis(rows);
   renderActiveState(rows);
@@ -1664,18 +1636,26 @@ function bindControls() {
   els.planFile.addEventListener('change', async () => {
     const file = els.planFile.files?.[0];
     if (!file) return;
+    const confirmationWindow = window.open('', '_blank');
+    if (confirmationWindow) {
+      confirmationWindow.document.title = 'Публикация плана';
+      confirmationWindow.document.body.textContent = 'Подготовка плана...';
+    }
     renderPlanUploadStatus('Читаю план...');
     try {
       const upload = await readPlanUploadFile(file);
-      savePlanUpload(upload);
-      applyPlanUpload(upload, true);
+      const submission = sharedPlanSubmission(upload);
+      if (!submission.plans.length) throw new Error('не найден план по МОПам из этого отчета');
+      openSharedPlanIssue(submission, confirmationWindow);
+      renderPlanUploadStatus('Подтвердите публикацию в открывшейся вкладке GitHub');
     } catch (error) {
+      if (confirmationWindow) confirmationWindow.close();
       renderPlanUploadStatus(`Не удалось загрузить план: ${error.message}`);
     } finally {
       els.planFile.value = '';
     }
   });
-  els.clearPlanUpload.addEventListener('click', clearPlanUpload);
+  els.clearPlanUpload.addEventListener('click', requestSharedPlanRemoval);
   els.activeDealDate.addEventListener('change', () => {
     state.activeDate = els.activeDealDate.value || defaultActiveDate();
     renderActiveDeals();
@@ -1709,7 +1689,7 @@ function bindControls() {
 }
 
 function init() {
-  state.planUpload = loadStoredPlanUpload();
+  removeLegacyStoredPlanUploads();
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
   setDefaultPeriod();
   setDefaultActiveDeals();

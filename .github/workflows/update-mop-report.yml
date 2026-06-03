@@ -74,6 +74,9 @@ jobs:
             python scripts/import_beeline_calls.py manual-data/beeline-stat.xls
           fi
 
+      - name: Apply shared plans
+        run: python scripts/shared_plan_store.py apply
+
       - name: Upload dashboard artifact
         uses: actions/upload-pages-artifact@v3
         with:
