@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -33,6 +34,8 @@ from import_megafon_calls import (
 
 BEELINE_SOURCE = "beeline_stat"
 BEELINE_WARNING_PREFIX = "Билайн:"
+BEELINE_MOP_ID = "__beeline_vats__"
+BEELINE_MOP_NAME = "ВАТС Билайн (общий итог)"
 
 
 @dataclass(frozen=True)
@@ -42,6 +45,16 @@ class BeelineCallRecord:
     duration_seconds: int
     call_type: str
     status: str
+
+
+@dataclass(frozen=True)
+class BeelineSummaryRecord:
+    total_calls: int
+    air_time_seconds: int
+    generated_on: date | None
+    incoming_calls: int = 0
+    missed_calls: int = 0
+    outgoing_calls: int = 0
 
 
 def parse_args() -> argparse.Namespace:
@@ -97,6 +110,12 @@ def parse_beeline_date(value: Any) -> date | None:
             pass
 
     return None
+
+
+def parse_date_from_text(value: Any) -> date | None:
+    text = str(value or "").strip()
+    match = re.search(r"(\d{2}[./]\d{2}[./]\d{4})", text)
+    return parse_beeline_date(match.group(1)) if match else None
 
 
 def read_xls_rows(path: Path) -> list[list[Any]]:
@@ -157,6 +176,49 @@ def parse_beeline_records(path: Path) -> list[BeelineCallRecord]:
     return sorted(records, key=lambda record: (record.day, record.employee))
 
 
+def parse_beeline_summary(path: Path) -> BeelineSummaryRecord:
+    rows = read_xls_rows(path)
+    aliases = {
+        "total": {"всего вызовов совершено"},
+        "incoming": {"входящих"},
+        "missed": {"не принятых"},
+        "outgoing": {"исходящих"},
+        "air": {"общее время разговоров"},
+    }
+    generated_on = next(
+        (parsed for row in rows[:20] for value in row if (parsed := parse_date_from_text(value))),
+        None,
+    )
+
+    for index, row in enumerate(rows):
+        mapping: dict[str, int] = {}
+        for column_index, value in enumerate(row):
+            normalized = normalize_text(value)
+            for key, names in aliases.items():
+                if normalized in names:
+                    mapping[key] = column_index
+        if not {"total", "air"} <= set(mapping):
+            continue
+
+        for values in rows[index + 1 :]:
+            if len(values) <= max(mapping.values()):
+                continue
+            total_calls = parse_int(values[mapping["total"]])
+            air_time_seconds = parse_duration_seconds(values[mapping["air"]])
+            if total_calls <= 0 and air_time_seconds <= 0:
+                continue
+            return BeelineSummaryRecord(
+                total_calls=total_calls,
+                air_time_seconds=air_time_seconds,
+                generated_on=generated_on,
+                incoming_calls=parse_int(values[mapping["incoming"]]) if "incoming" in mapping else 0,
+                missed_calls=parse_int(values[mapping["missed"]]) if "missed" in mapping else 0,
+                outgoing_calls=parse_int(values[mapping["outgoing"]]) if "outgoing" in mapping else 0,
+            )
+
+    raise ImportErrorWithHint("Не нашел в Beeline xls журнал звонков или таблицу общей статистики.")
+
+
 def aggregate_beeline_records(
     records: list[BeelineCallRecord],
     name_map: dict[str, str],
@@ -187,16 +249,46 @@ def aggregate_beeline_records(
     return rows, dict(skipped_by_employee)
 
 
+def aggregate_beeline_summary(summary: BeelineSummaryRecord, week_start: date) -> dict[str, Any]:
+    row = empty_metric_row(
+        week_start,
+        mop_name=BEELINE_MOP_NAME,
+        mop_id=BEELINE_MOP_ID,
+        manual_aggregate=True,
+        manual_source=BEELINE_SOURCE,
+    )
+    row.update(
+        {
+            "callsFact": summary.total_calls,
+            "airTimeFactSeconds": summary.air_time_seconds,
+            "airTimeFact": format_duration(summary.air_time_seconds),
+            "beelineCallsFact": summary.total_calls,
+            "beelineAirTimeFactSeconds": summary.air_time_seconds,
+            "beelineIncomingCalls": summary.incoming_calls,
+            "beelineMissedCalls": summary.missed_calls,
+            "beelineOutgoingCalls": summary.outgoing_calls,
+        }
+    )
+    return row
+
+
 def clear_existing_beeline_data(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     beeline_keys = {
         "beelineCallsFact",
         "beelineAirTimeFactSeconds",
         "beelineAnsweredCalls",
+        "beelineIncomingCalls",
+        "beelineMissedCalls",
+        "beelineOutgoingCalls",
         "beelineOnlyRow",
     }
     cleaned: list[dict[str, Any]] = []
     for row in rows:
-        if row.get("beelineOnlyRow"):
+        if (
+            row.get("beelineOnlyRow")
+            or row.get("manualSource") == BEELINE_SOURCE
+            or row.get("mopId") == BEELINE_MOP_ID
+        ):
             continue
 
         beeline_calls = parse_int(row.get("beelineCallsFact"))
@@ -227,7 +319,8 @@ def merge_beeline_rows(payload: dict[str, Any], beeline_rows: list[dict[str, Any
                 import_row_date(import_row),
                 mop_name=str(import_row["mopName"]),
                 mop_id=str(import_row.get("mopId", "")),
-                manual_aggregate=False,
+                manual_aggregate=bool(import_row.get("manualAggregate")),
+                manual_source=BEELINE_SOURCE,
             )
             row["beelineOnlyRow"] = True
             base_rows.append(row)
@@ -239,6 +332,10 @@ def merge_beeline_rows(payload: dict[str, Any], beeline_rows: list[dict[str, Any
         row["beelineCallsFact"] = parse_int(import_row.get("beelineCallsFact"))
         row["beelineAirTimeFactSeconds"] = parse_int(import_row.get("beelineAirTimeFactSeconds"))
         row["beelineAnsweredCalls"] = parse_int(import_row.get("beelineAnsweredCalls"))
+        row["beelineIncomingCalls"] = parse_int(import_row.get("beelineIncomingCalls"))
+        row["beelineMissedCalls"] = parse_int(import_row.get("beelineMissedCalls"))
+        row["beelineOutgoingCalls"] = parse_int(import_row.get("beelineOutgoingCalls"))
+        row.pop("sharedPlanOnlyRow", None)
 
     payload["baseRows"] = sorted(
         base_rows,
@@ -259,16 +356,23 @@ def replace_beeline_warnings(
     payload: dict[str, Any],
     file_name: str,
     skipped_by_employee: dict[str, int],
+    *,
+    has_mop_breakdown: bool = True,
 ) -> None:
     warnings = [
         warning
         for warning in payload.get("warnings", [])
         if not str(warning).startswith(BEELINE_WARNING_PREFIX)
     ]
-    warnings.append(f"{BEELINE_WARNING_PREFIX} звонки и эфир импортированы из файла {file_name} по абонентам.")
-    skipped_total = sum(skipped_by_employee.values())
-    if skipped_total:
-        warnings.append(f"{BEELINE_WARNING_PREFIX} пропущено {skipped_total} звонков абонентов вне списка МОП.")
+    if has_mop_breakdown:
+        warnings.append(f"{BEELINE_WARNING_PREFIX} звонки и эфир импортированы из файла {file_name} по абонентам.")
+        skipped_total = sum(skipped_by_employee.values())
+        if skipped_total:
+            warnings.append(f"{BEELINE_WARNING_PREFIX} пропущено {skipped_total} звонков абонентов вне списка МОП.")
+    else:
+        warnings.append(
+            f"{BEELINE_WARNING_PREFIX} звонки и эфир импортированы из файла {file_name} как общий итог без разбивки по МОП.",
+        )
     payload["warnings"] = warnings
 
 
@@ -286,26 +390,43 @@ def main() -> int:
         report_from = parse_payload_date(payload, "from")
         report_to = parse_payload_date(payload, "to")
 
-        records = parse_beeline_records(xls_path)
-        max_export_date = max(record.day for record in records)
-        upper_bound = max(report_to, max_export_date) if report_to else max_export_date
-        records = filter_records_by_window(records, report_from, upper_bound)
-        payload.setdefault("report", {})["to"] = upper_bound.isoformat()
+        try:
+            records = parse_beeline_records(xls_path)
+        except ImportErrorWithHint:
+            records = []
 
-        new_rows, skipped_by_employee = aggregate_beeline_records(records, canonical_mop_names(payload))
+        if records:
+            max_export_date = max(record.day for record in records)
+            upper_bound = max(report_to, max_export_date) if report_to else max_export_date
+            records = filter_records_by_window(records, report_from, upper_bound)
+            new_rows, skipped_by_employee = aggregate_beeline_records(records, canonical_mop_names(payload))
+            mode = "stat_xls"
+            record_count = len(records)
+            has_mop_breakdown = True
+        else:
+            summary = parse_beeline_summary(xls_path)
+            summary_date = summary.generated_on or report_to or date.today()
+            upper_bound = max(report_to, summary_date) if report_to else summary_date
+            new_rows = [aggregate_beeline_summary(summary, sprint_start_for_date(summary_date))]
+            skipped_by_employee = {}
+            mode = "summary_xls"
+            record_count = summary.total_calls
+            has_mop_breakdown = False
+
+        payload.setdefault("report", {})["to"] = upper_bound.isoformat()
         merge_beeline_rows(payload, new_rows)
 
         import_meta = {
             "fileName": xls_path.name,
             "importedAt": datetime.now().isoformat(timespec="seconds"),
-            "mode": "stat_xls",
+            "mode": mode,
             "rowCount": len(new_rows),
-            "recordCount": len(records),
+            "recordCount": record_count,
             "importedCallCount": sum(row.get("callsFact", 0) for row in new_rows),
             "importedAirTimeSeconds": sum(row.get("airTimeFactSeconds", 0) for row in new_rows),
             "skippedCallCount": sum(skipped_by_employee.values()),
             "skippedEmployees": skipped_by_employee,
-            "hasMopBreakdown": True,
+            "hasMopBreakdown": has_mop_breakdown,
             "hasAirTime": True,
         }
 
@@ -315,7 +436,12 @@ def main() -> int:
         }
         payload["generatedAt"] = datetime.now().isoformat(timespec="seconds")
 
-        replace_beeline_warnings(payload, xls_path.name, skipped_by_employee)
+        replace_beeline_warnings(
+            payload,
+            xls_path.name,
+            skipped_by_employee,
+            has_mop_breakdown=has_mop_breakdown,
+        )
         update_filters(payload, new_rows)
         recompute_totals(payload)
         update_overview(payload)

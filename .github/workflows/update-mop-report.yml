@@ -60,19 +60,8 @@ jobs:
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
         run: python scripts/sync_mop_report.py
 
-      - name: Import MegaFon VATS calls
-        run: |
-          if [ -f manual-data/megafon-vats-history.xlsx ]; then
-            python scripts/import_megafon_calls.py manual-data/megafon-vats-history.xlsx
-          elif [ -f manual-data/megafon-vats-calls.xlsx ]; then
-            python scripts/import_megafon_calls.py manual-data/megafon-vats-calls.xlsx
-          fi
-
-      - name: Import Beeline calls
-        run: |
-          if [ -f manual-data/beeline-stat.xls ]; then
-            python scripts/import_beeline_calls.py manual-data/beeline-stat.xls
-          fi
+      - name: Import VATS calls
+        run: python scripts/import_vats_data.py
 
       - name: Apply shared plans
         run: python scripts/shared_plan_store.py apply

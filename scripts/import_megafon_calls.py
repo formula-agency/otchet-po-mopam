@@ -352,6 +352,7 @@ def empty_metric_row(
     mop_name: str = MEGAFON_MOP_NAME,
     mop_id: str = MEGAFON_MOP_ID,
     manual_aggregate: bool = True,
+    manual_source: str = MEGAFON_SOURCE,
 ) -> dict[str, Any]:
     row = {
         "weekStart": week_start.isoformat(),
@@ -364,7 +365,7 @@ def empty_metric_row(
         **METRIC_ZEROES,
     }
     if manual_aggregate:
-        row["manualSource"] = MEGAFON_SOURCE
+        row["manualSource"] = manual_source
         row["manualAggregate"] = True
     return row
 
@@ -496,6 +497,7 @@ def merge_history_rows(payload: dict[str, Any], megafon_rows: list[dict[str, Any
         row["megafonCallsFact"] = parse_int(import_row.get("megafonCallsFact"))
         row["megafonAirTimeFactSeconds"] = parse_int(import_row.get("megafonAirTimeFactSeconds"))
         row["megafonAnsweredCalls"] = parse_int(import_row.get("megafonAnsweredCalls"))
+        row.pop("sharedPlanOnlyRow", None)
 
     payload["baseRows"] = sorted(
         base_rows,
