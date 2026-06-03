@@ -635,6 +635,32 @@ def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str)
     return selected_sheet["properties"]["title"]
 
 
+def fetch_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_title: str) -> set[int]:
+    try:
+        metadata = execute_google_request(
+            service.spreadsheets()
+            .get(
+                spreadsheetId=spreadsheet_id,
+                ranges=[f"{quote_sheet_title(sheet_title)}!A:Z"],
+                includeGridData=True,
+                fields="sheets(properties(title),data(startRow,rowMetadata(hiddenByFilter,hiddenByUser)))",
+            )
+        )
+    except Exception as exc:
+        raise ConfigError(f"Could not read row visibility for sheet '{sheet_title}': {safe_error_text(exc)}") from exc
+
+    hidden_rows: set[int] = set()
+    for sheet in metadata.get("sheets", []):
+        if sheet.get("properties", {}).get("title") != sheet_title:
+            continue
+        for grid_data in sheet.get("data", []):
+            start_row = int(grid_data.get("startRow") or 0)
+            for offset, properties in enumerate(grid_data.get("rowMetadata", [])):
+                if properties.get("hiddenByFilter") or properties.get("hiddenByUser"):
+                    hidden_rows.add(start_row + offset)
+    return hidden_rows
+
+
 def normalize_webhook_base(url: str) -> str:
     parsed = urlparse(url.strip())
     path = parsed.path or "/"
@@ -843,9 +869,12 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
     if not values:
         return []
 
+    hidden_row_indexes = fetch_hidden_sheet_row_indexes(service, settings.google_meeting_log_sheet_id, sheet_title)
     header_row_index, column_map = find_meeting_log_columns(values)
     entries: list[MeetingLogEntry] = []
-    for row in values[header_row_index + 1 :]:
+    for row_index, row in enumerate(values[header_row_index + 1 :], start=header_row_index + 1):
+        if row_index in hidden_row_indexes:
+            continue
         status_index = column_map["status"]
         status_value = row[status_index] if status_index < len(row) else ""
         if normalize_text(status_value) not in SUCCESSFUL_MEETING_STATUSES:
