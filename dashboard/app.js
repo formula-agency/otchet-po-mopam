@@ -22,10 +22,6 @@ const els = {
   sprint: document.getElementById('filter-sprint'),
   search: document.getElementById('filter-search'),
   reset: document.getElementById('reset-filters'),
-  planFile: document.getElementById('plan-file-input'),
-  planUploadButton: document.getElementById('plan-upload-button'),
-  clearPlanUpload: document.getElementById('clear-plan-upload'),
-  planUploadStatus: document.getElementById('plan-upload-status'),
   activeFilters: document.getElementById('active-filters'),
   selectionSummary: document.getElementById('selection-summary'),
   heroMops: document.getElementById('hero-mops'),
@@ -104,17 +100,8 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const LEGACY_PLAN_UPLOAD_STORAGE_KEYS = [
-  'mopReportPlanUpload:v1',
-  'mopReportPlanUpload:v2',
-  'mopReportPlanUpload:v3',
-  'mopReportPlanUpload:v4',
-  'mopReportPlanUpload:v5',
-];
-const SHARED_PLAN_ISSUE_URL = 'https://github.com/formula-agency/otchet-po-mopam/issues/new';
-const SHARED_PLAN_SUBMISSION_MARKER = 'MOP_REPORT_SHARED_PLAN_V1';
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260603-6';
+const DASHBOARD_DATA_VERSION = '20260603-9';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
@@ -965,94 +952,6 @@ async function readPlanUploadFile(file) {
   return parsePlanWorkbook(workbook, file.name);
 }
 
-function removeLegacyStoredPlanUploads() {
-  try {
-    for (const key of LEGACY_PLAN_UPLOAD_STORAGE_KEYS) localStorage.removeItem(key);
-  } catch (error) {
-    // Shared plans do not depend on browser storage.
-  }
-}
-
-function monthlyPlansFromUpload(upload) {
-  const plansByName = new Map();
-  for (const row of upload.rows || []) {
-    const mopName = row.aggregatePlan ? AGGREGATE_PLAN_NAME : canonicalMopName(row.mopName);
-    if (!mopName) continue;
-    const key = normalizeNameKey(mopName);
-    if (!plansByName.has(key)) {
-      plansByName.set(key, {
-        mopName,
-        aggregatePlan: Boolean(row.aggregatePlan),
-        aggregatePlanFields: [],
-        salesPlan: 0,
-        meetingsPlan: 0,
-        reservationsPlan: 0,
-        approvedMortgagesPlan: 0,
-        airTimePlanSeconds: 0,
-      });
-    }
-    const plan = plansByName.get(key);
-    for (const field of PLAN_METRIC_FIELDS) {
-      plan[field] += parsePlanNumber(row[field]);
-    }
-    if (row.aggregatePlan && Array.isArray(row.aggregatePlanFields)) {
-      plan.aggregatePlanFields.push(...row.aggregatePlanFields);
-    }
-  }
-
-  return [...plansByName.values()].map((plan) => ({
-    ...plan,
-    ...(plan.aggregatePlan ? {
-      aggregatePlanFields: [...new Set(plan.aggregatePlanFields.length ? plan.aggregatePlanFields : PLAN_METRIC_FIELDS)],
-    } : {}),
-  }));
-}
-
-function sharedPlanSubmission(upload) {
-  return {
-    schemaVersion: 1,
-    action: 'upsert',
-    fileName: upload.fileName || 'Загруженный план',
-    month: upload.month,
-    managerCount: Number(upload.managerCount || 0),
-    hasAggregatePlan: Boolean(upload.hasAggregatePlan),
-    skippedNames: Array.isArray(upload.skippedNames) ? upload.skippedNames : [],
-    plans: monthlyPlansFromUpload(upload),
-  };
-}
-
-function sharedPlanIssueUrl(submission) {
-  const removing = submission.action === 'remove';
-  const monthLabel = formatMonthLabel(submission.month);
-  const title = `[План МОП] ${removing ? 'Удалить' : 'Опубликовать'} ${monthLabel}`;
-  const body = [
-    removing
-      ? `Удаление общего плана за ${monthLabel}.`
-      : `Публикация общего плана за ${monthLabel}.`,
-    '',
-    'После создания этой задачи отчет будет пересобран для всех устройств.',
-    '',
-    `<!-- ${SHARED_PLAN_SUBMISSION_MARKER}`,
-    JSON.stringify(submission),
-    '-->',
-  ].join('\n');
-  return `${SHARED_PLAN_ISSUE_URL}?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
-}
-
-function openSharedPlanIssue(submission, targetWindow = null) {
-  const url = sharedPlanIssueUrl(submission);
-  if (targetWindow) {
-    targetWindow.opener = null;
-    targetWindow.location.replace(url);
-    return;
-  }
-  window.location.href = url;
-}
-
-function sharedPlanForMonth(month = state.month) {
-  return (data.sharedPlans?.months || []).find((plan) => plan.month === month) || null;
-}
-
 function refreshPeriodControls(preserveSelection = true) {
   const months = monthOptions();
   if (!months.some((option) => option.value === state.month)) {
@@ -1067,35 +966,6 @@ function refreshPeriodControls(preserveSelection = true) {
   populateSelect(els.airtimeMonth, months, '', false);
   els.airtimeMonth.value = state.airtimeMonth;
   syncAirTimeSprintSelect(preserveSelection);
-}
-
-function renderPlanUploadStatus(message = '') {
-  if (message) {
-    els.planUploadStatus.textContent = message;
-    return;
-  }
-
-  const sharedPlan = sharedPlanForMonth();
-  if (!sharedPlan) {
-    els.planUploadStatus.textContent = 'План на выбранный месяц не опубликован';
-    els.clearPlanUpload.hidden = true;
-    return;
-  }
-
-  const skippedCount = sharedPlan.skippedNames?.length || 0;
-  const skippedText = skippedCount ? ` · пропущено: ${formatNumber(skippedCount)}` : '';
-  const aggregateText = sharedPlan.hasAggregatePlan ? ' · общий план: задан' : '';
-  els.planUploadStatus.textContent = `${formatMonthLabel(sharedPlan.month)} · МОП: ${formatNumber(sharedPlan.managerCount)}${aggregateText}${skippedText} · опубликован`;
-  els.clearPlanUpload.hidden = false;
-}
-
-function requestSharedPlanRemoval() {
-  if (!state.month || !sharedPlanForMonth()) return;
-  openSharedPlanIssue({
-    schemaVersion: 1,
-    action: 'remove',
-    month: state.month,
-  });
 }
 
 function summarizeRows(rows) {
@@ -1580,7 +1450,6 @@ function exportCsv(rows) {
 
 function render() {
   const rows = filteredRows();
-  renderPlanUploadStatus();
   renderHero(rows);
   renderKpis(rows);
   renderActiveState(rows);
@@ -1662,32 +1531,6 @@ function bindControls() {
     state.search = els.search.value;
     render();
   });
-  els.planUploadButton.addEventListener('click', () => {
-    els.planFile.click();
-  });
-  els.planFile.addEventListener('change', async () => {
-    const file = els.planFile.files?.[0];
-    if (!file) return;
-    const confirmationWindow = window.open('', '_blank');
-    if (confirmationWindow) {
-      confirmationWindow.document.title = 'Публикация плана';
-      confirmationWindow.document.body.textContent = 'Подготовка плана...';
-    }
-    renderPlanUploadStatus('Читаю план...');
-    try {
-      const upload = await readPlanUploadFile(file);
-      const submission = sharedPlanSubmission(upload);
-      if (!submission.plans.length) throw new Error('не найден план по МОПам из этого отчета');
-      openSharedPlanIssue(submission, confirmationWindow);
-      renderPlanUploadStatus('Подтвердите публикацию в открывшейся вкладке GitHub');
-    } catch (error) {
-      if (confirmationWindow) confirmationWindow.close();
-      renderPlanUploadStatus(`Не удалось загрузить план: ${error.message}`);
-    } finally {
-      els.planFile.value = '';
-    }
-  });
-  els.clearPlanUpload.addEventListener('click', requestSharedPlanRemoval);
   els.activeDealDate.addEventListener('change', () => {
     state.activeDate = els.activeDealDate.value || defaultActiveDate();
     renderActiveDeals();
@@ -1721,7 +1564,6 @@ function bindControls() {
 }
 
 function init() {
-  removeLegacyStoredPlanUploads();
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
   setDefaultPeriod();
   setDefaultActiveDeals();
@@ -1740,7 +1582,6 @@ function init() {
   bindViewNavigation();
   bindHeaderState();
   renderWarnings();
-  renderPlanUploadStatus();
   render();
   setView(viewFromHash(), false);
 }

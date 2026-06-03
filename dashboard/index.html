@@ -4,11 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260603-5">
+  <link rel="stylesheet" href="./styles.css?v=20260603-8">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script defer src="./data/mop-report-data.js?v=20260603-7"></script>
-  <script defer src="./app.js?v=20260603-7"></script>
+  <script defer src="./data/mop-report-data.js?v=20260603-9"></script>
+  <script defer src="./app.js?v=20260603-9"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -28,15 +27,6 @@
         <div>
           <p class="eyebrow">План-факт по спринтам</p>
           <h1 id="overview-title">Отчет по МОПам</h1>
-        </div>
-        <div class="field plan-upload-field">
-          <span>План</span>
-          <input id="plan-file-input" class="file-input-hidden" type="file" accept=".xlsx,.xls,.csv">
-          <div class="plan-upload-actions">
-            <button id="plan-upload-button" class="ghost-button" type="button">Опубликовать план</button>
-            <button id="clear-plan-upload" class="ghost-button" type="button" hidden>Удалить план</button>
-          </div>
-          <div id="plan-upload-status" class="plan-upload-status" aria-live="polite">План на выбранный месяц не опубликован</div>
         </div>
       </div>
       <div class="summary-band__stats" aria-label="Сводка">

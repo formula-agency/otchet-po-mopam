@@ -635,7 +635,7 @@ def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str)
     return selected_sheet["properties"]["title"]
 
 
-def fetch_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_title: str) -> set[int]:
+def fetch_user_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_title: str) -> set[int]:
     try:
         metadata = execute_google_request(
             service.spreadsheets()
@@ -643,7 +643,7 @@ def fetch_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_titl
                 spreadsheetId=spreadsheet_id,
                 ranges=[f"{quote_sheet_title(sheet_title)}!A:Z"],
                 includeGridData=True,
-                fields="sheets(properties(title),data(startRow,rowMetadata(hiddenByFilter,hiddenByUser)))",
+                fields="sheets(properties(title),data(startRow,rowMetadata(hiddenByUser)))",
             )
         )
     except Exception as exc:
@@ -656,7 +656,7 @@ def fetch_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_titl
         for grid_data in sheet.get("data", []):
             start_row = int(grid_data.get("startRow") or 0)
             for offset, properties in enumerate(grid_data.get("rowMetadata", [])):
-                if properties.get("hiddenByFilter") or properties.get("hiddenByUser"):
+                if properties.get("hiddenByUser"):
                     hidden_rows.add(start_row + offset)
     return hidden_rows
 
@@ -869,7 +869,7 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
     if not values:
         return []
 
-    hidden_row_indexes = fetch_hidden_sheet_row_indexes(service, settings.google_meeting_log_sheet_id, sheet_title)
+    hidden_row_indexes = fetch_user_hidden_sheet_row_indexes(service, settings.google_meeting_log_sheet_id, sheet_title)
     header_row_index, column_map = find_meeting_log_columns(values)
     entries: list[MeetingLogEntry] = []
     for row_index, row in enumerate(values[header_row_index + 1 :], start=header_row_index + 1):
