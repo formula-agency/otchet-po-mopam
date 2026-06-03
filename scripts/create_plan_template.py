@@ -7,6 +7,7 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 OUTPUT_PATH = Path(__file__).resolve().parents[1] / "Шаблон плана МОП.xlsx"
 SHEET_NAME = "Сводная за месяц"
+AGGREGATE_PLAN_NAME = "Общий план"
 MOP_NAMES = (
     "Черткова Ирина",
     "Газисова Мария",
@@ -39,15 +40,19 @@ def sheet_xml() -> str:
         '<row r="3" ht="30" customHeight="1">'
         + "".join(inline_cell(f"{column}3", header, 3) for column, header in zip("ABCDEF", HEADERS))
         + "</row>",
+        '<row r="4" ht="24" customHeight="1">'
+        + inline_cell("A4", AGGREGATE_PLAN_NAME, 6)
+        + "".join(empty_cell(f"{column}4", 6) for column in "BCDEF")
+        + "</row>",
     ]
-    for row_number, mop_name in enumerate(MOP_NAMES, start=4):
+    for row_number, mop_name in enumerate(MOP_NAMES, start=5):
         cells = [inline_cell(f"A{row_number}", mop_name, 4)]
         cells.extend(empty_cell(f"{column}{row_number}", 5) for column in "BCDEF")
         rows.append(f'<row r="{row_number}" ht="22" customHeight="1">{"".join(cells)}</row>')
 
     return f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-  <dimension ref="A1:F13"/>
+  <dimension ref="A1:F14"/>
   <sheetViews>
     <sheetView workbookViewId="0">
       <pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/>
@@ -61,7 +66,7 @@ def sheet_xml() -> str:
     <col min="6" max="6" width="16" customWidth="1"/>
   </cols>
   <sheetData>{"".join(rows)}</sheetData>
-  <autoFilter ref="A3:F13"/>
+  <autoFilter ref="A3:F14"/>
 </worksheet>
 """
 
@@ -99,11 +104,12 @@ FILES = {
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
     <font><b/><sz val="11"/><color rgb="FF1F2937"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="4">
+  <fills count="5">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF2F8CFF"/><bgColor indexed="64"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFEAF3FF"/><bgColor indexed="64"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FFEDE7FF"/><bgColor indexed="64"/></patternFill></fill>
   </fills>
   <borders count="2">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -116,13 +122,14 @@ FILES = {
     </border>
   </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="6">
+  <cellXfs count="7">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="4" borderId="1" xfId="0"><alignment vertical="center"/></xf>
   </cellXfs>
 </styleSheet>
 """,

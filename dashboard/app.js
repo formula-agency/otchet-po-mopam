@@ -105,8 +105,9 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v4';
-const DASHBOARD_DATA_VERSION = '20260603-1';
+const PLAN_UPLOAD_STORAGE_KEY = 'mopReportPlanUpload:v5';
+const DASHBOARD_DATA_VERSION = '20260603-2';
+const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
   'meetingsPlan',
@@ -197,6 +198,11 @@ function canonicalMopName(value) {
   const key = normalizeNameKey(value);
   if (!key || key === 'none' || key === 'null') return '';
   return (data.filters?.mopNames || []).find((name) => normalizeNameKey(name) === key) || '';
+}
+
+function isAggregatePlanName(value) {
+  const key = normalizeNameKey(value);
+  return key === 'общий план' || key === 'общий' || key === 'итого' || key === 'все мопы';
 }
 
 function reportRowKey(row) {
@@ -408,7 +414,8 @@ function reportRows() {
     result.push({
       ...emptyPlanRow(plan),
       ...plan,
-      manualAggregate: false,
+      manualAggregate: Boolean(plan.manualAggregate),
+      aggregatePlan: Boolean(plan.aggregatePlan),
       planSource: 'uploaded',
     });
   }
@@ -769,7 +776,7 @@ function sprintStartsForMonth(monthDate) {
   )));
 }
 
-function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
+function buildPlanRowsForMop(mopName, monthlyPlan, monthDate, options = {}) {
   const splitPlans = {
     salesPlan: splitMonthlyPlanValue(monthlyPlan.salesPlan),
     meetingsPlan: splitMonthlyPlanValue(monthlyPlan.meetingsPlan),
@@ -789,7 +796,20 @@ function buildPlanRowsForMop(mopName, monthlyPlan, monthDate) {
       reservationsPlan: splitPlans.reservationsPlan[sprintIndex],
       approvedMortgagesPlan: splitPlans.approvedMortgagesPlan[sprintIndex],
       airTimePlanSeconds: splitPlans.airTimePlanSeconds[sprintIndex],
+      ...(options.aggregatePlan ? {
+        aggregatePlan: true,
+        manualAggregate: true,
+        aggregatePlanFields: options.aggregatePlanFields || [...PLAN_METRIC_FIELDS],
+      } : {}),
     };
+  });
+}
+
+function planInputFields(row, header) {
+  return PLAN_METRIC_FIELDS.filter((field) => {
+    const columnIndex = header[field];
+    if (columnIndex === undefined) return false;
+    return String(row[columnIndex] ?? '').trim() !== '';
   });
 }
 
@@ -824,16 +844,20 @@ function parseSimplePlanRows(rows, monthDate) {
   const importedRows = [];
   const skippedNames = new Set();
   const importedMops = new Set();
+  let hasAggregatePlan = false;
 
   for (let rowIndex = headerIndex + 1; rowIndex < rows.length; rowIndex += 1) {
     const row = rows[rowIndex] || [];
     const rawName = String(row[header.mopName] ?? '').trim();
     if (!rawName) continue;
-    const mopName = canonicalMopName(rawName);
+    const aggregatePlan = isAggregatePlanName(rawName);
+    const mopName = aggregatePlan ? AGGREGATE_PLAN_NAME : canonicalMopName(rawName);
     if (!mopName) {
       skippedNames.add(rawName);
       continue;
     }
+    const aggregatePlanFields = aggregatePlan ? planInputFields(row, header) : [];
+    if (aggregatePlan && !aggregatePlanFields.length) continue;
 
     const monthlyPlan = {
       salesPlan: 0,
@@ -850,14 +874,19 @@ function parseSimplePlanRows(rows, monthDate) {
         : parsePlanNumber(row[columnIndex]);
     }
 
-    importedMops.add(mopName);
-    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate));
+    if (aggregatePlan) {
+      hasAggregatePlan = true;
+    } else {
+      importedMops.add(mopName);
+    }
+    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate, { aggregatePlan, aggregatePlanFields }));
   }
 
   if (!importedRows.length) return null;
   return {
     rows: importedRows,
     managerCount: importedMops.size,
+    hasAggregatePlan,
     skippedNames: [...skippedNames],
   };
 }
@@ -878,6 +907,7 @@ function parsePlanWorkbook(workbook, fileName) {
       month: monthKey(monthDate),
       importedAt: new Date().toISOString(),
       managerCount: simplePlan.managerCount,
+      hasAggregatePlan: simplePlan.hasAggregatePlan,
       skippedNames: simplePlan.skippedNames,
       rows: simplePlan.rows,
     };
@@ -887,14 +917,15 @@ function parsePlanWorkbook(workbook, fileName) {
   const importedRows = [];
   const skippedNames = new Set();
   const importedMops = new Set();
+  let hasAggregatePlan = false;
 
   for (let blockIndex = 0; blockIndex < blockStarts.length; blockIndex += 1) {
     const start = blockStarts[blockIndex];
     const end = blockStarts[blockIndex + 1] ?? rows.length;
     const rawName = String(tableCell(rows, start, 1) ?? '').trim();
-    if (normalizePlanLabel(rawName).startsWith('итого')) continue;
-
-    const mopName = canonicalMopName(rawName);
+    const aggregatePlan = isAggregatePlanName(rawName);
+    if (!aggregatePlan && normalizePlanLabel(rawName).startsWith('итого')) continue;
+    const mopName = aggregatePlan ? AGGREGATE_PLAN_NAME : canonicalMopName(rawName);
     if (!mopName) {
       const skippedKey = normalizeNameKey(rawName);
       if (rawName && skippedKey !== 'none' && skippedKey !== 'null') skippedNames.add(rawName);
@@ -910,18 +941,24 @@ function parsePlanWorkbook(workbook, fileName) {
       approvedMortgagesPlan: 0,
       airTimePlanSeconds: 0,
     };
+    const aggregatePlanFields = [];
 
     for (let rowIndex = start + 2; rowIndex < end; rowIndex += 1) {
       const field = planFieldForLabel(tableCell(rows, rowIndex, planColumn));
       if (!field) continue;
+      if (aggregatePlan) aggregatePlanFields.push(field);
       monthlyPlan[field] = field === 'airTimePlanSeconds'
         ? parsePlanDurationSeconds(tableCell(rows, rowIndex, valueColumn))
         : parsePlanNumber(tableCell(rows, rowIndex, valueColumn));
     }
 
     if (!PLAN_METRIC_FIELDS.some((field) => Number(monthlyPlan[field] || 0) > 0)) continue;
-    importedMops.add(mopName);
-    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate));
+    if (aggregatePlan) {
+      hasAggregatePlan = true;
+    } else {
+      importedMops.add(mopName);
+    }
+    importedRows.push(...buildPlanRowsForMop(mopName, monthlyPlan, monthDate, { aggregatePlan, aggregatePlanFields }));
   }
 
   if (!importedRows.length) {
@@ -933,6 +970,7 @@ function parsePlanWorkbook(workbook, fileName) {
     month: monthKey(monthDate),
     importedAt: new Date().toISOString(),
     managerCount: importedMops.size,
+    hasAggregatePlan,
     skippedNames: [...skippedNames],
     rows: importedRows,
   };
@@ -953,6 +991,9 @@ function normalizeStoredPlanUpload(upload) {
       weekStart: row.weekStart,
       weekLabel: row.weekLabel || formatWeekLabel(row.weekStart),
       mopName: row.mopName,
+      aggregatePlan: Boolean(row.aggregatePlan),
+      manualAggregate: Boolean(row.manualAggregate || row.aggregatePlan),
+      aggregatePlanFields: Array.isArray(row.aggregatePlanFields) ? row.aggregatePlanFields : undefined,
       salesPlan: parsePlanNumber(row.salesPlan ?? row.dealsPlan),
       meetingsPlan: parsePlanNumber(row.meetingsPlan),
       reservationsPlan: parsePlanNumber(row.reservationsPlan),
@@ -964,7 +1005,8 @@ function normalizeStoredPlanUpload(upload) {
     fileName: upload.fileName || 'Загруженный файл',
     month: upload.month || monthKey(parseISODate(rows[0].weekStart)),
     importedAt: upload.importedAt || '',
-    managerCount: Number(upload.managerCount || new Set(rows.map((row) => row.mopName)).size),
+    managerCount: Number(upload.managerCount || new Set(rows.filter((row) => !row.aggregatePlan).map((row) => row.mopName)).size),
+    hasAggregatePlan: Boolean(upload.hasAggregatePlan || rows.some((row) => row.aggregatePlan)),
     skippedNames: Array.isArray(upload.skippedNames) ? upload.skippedNames : [],
     rows,
   };
@@ -1024,7 +1066,8 @@ function renderPlanUploadStatus(message = '') {
 
   const skippedCount = state.planUpload.skippedNames?.length || 0;
   const skippedText = skippedCount ? ` · пропущено: ${formatNumber(skippedCount)}` : '';
-  els.planUploadStatus.textContent = `${formatMonthLabel(state.planUpload.month)} · МОП: ${formatNumber(state.planUpload.managerCount)}${skippedText}`;
+  const aggregateText = state.planUpload.hasAggregatePlan ? ' · общий план: задан' : '';
+  els.planUploadStatus.textContent = `${formatMonthLabel(state.planUpload.month)} · МОП: ${formatNumber(state.planUpload.managerCount)}${aggregateText}${skippedText}`;
   els.clearPlanUpload.hidden = false;
 }
 
@@ -1053,20 +1096,8 @@ function clearPlanUpload() {
 }
 
 function summarizeRows(rows) {
-  return rows.reduce((acc, row) => {
-    acc.salesPlan += Number(row.salesPlan ?? row.dealsPlan ?? 0);
-    acc.salesFact += Number(row.salesFact ?? row.dealsFact ?? 0);
-    acc.meetingsPlan += Number(row.meetingsPlan || 0);
-    acc.meetingsFact += Number(row.meetingsFact || 0);
-    acc.reservationsPlan += Number(row.reservationsPlan || 0);
-    acc.reservationsFact += Number(row.reservationsFact || 0);
-    acc.approvedMortgagesPlan += Number(row.approvedMortgagesPlan || 0);
-    acc.approvedMortgagesFact += Number(row.approvedMortgagesFact || 0);
-    acc.callsFact += Number(row.callsFact || 0);
-    acc.airTimePlanSeconds += Number(row.airTimePlanSeconds || 0);
-    acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
-    return acc;
-  }, {
+  const factRows = rows.filter((row) => !row.aggregatePlan);
+  const summary = {
     salesPlan: 0,
     salesFact: 0,
     meetingsPlan: 0,
@@ -1078,7 +1109,29 @@ function summarizeRows(rows) {
     callsFact: 0,
     airTimePlanSeconds: 0,
     airTimeFactSeconds: 0,
-  });
+  };
+
+  for (const field of PLAN_METRIC_FIELDS) {
+    const aggregatePlanRows = rows.filter((row) => (
+      row.aggregatePlan
+      && (!Array.isArray(row.aggregatePlanFields) || row.aggregatePlanFields.includes(field))
+    ));
+    const planRows = aggregatePlanRows.length ? aggregatePlanRows : rows.filter((row) => !row.aggregatePlan);
+    summary[field] = planRows.reduce((sum, row) => {
+      const value = field === 'salesPlan' ? row.salesPlan ?? row.dealsPlan : row[field];
+      return sum + Number(value || 0);
+    }, 0);
+  }
+
+  return factRows.reduce((acc, row) => {
+    acc.salesFact += Number(row.salesFact ?? row.dealsFact ?? 0);
+    acc.meetingsFact += Number(row.meetingsFact || 0);
+    acc.reservationsFact += Number(row.reservationsFact || 0);
+    acc.approvedMortgagesFact += Number(row.approvedMortgagesFact || 0);
+    acc.callsFact += Number(row.callsFact || 0);
+    acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
+    return acc;
+  }, summary);
 }
 
 function summarizeByWeek(rows) {

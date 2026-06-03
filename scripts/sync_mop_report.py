@@ -183,7 +183,6 @@ PLAN_HEADER_ALIASES = {
 MEETING_LOG_HEADER_ALIASES = {
     "status": {"статус", "status", "результат", "result"},
     "meeting_start": {"начало встречи", "start", "meeting start"},
-    "meeting_close": {"дата закрытия", "close date", "closed at", "meeting close"},
     "responsible": {"ответственный", "моп", "менеджер", "responsible", "manager"},
     "deal_id": {"id сделки", "deal id", "id deal"},
     "deal_link": {"ссылка на сделку", "deal link", "link"},
@@ -814,7 +813,7 @@ def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]
         column_map[canonical_name] = column_index
         matched_rows.append(row_index)
 
-    for canonical_name in ("meeting_close", "responsible", "deal_id", "deal_link"):
+    for canonical_name in ("responsible", "deal_id", "deal_link"):
         match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
         if match is not None:
             row_index, column_index = match
@@ -852,19 +851,11 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         if normalize_text(status_value) not in SUCCESSFUL_MEETING_STATUSES:
             continue
 
-        close_index = column_map.get("meeting_close")
-        meeting_datetime = None
-        if close_index is not None:
-            meeting_datetime = parse_sheet_datetime(
-                row[close_index] if close_index < len(row) else "",
-                settings.report_timezone,
-            )
         start_index = column_map["meeting_start"]
-        if meeting_datetime is None:
-            meeting_datetime = parse_sheet_datetime(
-                row[start_index] if start_index < len(row) else "",
-                settings.report_timezone,
-            )
+        meeting_datetime = parse_sheet_datetime(
+            row[start_index] if start_index < len(row) else "",
+            settings.report_timezone,
+        )
         if meeting_datetime is None:
             continue
 
