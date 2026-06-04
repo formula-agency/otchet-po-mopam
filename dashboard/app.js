@@ -105,7 +105,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260604-1';
+const DASHBOARD_DATA_VERSION = '20260604-2';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -441,6 +441,9 @@ function defaultPeriod() {
 }
 
 function defaultSprintForMonth(selectedMonth) {
+  if (selectedMonth && sprintOptionsForMonth(selectedMonth).some((option) => option.value === WHOLE_MONTH_VALUE)) {
+    return WHOLE_MONTH_VALUE;
+  }
   const sprints = sprintOnlyOptionsForMonth(selectedMonth);
   const currentSprint = currentSprintValue();
   if (monthKey(referenceDate()) === selectedMonth && sprints.some((option) => option.value === currentSprint)) {

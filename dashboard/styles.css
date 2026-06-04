@@ -96,6 +96,11 @@ body {
 .app-main {
   min-width: 0;
   padding-bottom: 36px;
+  transition: padding-left 180ms ease;
+}
+
+.app-frame.is-sidebar-collapsed .app-main {
+  padding-left: 52px;
 }
 
 .view[hidden] {
@@ -928,6 +933,10 @@ select {
 
   .app-frame.is-sidebar-collapsed {
     grid-template-columns: 1fr;
+  }
+
+  .app-frame.is-sidebar-collapsed .app-main {
+    padding-left: 0;
   }
 
   .sidebar {
