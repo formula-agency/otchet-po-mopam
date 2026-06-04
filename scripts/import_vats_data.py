@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import re
 import sys
@@ -27,10 +28,13 @@ from import_megafon_calls import (
     aggregate_history_records,
     canonical_mop_names,
     clear_existing_megafon_data,
+    empty_metric_row,
     filter_records_by_window,
     format_duration,
     merge_history_rows,
     normalize_text,
+    parse_duration_seconds,
+    parse_int,
     parse_megafon_history_records,
     parse_payload_date,
     recompute_totals,
@@ -45,6 +49,8 @@ DEFAULT_VATS_DIR = Path("vats data")
 DEFAULT_DATA_PATH = Path("dashboard/data/mop-report-data.json")
 LEGACY_MEGAFON_HISTORY = Path("manual-data/megafon-vats-history.xlsx")
 LEGACY_BEELINE_STAT = Path("manual-data/beeline-stat.xls")
+CRM_CALLS_SOURCE = "crm_calls_export"
+CRM_CALLS_WARNING_PREFIX = "CRM звонки:"
 RANGE_PATTERN = re.compile(
     r"^\s*(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?\s*-\s*"
     r"(\d{1,2})\.(\d{1,2})(?:\.(\d{4}))?\s*$",
@@ -58,6 +64,8 @@ SUM_FIELDS = {
     "beelineIncomingCalls",
     "beelineMissedCalls",
     "beelineOutgoingCalls",
+    "crmCallsFact",
+    "crmAirTimeFactSeconds",
 }
 
 
@@ -72,6 +80,14 @@ class SourceRange:
 class BeelineSummarySource:
     summary: BeelineSummaryRecord
     source_range: SourceRange
+
+
+@dataclass(frozen=True)
+class CsvCallRecord:
+    day: date
+    employee: str
+    duration_seconds: int
+    classification: str
 
 
 def parse_args() -> argparse.Namespace:
@@ -176,17 +192,20 @@ def ensure_non_overlapping(ranges: list[SourceRange], provider_name: str) -> Non
             )
 
 
-def discover_vats_files(vats_dir: Path) -> tuple[list[Path], list[Path]]:
+def discover_vats_files(vats_dir: Path) -> tuple[list[Path], list[Path], list[Path]]:
     megafon_files: list[Path] = []
     beeline_files: list[Path] = []
+    csv_files: list[Path] = []
     if not vats_dir.exists():
-        return megafon_files, beeline_files
+        return megafon_files, beeline_files, csv_files
 
     for path in sorted(vats_dir.rglob("*")):
         if not path.is_file() or path.name.startswith("~$"):
             continue
         normalized = normalize_text(path.stem)
-        if path.suffix.lower() == ".xlsx" and ("megafon" in normalized or "мегафон" in normalized):
+        if path.suffix.lower() == ".csv" and ("calls export" in normalized or "calls_export" in normalized):
+            csv_files.append(path)
+        elif path.suffix.lower() == ".xlsx" and ("megafon" in normalized or "мегафон" in normalized):
             megafon_files.append(path)
         elif path.suffix.lower() == ".xls" and ("beeline" in normalized or "билайн" in normalized):
             beeline_files.append(path)
@@ -195,7 +214,7 @@ def discover_vats_files(vats_dir: Path) -> tuple[list[Path], list[Path]]:
                 f"Не удалось определить оператора по имени файла '{path.name}'. "
                 "Используйте имя megafon.xlsx или beeline.xls.",
             )
-    return megafon_files, beeline_files
+    return megafon_files, beeline_files, csv_files
 
 
 def load_megafon_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CallHistoryRecord], list[SourceRange]]:
@@ -238,6 +257,118 @@ def load_beeline_sources(
     return records, summaries, ranges
 
 
+def parse_csv_call_date(value: Any) -> date | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    for fmt in (
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d",
+        "%d.%m.%Y %H:%M:%S",
+        "%d.%m.%Y",
+    ):
+        try:
+            return datetime.strptime(text[:19], fmt).date()
+        except ValueError:
+            pass
+    return None
+
+
+def parse_csv_duration_seconds(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
+        return 0
+    if re.fullmatch(r"\d+", text):
+        return parse_int(text)
+    return parse_duration_seconds(text)
+
+
+def parse_csv_call_records(path: Path) -> list[CsvCallRecord]:
+    with path.open("r", encoding="utf-8-sig", newline="") as file:
+        reader = csv.DictReader(file, delimiter=";")
+        if not reader.fieldnames:
+            raise ImportErrorWithHint(f"В CSV нет заголовков: {path}")
+        header_by_key = {normalize_text(header): header for header in reader.fieldnames}
+        date_header = header_by_key.get("дата звонка")
+        duration_header = header_by_key.get("длительность звонка")
+        employee_header = header_by_key.get("менеджер")
+        classification_header = header_by_key.get("классификация звонка")
+        if not date_header or not duration_header or not employee_header:
+            raise ImportErrorWithHint(
+                "В CSV нужны колонки 'Дата звонка', 'Длительность звонка' и 'Менеджер'."
+            )
+
+        records: list[CsvCallRecord] = []
+        for row in reader:
+            current_date = parse_csv_call_date(row.get(date_header))
+            employee = str(row.get(employee_header) or "").strip()
+            if current_date is None or not employee:
+                continue
+            records.append(
+                CsvCallRecord(
+                    day=current_date,
+                    employee=employee,
+                    duration_seconds=parse_csv_duration_seconds(row.get(duration_header)),
+                    classification=str(row.get(classification_header) or "").strip() if classification_header else "",
+                )
+            )
+    if not records:
+        raise ImportErrorWithHint(f"В CSV не найдено строк звонков с датой и менеджером: {path}")
+    return sorted(records, key=lambda record: (record.day, record.employee))
+
+
+def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRecord], list[SourceRange]]:
+    records: list[CsvCallRecord] = []
+    ranges: list[SourceRange] = []
+    for path in paths:
+        try:
+            file_records = parse_csv_call_records(path)
+        except ImportErrorWithHint as exc:
+            raise ImportErrorWithHint(f"Не удалось прочитать CSV звонков {path}: {exc}") from exc
+        ranges.append(source_range_for_records(path, vats_dir, (record.day for record in file_records)))
+        records.extend(file_records)
+    ensure_non_overlapping(ranges, "CSV звонков")
+    return records, ranges
+
+
+def range_contains_day(source_range: SourceRange, value: date) -> bool:
+    return source_range.start <= value <= source_range.end
+
+
+def ranges_overlap(left: SourceRange, right: SourceRange) -> bool:
+    return left.start <= right.end and right.start <= left.end
+
+
+def aggregate_csv_records(
+    records: list[CsvCallRecord],
+    name_map: dict[str, str],
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    by_week_mop: dict[tuple[date, str], dict[str, int]] = {}
+    skipped_by_employee: dict[str, int] = {}
+
+    for record in records:
+        mop_name = name_map.get(normalize_text(record.employee))
+        if not mop_name:
+            skipped_by_employee[record.employee] = skipped_by_employee.get(record.employee, 0) + 1
+            continue
+        key = (sprint_start_for_date(record.day), mop_name)
+        metrics = by_week_mop.setdefault(key, {})
+        metrics["callsFact"] = metrics.get("callsFact", 0) + 1
+        metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
+        metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+        metrics["crmAirTimeFactSeconds"] = metrics.get("crmAirTimeFactSeconds", 0) + record.duration_seconds
+
+    rows: list[dict[str, Any]] = []
+    for (week_start, mop_name), metrics in sorted(by_week_mop.items(), key=lambda item: (item[0][0], item[0][1])):
+        row = empty_metric_row(week_start, mop_name=mop_name, mop_id="", manual_aggregate=False)
+        row.update(metrics)
+        row["airTimeFact"] = format_duration(row["airTimeFactSeconds"])
+        row["callsSource"] = CRM_CALLS_SOURCE
+        row["airTimeSource"] = CRM_CALLS_SOURCE
+        rows.append(row)
+    return rows, skipped_by_employee
+
+
 def combine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     combined: dict[tuple[str, str], dict[str, Any]] = {}
     for row in rows:
@@ -250,6 +381,70 @@ def combine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             target[field] = int(target.get(field) or 0) + int(row.get(field) or 0)
         target["airTimeFact"] = format_duration(int(target.get("airTimeFactSeconds") or 0))
     return sorted(combined.values(), key=lambda row: (str(row.get("weekStart", "")), str(row.get("mopName", ""))))
+
+
+def clear_existing_csv_call_data(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    cleaned: list[dict[str, Any]] = []
+    csv_keys = {
+        "callsFactBaseBeforeCrmCalls",
+        "airTimeFactSecondsBaseBeforeCrmCalls",
+        "crmCallsFact",
+        "crmAirTimeFactSeconds",
+    }
+    for row in rows:
+        if row.get("manualSource") == CRM_CALLS_SOURCE:
+            continue
+        if row.get("callsSource") == CRM_CALLS_SOURCE:
+            row["callsFact"] = int(row.get("callsFactBaseBeforeCrmCalls") or 0)
+            row.pop("callsSource", None)
+        if row.get("airTimeSource") == CRM_CALLS_SOURCE:
+            row["airTimeFactSeconds"] = int(row.get("airTimeFactSecondsBaseBeforeCrmCalls") or 0)
+            row["airTimeFact"] = format_duration(int(row.get("airTimeFactSeconds") or 0))
+            row.pop("airTimeSource", None)
+        for key in csv_keys:
+            row.pop(key, None)
+        cleaned.append(row)
+    return cleaned
+
+
+def merge_csv_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    base_rows = clear_existing_csv_call_data(payload.get("baseRows", []))
+    rows_by_key = {
+        (str(row.get("weekStart", "")), str(row.get("mopName", ""))): row
+        for row in base_rows
+    }
+
+    for import_row in csv_rows:
+        key = (str(import_row["weekStart"]), str(import_row["mopName"]))
+        row = rows_by_key.get(key)
+        if row is None:
+            row = empty_metric_row(
+                date.fromisoformat(str(import_row["weekStart"])),
+                mop_name=str(import_row["mopName"]),
+                mop_id=str(import_row.get("mopId", "")),
+                manual_aggregate=False,
+            )
+            base_rows.append(row)
+            rows_by_key[key] = row
+
+        base_calls = int(row.get("callsFact") or 0)
+        base_air = int(row.get("airTimeFactSeconds") or 0)
+        row["callsFactBaseBeforeCrmCalls"] = base_calls
+        row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
+        row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["airTimeFactSeconds"] = base_air + int(import_row.get("airTimeFactSeconds") or 0)
+        row["airTimeFact"] = format_duration(int(row["airTimeFactSeconds"]))
+        row["callsSource"] = CRM_CALLS_SOURCE
+        row["airTimeSource"] = CRM_CALLS_SOURCE
+        row["crmCallsFact"] = int(import_row.get("crmCallsFact") or 0)
+        row["crmAirTimeFactSeconds"] = int(import_row.get("crmAirTimeFactSeconds") or 0)
+        row.pop("sharedPlanOnlyRow", None)
+
+    payload["baseRows"] = sorted(
+        base_rows,
+        key=lambda row: (str(row.get("weekStart", "")), str(row.get("mopName", ""))),
+    )
+    return payload["baseRows"]
 
 
 def display_path(path: Path) -> str:
@@ -284,6 +479,8 @@ def russian_count(value: int, one: str, few: str, many: str) -> str:
 def replace_vats_warnings(
     payload: dict[str, Any],
     *,
+    csv_file_count: int,
+    csv_skipped: dict[str, int],
     megafon_file_count: int,
     megafon_skipped: dict[str, int],
     beeline_detailed_count: int,
@@ -295,8 +492,17 @@ def replace_vats_warnings(
         for warning in payload.get("warnings", [])
         if not str(warning).startswith("МегаФон ВАТС:")
         and not str(warning).startswith("Билайн:")
+        and not str(warning).startswith(CRM_CALLS_WARNING_PREFIX)
         and not str(warning).startswith("Звонки не посчитаны:")
     ]
+    if csv_file_count:
+        warnings.append(
+            f"{CRM_CALLS_WARNING_PREFIX} звонки и эфир импортированы из "
+            f"{russian_count(csv_file_count, 'CSV-файла', 'CSV-файлов', 'CSV-файлов')} по МОПам.",
+        )
+        skipped_total = sum(csv_skipped.values())
+        if skipped_total:
+            warnings.append(f"{CRM_CALLS_WARNING_PREFIX} пропущено {skipped_total} звонков менеджеров вне списка МОП.")
     if megafon_file_count:
         warnings.append(
             "МегаФон ВАТС: звонки и эфир импортированы из "
@@ -328,13 +534,13 @@ def main() -> int:
         if not data_path.exists():
             raise ImportErrorWithHint(f"Файл данных dashboard не найден: {data_path}")
 
-        megafon_files, beeline_files = discover_vats_files(vats_dir)
+        megafon_files, beeline_files, csv_files = discover_vats_files(vats_dir)
         if not args.no_legacy:
             if LEGACY_MEGAFON_HISTORY.exists():
                 megafon_files.insert(0, LEGACY_MEGAFON_HISTORY)
             if LEGACY_BEELINE_STAT.exists():
                 beeline_files.insert(0, LEGACY_BEELINE_STAT)
-        if not megafon_files and not beeline_files:
+        if not megafon_files and not beeline_files and not csv_files:
             raise ImportErrorWithHint(f"В {vats_dir} и manual-data не найдено файлов ВАТС.")
 
         payload = json.loads(data_path.read_text(encoding="utf-8"))
@@ -342,22 +548,46 @@ def main() -> int:
         report_to = parse_payload_date(payload, "to")
         fallback_date = report_to or date.today()
 
+        csv_records, csv_ranges = load_csv_sources(csv_files, vats_dir)
         megafon_records, megafon_ranges = load_megafon_sources(megafon_files, vats_dir)
         beeline_records, beeline_summaries, beeline_ranges = load_beeline_sources(
             beeline_files,
             vats_dir,
             fallback_date,
         )
+        if csv_ranges:
+            megafon_records = [
+                record
+                for record in megafon_records
+                if not any(range_contains_day(source_range, record.day) for source_range in csv_ranges)
+            ]
+            beeline_records = [
+                record
+                for record in beeline_records
+                if not any(range_contains_day(source_range, record.day) for source_range in csv_ranges)
+            ]
+            beeline_summaries = [
+                summary_source
+                for summary_source in beeline_summaries
+                if not any(ranges_overlap(summary_source.source_range, source_range) for source_range in csv_ranges)
+            ]
 
-        all_end_dates = [source_range.end for source_range in [*megafon_ranges, *beeline_ranges]]
+        all_end_dates = [source_range.end for source_range in [*megafon_ranges, *beeline_ranges, *csv_ranges]]
         upper_bound = max([fallback_date, *all_end_dates])
         payload.setdefault("report", {})["to"] = upper_bound.isoformat()
 
         # Remove both providers before adding them again. This keeps repeated local imports idempotent.
         payload["baseRows"] = clear_existing_beeline_data(payload.get("baseRows", []))
         payload["baseRows"] = clear_existing_megafon_data(payload.get("baseRows", []))
+        payload["baseRows"] = clear_existing_csv_call_data(payload.get("baseRows", []))
         name_map = canonical_mop_names(payload)
         imported_rows: list[dict[str, Any]] = []
+
+        csv_records = filter_records_by_window(csv_records, report_from, upper_bound)
+        csv_rows, csv_skipped = aggregate_csv_records(csv_records, name_map)
+        if csv_rows:
+            merge_csv_call_rows(payload, csv_rows)
+            imported_rows.extend(csv_rows)
 
         megafon_records = filter_records_by_window(megafon_records, report_from, upper_bound)
         megafon_rows, megafon_skipped = aggregate_history_records(megafon_records, name_map)
@@ -383,6 +613,20 @@ def main() -> int:
 
         imported_at = datetime.now().isoformat(timespec="seconds")
         manual_imports = payload.setdefault("manualImports", {})
+        manual_imports[CRM_CALLS_SOURCE] = {
+            "mode": "vats_directory",
+            "importedAt": imported_at,
+            "files": [range_metadata(source_range) for source_range in csv_ranges],
+            "fileCount": len(csv_ranges),
+            "recordCount": len(csv_records),
+            "importedCallCount": sum(int(row.get("callsFact") or 0) for row in csv_rows),
+            "importedAirTimeSeconds": sum(int(row.get("airTimeFactSeconds") or 0) for row in csv_rows),
+            "skippedCallCount": sum(csv_skipped.values()),
+            "skippedEmployees": csv_skipped,
+            "hasMopBreakdown": True,
+            "hasAirTime": True,
+            "durationUnit": "seconds",
+        }
         manual_imports[MEGAFON_SOURCE] = {
             "mode": "vats_directory",
             "importedAt": imported_at,
@@ -415,9 +659,11 @@ def main() -> int:
 
         replace_vats_warnings(
             payload,
-            megafon_file_count=len(megafon_ranges),
+            csv_file_count=len(csv_ranges),
+            csv_skipped=csv_skipped,
+            megafon_file_count=len(megafon_ranges) if megafon_rows else 0,
             megafon_skipped=megafon_skipped,
-            beeline_detailed_count=len(beeline_ranges) - len(beeline_summaries),
+            beeline_detailed_count=(len(beeline_ranges) - len(beeline_summaries)) if beeline_rows else 0,
             beeline_summary_count=len(beeline_summaries),
             beeline_skipped=beeline_skipped,
         )
@@ -427,6 +673,8 @@ def main() -> int:
         update_overview(payload)
         write_payload(payload, data_path)
 
+        print(f"Imported CRM CSV calls: {manual_imports[CRM_CALLS_SOURCE]['importedCallCount']}")
+        print(f"Imported CRM CSV air time: {format_duration(manual_imports[CRM_CALLS_SOURCE]['importedAirTimeSeconds'])}")
         print(f"Imported MegaFon calls: {manual_imports[MEGAFON_SOURCE]['importedCallCount']}")
         print(f"Imported MegaFon air time: {format_duration(manual_imports[MEGAFON_SOURCE]['importedAirTimeSeconds'])}")
         print(f"Imported Beeline calls: {manual_imports[BEELINE_SOURCE]['importedCallCount']}")

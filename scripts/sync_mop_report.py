@@ -172,6 +172,7 @@ PLAN_HEADER_ALIASES = {
         "план ипотек",
         "план ипотеки",
         "одобренные ипотеки план",
+        "одобренная ипотека наличные план",
         "mortgages plan",
     },
     "air_time_plan": {
@@ -180,9 +181,52 @@ PLAN_HEADER_ALIASES = {
         "план эфира",
         "эфирное время план",
         "целевое эфирное время",
+        "целевое эфирное время план",
         "target air time",
         "air time plan",
     },
+}
+
+PLAN_MOP_NAME_ALIASES = {
+    "черткова": "Черткова Ирина",
+    "газисова": "Газисова Мария",
+    "попова о": "Попова Олеся",
+    "попова олеся": "Попова Олеся",
+    "попова ю": "Попова Юлия",
+    "попова юлия": "Попова Юлия",
+    "губайдулина": "Губайдулина Заррина",
+    "тончу": "Тончу Ростислав",
+    "погребинский": "Погребинский Артем",
+    "камболин": "Камболин Александр",
+    "жуков": "Жуков Лев",
+    "гавриленко": "Гавриленко Елена",
+}
+
+RUSSIAN_MONTHS = {
+    "январь": 1,
+    "января": 1,
+    "февраль": 2,
+    "февраля": 2,
+    "март": 3,
+    "марта": 3,
+    "апрель": 4,
+    "апреля": 4,
+    "май": 5,
+    "мая": 5,
+    "июнь": 6,
+    "июня": 6,
+    "июль": 7,
+    "июля": 7,
+    "август": 8,
+    "августа": 8,
+    "сентябрь": 9,
+    "сентября": 9,
+    "октябрь": 10,
+    "октября": 10,
+    "ноябрь": 11,
+    "ноября": 11,
+    "декабрь": 12,
+    "декабря": 12,
 }
 
 MEETING_LOG_HEADER_ALIASES = {
@@ -231,6 +275,8 @@ class Settings:
 class MopSettings:
     plan_sheet_id: str
     plan_sheet_name: str
+    plan_sheet_gid: str
+    plan_month: str
     plan_required: bool
     dashboard_dir: Path
     deal_date_field: str
@@ -488,6 +534,8 @@ def load_mop_settings(settings: Settings) -> MopSettings:
     return MopSettings(
         plan_sheet_id=plan_sheet_id,
         plan_sheet_name=os.getenv("MOP_PLAN_SHEET_NAME", "Планы МОП").strip() or "Планы МОП",
+        plan_sheet_gid=os.getenv("MOP_PLAN_SHEET_GID", "").strip(),
+        plan_month=os.getenv("MOP_PLAN_MONTH", "").strip(),
         plan_required=read_bool_env("MOP_PLAN_REQUIRED", False),
         dashboard_dir=Path(os.getenv("MOP_DASHBOARD_DIR", "dashboard").strip() or "dashboard"),
         deal_date_field=deal_date_field,
@@ -653,17 +701,29 @@ def quote_sheet_title(sheet_title: str) -> str:
     return sheet_title if re.fullmatch(r"[A-Za-z0-9_]+", sheet_title) else f"'{escaped_title}'"
 
 
-def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str) -> str:
+def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str, requested_gid: str = "") -> str:
     metadata = execute_google_request(
         service.spreadsheets()
-        .get(spreadsheetId=spreadsheet_id, fields="properties(title),sheets(properties(title))")
+        .get(spreadsheetId=spreadsheet_id, fields="properties(title),sheets(properties(sheetId,title))")
     )
     sheets = metadata.get("sheets", [])
     if not sheets:
         raise ConfigError("The target spreadsheet has no sheets.")
 
     spreadsheet_title = metadata["properties"]["title"]
-    selected_sheet = next((sheet for sheet in sheets if sheet["properties"]["title"] == requested_title), None)
+    selected_sheet = None
+    if requested_gid:
+        selected_sheet = next(
+            (sheet for sheet in sheets if str(sheet["properties"].get("sheetId", "")) == requested_gid),
+            None,
+        )
+        if selected_sheet is None:
+            available = ", ".join(
+                f"{sheet['properties']['title']} ({sheet['properties'].get('sheetId')})" for sheet in sheets
+            )
+            raise ConfigError(f"Sheet gid '{requested_gid}' not found. Available sheets: {available}")
+    if selected_sheet is None:
+        selected_sheet = next((sheet for sheet in sheets if sheet["properties"]["title"] == requested_title), None)
     if selected_sheet is None and requested_title == spreadsheet_title and len(sheets) == 1:
         selected_sheet = sheets[0]
     elif selected_sheet is None and len(sheets) == 1:
@@ -1782,22 +1842,49 @@ def build_call_facts(
             add_fact(data, call_date, mop_id, "air_seconds", duration)
 
 
+def infer_plan_column_from_header(normalized_header: str) -> str:
+    if not normalized_header:
+        return ""
+    has_plan_marker = "план" in normalized_header or "plan" in normalized_header
+    if ("эфир" in normalized_header or "air time" in normalized_header) and has_plan_marker:
+        return "air_time_plan"
+    if ("встреч" in normalized_header or "meeting" in normalized_header) and has_plan_marker:
+        return "meeting_plan"
+    if ("брон" in normalized_header or "reservation" in normalized_header) and has_plan_marker:
+        return "reservation_plan"
+    if ("ипот" in normalized_header or "mortgage" in normalized_header) and has_plan_marker:
+        return "mortgage_plan"
+    if ("сделк" in normalized_header or "продаж" in normalized_header or "sale" in normalized_header) and has_plan_marker:
+        return "sale_plan"
+    return ""
+
+
 def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
     column_map: dict[str, int] = {}
     matched_rows: list[int] = []
-    for canonical_name, aliases in PLAN_HEADER_ALIASES.items():
-        for row_index, row in enumerate(rows[:10]):
-            for column_index, cell in enumerate(row):
+    for row_index, row in enumerate(rows[:10]):
+        for column_index, cell in enumerate(row):
+            normalized = normalize_text(cell)
+            inferred_name = infer_plan_column_from_header(normalized)
+            if inferred_name and inferred_name not in column_map:
+                column_map[inferred_name] = column_index
+                matched_rows.append(row_index)
+                continue
+            for canonical_name, aliases in PLAN_HEADER_ALIASES.items():
                 if normalize_text(cell) in aliases:
                     column_map[canonical_name] = column_index
                     matched_rows.append(row_index)
                     break
-            if canonical_name in column_map:
-                break
-    if "week" not in column_map and "week_start" not in column_map:
-        raise ConfigError("В листе планов не найдена колонка 'Неделя' или 'Начало недели'.")
+    if "mortgage_plan" not in column_map:
+        if "reservation_plan" in column_map:
+            column_map["mortgage_plan"] = column_map["reservation_plan"] + 3
+        elif "sale_plan" in column_map:
+            column_map["mortgage_plan"] = max(0, column_map["sale_plan"] - 3)
+    has_week_column = "week" in column_map or "week_start" in column_map
     if "mop_id" not in column_map and "mop_name" not in column_map:
-        raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
+        if has_week_column:
+            raise ConfigError("В листе планов не найдена колонка 'МОП' или 'ID МОП'.")
+        column_map["mop_name"] = 0
     if not {"sale_plan", "meeting_plan", "reservation_plan", "mortgage_plan", "air_time_plan"} & set(
         column_map
     ):
@@ -1810,6 +1897,91 @@ def cell(row: list[Any], column_map: dict[str, int], name: str) -> Any:
     if index is None or index >= len(row):
         return ""
     return row[index]
+
+
+def canonical_plan_mop_name(value: Any) -> str:
+    raw = str(value or "").strip()
+    key = normalize_key(raw)
+    if not key:
+        return ""
+    if key in PLAN_MOP_NAME_ALIASES:
+        return PLAN_MOP_NAME_ALIASES[key]
+    for name in DEFAULT_INCLUDED_MOPS:
+        if key == normalize_key(name):
+            return name
+    return raw
+
+
+def parse_plan_duration_seconds(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
+        return 0
+    match = re.fullmatch(r"(\d{1,5}):(\d{2})(?::(\d{2}))?", text)
+    if match:
+        first, second, third = match.groups()
+        if third is not None:
+            return int(first) * 3600 + int(second) * 60 + int(third)
+        return int(first) * 60 + int(second)
+    try:
+        numeric = float(text.replace("\xa0", "").replace(" ", "").replace(",", "."))
+    except ValueError:
+        return 0
+    if 0 <= numeric < 1:
+        return round(numeric * 86400)
+    return max(0, round(numeric * 60))
+
+
+def split_monthly_value(value: int) -> list[int]:
+    value = max(0, int(value or 0))
+    base, remainder = divmod(value, 4)
+    return [base + (1 if index < remainder else 0) for index in range(4)]
+
+
+def sprint_starts_for_month(month_start: date) -> list[date]:
+    return [date(month_start.year, month_start.month, day) for day in (1, 8, 15, 22)]
+
+
+def parse_plan_month(value: str, fallback_year: int) -> date | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    for fmt in ("%Y-%m", "%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y"):
+        try:
+            parsed = datetime.strptime(text[:10], fmt).date()
+            return date(parsed.year, parsed.month, 1)
+        except ValueError:
+            pass
+    normalized = normalize_key(text)
+    year_match = re.search(r"(20\d{2})", normalized)
+    year = int(year_match.group(1)) if year_match else fallback_year
+    for month_name, month_number in RUSSIAN_MONTHS.items():
+        if month_name in normalized:
+            return date(year, month_number, 1)
+    numeric_match = re.search(r"\b(0?[1-9]|1[0-2])[.\-/](20\d{2})\b", normalized)
+    if numeric_match:
+        return date(int(numeric_match.group(2)), int(numeric_match.group(1)), 1)
+    return None
+
+
+def resolve_plan_month_start(settings: Settings, mop_settings: MopSettings, sheet_title: str, window: ReportWindow) -> date:
+    fallback = window.end.date()
+    configured = parse_plan_month(mop_settings.plan_month, fallback.year)
+    if configured is not None:
+        return configured
+    from_sheet_title = parse_plan_month(sheet_title, fallback.year)
+    if from_sheet_title is not None:
+        return from_sheet_title
+    return date(fallback.year, fallback.month, 1)
+
+
+def metric_set_from_plan_row(row: list[Any], column_map: dict[str, int]) -> MopMetricSet:
+    return MopMetricSet(
+        sales=parse_number(cell(row, column_map, "sale_plan")),
+        meetings=parse_number(cell(row, column_map, "meeting_plan")),
+        reservations=parse_number(cell(row, column_map, "reservation_plan")),
+        approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
+        air_seconds=parse_plan_duration_seconds(cell(row, column_map, "air_time_plan")),
+    )
 
 
 def load_plan_entries(
@@ -1828,7 +2000,12 @@ def load_plan_entries(
         return []
 
     try:
-        sheet_title = resolve_sheet_title(service, mop_settings.plan_sheet_id, mop_settings.plan_sheet_name)
+        sheet_title = resolve_sheet_title(
+            service,
+            mop_settings.plan_sheet_id,
+            mop_settings.plan_sheet_name,
+            mop_settings.plan_sheet_gid,
+        )
     except ConfigError:
         if mop_settings.plan_required:
             raise
@@ -1848,25 +2025,48 @@ def load_plan_entries(
 
     header_row_index, column_map = find_plan_columns(values)
     entries: list[PlanEntry] = []
+    has_week_column = "week" in column_map or "week_start" in column_map
     for row in values[header_row_index + 1 :]:
-        week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
-        week_start = parse_week_start(week_value, window, settings.report_timezone)
-        if week_start is None:
-            continue
-        if week_end_for_start(week_start) < window.start.date() or week_start > window.end.date():
-            continue
         mop_id = str(cell(row, column_map, "mop_id") or "").strip()
-        mop_name = str(cell(row, column_map, "mop_name") or "").strip()
+        mop_name = canonical_plan_mop_name(cell(row, column_map, "mop_name"))
         if not mop_id and not mop_name:
             continue
-        metrics = MopMetricSet(
-            sales=parse_number(cell(row, column_map, "sale_plan")),
-            meetings=parse_number(cell(row, column_map, "meeting_plan")),
-            reservations=parse_number(cell(row, column_map, "reservation_plan")),
-            approved_mortgages=parse_number(cell(row, column_map, "mortgage_plan")),
-            air_seconds=parse_duration_seconds(cell(row, column_map, "air_time_plan")),
-        )
-        entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
+        metrics = metric_set_from_plan_row(row, column_map)
+        if has_week_column:
+            week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
+            week_start = parse_week_start(week_value, window, settings.report_timezone)
+            if week_start is None:
+                continue
+            if week_end_for_start(week_start) < window.start.date() or week_start > window.end.date():
+                continue
+            entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
+            continue
+
+        month_start = resolve_plan_month_start(settings, mop_settings, sheet_title, window)
+        split_metrics = {
+            "sales": split_monthly_value(metrics.sales),
+            "meetings": split_monthly_value(metrics.meetings),
+            "reservations": split_monthly_value(metrics.reservations),
+            "approved_mortgages": split_monthly_value(metrics.approved_mortgages),
+            "air_seconds": split_monthly_value(metrics.air_seconds),
+        }
+        for sprint_index, week_start in enumerate(sprint_starts_for_month(month_start)):
+            if week_end_for_start(week_start) < window.start.date():
+                continue
+            entries.append(
+                PlanEntry(
+                    week_start,
+                    mop_id,
+                    mop_name,
+                    MopMetricSet(
+                        sales=split_metrics["sales"][sprint_index],
+                        meetings=split_metrics["meetings"][sprint_index],
+                        reservations=split_metrics["reservations"][sprint_index],
+                        approved_mortgages=split_metrics["approved_mortgages"][sprint_index],
+                        air_seconds=split_metrics["air_seconds"][sprint_index],
+                    ),
+                )
+            )
     return entries
 
 
@@ -2256,7 +2456,8 @@ def main() -> int:
         booking_events = build_booking_reservation_events(data, session, settings, window)
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
         build_meeting_facts(data, service, session, settings, mop_settings, window)
-        build_call_facts(data, session, settings, mop_settings, window)
+        if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
+            build_call_facts(data, session, settings, mop_settings, window)
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
         hydrate_fact_identities(data, user_names)

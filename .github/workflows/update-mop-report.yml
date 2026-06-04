@@ -46,6 +46,8 @@ jobs:
           GOOGLE_MEETING_LOG_SHEET_NAME: Meetings
           MOP_PLAN_SHEET_ID: ${{ secrets.MOP_PLAN_SHEET_ID }}
           MOP_PLAN_SHEET_NAME: ${{ secrets.MOP_PLAN_SHEET_NAME }}
+          MOP_PLAN_SHEET_GID: ${{ secrets.MOP_PLAN_SHEET_GID }}
+          MOP_PLAN_MONTH: ${{ secrets.MOP_PLAN_MONTH }}
           MOP_PLAN_REQUIRED: ${{ secrets.MOP_PLAN_REQUIRED }}
           MOP_DEAL_DATE_FIELD: ${{ secrets.MOP_DEAL_DATE_FIELD }}
           MOP_APPROVED_MORTGAGE_DATE_FIELD: ${{ secrets.MOP_APPROVED_MORTGAGE_DATE_FIELD }}
@@ -54,6 +56,7 @@ jobs:
           MOP_INCLUDE_USERS: Черткова Ирина,Газисова Мария,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена
           MOP_EXCLUDE_USERS: ""
           MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
+          MOP_SKIP_BITRIX_CALLS: "true"
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
