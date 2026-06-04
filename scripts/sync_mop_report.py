@@ -231,7 +231,14 @@ RUSSIAN_MONTHS = {
 
 MEETING_LOG_HEADER_ALIASES = {
     "status": {"статус", "status", "результат", "result"},
-    "meeting_created": {"дата создания", "created at", "create date", "created"},
+    "meeting_start": {
+        "начало встречи",
+        "дата встречи",
+        "meeting start",
+        "start date",
+        "start datetime",
+        "starts at",
+    },
     "responsible": {"ответственный", "моп", "менеджер", "responsible", "manager"},
     "deal_id": {"id сделки", "deal id", "id deal"},
     "deal_link": {"ссылка на сделку", "deal link", "link"},
@@ -1056,10 +1063,10 @@ def find_matching_column(rows: list[list[Any]], aliases: set[str]) -> tuple[int,
 def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
     column_map: dict[str, int] = {}
     matched_rows: list[int] = []
-    for canonical_name in ("status", "meeting_created"):
+    for canonical_name in ("status", "meeting_start"):
         match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
         if match is None:
-            raise ConfigError("Could not find required meeting log columns: result/status and creation date.")
+            raise ConfigError("Could not find required meeting log columns: result/status and 'Начало встречи'.")
         row_index, column_index = match
         column_map[canonical_name] = column_index
         matched_rows.append(row_index)
@@ -1087,7 +1094,7 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         .values()
         .get(
             spreadsheetId=settings.google_meeting_log_sheet_id,
-            range=f"{quote_sheet_title(sheet_title)}!A:Z",
+            range=f"{quote_sheet_title(sheet_title)}!A:AZ",
             majorDimension="ROWS",
         )
     ).get("values", [])
@@ -1105,9 +1112,9 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         if normalize_text(status_value) not in SUCCESSFUL_MEETING_STATUSES:
             continue
 
-        created_index = column_map["meeting_created"]
+        start_index = column_map["meeting_start"]
         meeting_datetime = parse_sheet_datetime(
-            row[created_index] if created_index < len(row) else "",
+            row[start_index] if start_index < len(row) else "",
             settings.report_timezone,
         )
         if meeting_datetime is None:
