@@ -36,9 +36,9 @@ jobs:
       - name: Sync MOP report
         env:
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
+          BITRIX_BOOKING_WEBHOOK_URL: ${{ secrets.BITRIX_BOOKING_WEBHOOK_URL }}
           BITRIX_REQUEST_TIMEOUT: ${{ secrets.BITRIX_REQUEST_TIMEOUT }}
           BITRIX_APPROVED_MORTGAGE_FIELD: ${{ secrets.BITRIX_APPROVED_MORTGAGE_FIELD }}
-          BITRIX_RESERVATION_FIELD: UF_DEAL_WHERE_PUT_RESERVATION
           BITRIX_STAGE_FIELD: ${{ secrets.BITRIX_STAGE_FIELD || 'STAGE_ID' }}
           BITRIX_SUCCESS_STAGE_IDS: ${{ secrets.BITRIX_SUCCESS_STAGE_IDS || 'WON,CLOSED' }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
@@ -49,7 +49,6 @@ jobs:
           MOP_PLAN_REQUIRED: ${{ secrets.MOP_PLAN_REQUIRED }}
           MOP_DEAL_DATE_FIELD: ${{ secrets.MOP_DEAL_DATE_FIELD }}
           MOP_APPROVED_MORTGAGE_DATE_FIELD: ${{ secrets.MOP_APPROVED_MORTGAGE_DATE_FIELD }}
-          MOP_RESERVATION_DATE_FIELD: ${{ secrets.MOP_RESERVATION_DATE_FIELD }}
           MOP_ASSIGNED_FIELD: ASSIGNED_BY_ID
           MOP_UNKNOWN_USER: ${{ secrets.MOP_UNKNOWN_USER }}
           MOP_INCLUDE_USERS: Черткова Ирина,Газисова Мария,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена

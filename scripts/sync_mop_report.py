@@ -24,7 +24,6 @@ GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
 DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
-DEFAULT_DEAL_RESERVATION_FIELD = "UF_DEAL_WHERE_PUT_RESERVATION"
 SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
 DEFAULT_INCLUDED_MOPS = (
     "Черткова Ирина",
@@ -202,9 +201,9 @@ class ReportWindow:
 @dataclass(frozen=True)
 class Settings:
     bitrix_webhook_url: str
+    bitrix_booking_webhook_url: str
     bitrix_request_timeout: int
     bitrix_approved_mortgage_field: str
-    bitrix_reservation_field: str
     bitrix_stage_field: str
     bitrix_success_stage_ids: tuple[str, ...]
     google_service_account_file: str | None
@@ -224,7 +223,6 @@ class MopSettings:
     dashboard_dir: Path
     deal_date_field: str
     approved_mortgage_date_field: str
-    reservation_date_field: str
     assigned_field: str
     unknown_mop_name: str
     include_user_labels: tuple[str, ...]
@@ -246,6 +244,13 @@ class ActiveDealActivity:
     date: date
     kind: str
     completed: bool = True
+
+
+@dataclass(frozen=True)
+class BookingReservationEvent:
+    booking_id: str
+    deal_id: str
+    date: date
 
 
 @dataclass
@@ -398,6 +403,7 @@ def read_filter_labels(name: str, default_values: tuple[str, ...] = ()) -> tuple
 
 
 def load_settings() -> Settings:
+    bitrix_webhook_url = require_env("BITRIX_WEBHOOK_URL")
     google_service_account_file = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip() or None
     google_service_account_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip() or None
     raw_success_stages = os.getenv("BITRIX_SUCCESS_STAGE_IDS", "").strip() or "WON,CLOSED"
@@ -412,15 +418,12 @@ def load_settings() -> Settings:
             google_service_account_file = str(discovered_files[0])
 
     return Settings(
-        bitrix_webhook_url=require_env("BITRIX_WEBHOOK_URL"),
+        bitrix_webhook_url=bitrix_webhook_url,
+        bitrix_booking_webhook_url=os.getenv("BITRIX_BOOKING_WEBHOOK_URL", "").strip() or bitrix_webhook_url,
         bitrix_request_timeout=read_positive_int_env("BITRIX_REQUEST_TIMEOUT", 120),
         bitrix_approved_mortgage_field=(
             os.getenv("BITRIX_APPROVED_MORTGAGE_FIELD", DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD).strip()
             or DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD
-        ),
-        bitrix_reservation_field=(
-            os.getenv("BITRIX_RESERVATION_FIELD", DEFAULT_DEAL_RESERVATION_FIELD).strip()
-            or DEFAULT_DEAL_RESERVATION_FIELD
         ),
         bitrix_stage_field=os.getenv("BITRIX_STAGE_FIELD", "STAGE_ID").strip() or "STAGE_ID",
         bitrix_success_stage_ids=bitrix_success_stage_ids,
@@ -454,7 +457,6 @@ def load_mop_settings(settings: Settings) -> MopSettings:
         approved_mortgage_date_field=(
             os.getenv("MOP_APPROVED_MORTGAGE_DATE_FIELD", "").strip() or deal_date_field
         ),
-        reservation_date_field=os.getenv("MOP_RESERVATION_DATE_FIELD", "").strip() or deal_date_field,
         assigned_field=os.getenv("MOP_ASSIGNED_FIELD", "ASSIGNED_BY_ID").strip() or "ASSIGNED_BY_ID",
         unknown_mop_name=os.getenv("MOP_UNKNOWN_USER", "Без ответственного").strip()
         or "Без ответственного",
@@ -726,6 +728,30 @@ def execute_bitrix_post_method(
     return payload
 
 
+def execute_bitrix_json_method(
+    session: requests.Session,
+    settings: Settings,
+    method_name: str,
+    payload: dict[str, Any] | None = None,
+    *,
+    webhook_url: str | None = None,
+) -> dict[str, Any]:
+    response = session.post(
+        build_bitrix_method_url(webhook_url or settings.bitrix_webhook_url, method_name),
+        json=payload or {},
+        timeout=settings.bitrix_request_timeout,
+    )
+    try:
+        result = response.json()
+    except ValueError:
+        response.raise_for_status()
+        raise
+    if "error" in result:
+        raise RuntimeError(f"Bitrix API error: {result['error']} - {result.get('error_description', '')}")
+    response.raise_for_status()
+    return result
+
+
 def execute_bitrix_deal_get(session: requests.Session, settings: Settings, deal_id: str) -> dict[str, Any]:
     payload = execute_bitrix_method(session, settings, "crm.deal.get", {"id": deal_id})
     result = payload.get("result")
@@ -808,6 +834,165 @@ def fetch_paged_method(
         raw_next = payload.get("next")
         next_page = int(raw_next) if raw_next is not None else None
     return records
+
+
+def parse_booking_datetime(value: Any, timezone_name: str) -> datetime | None:
+    if isinstance(value, dict):
+        raw_timestamp = value.get("timestamp")
+        raw_timezone = str(value.get("timezone") or timezone_name)
+    else:
+        raw_timestamp = value
+        raw_timezone = timezone_name
+
+    if raw_timestamp is None or str(raw_timestamp).strip() == "":
+        return parse_bitrix_datetime(value, timezone_name)
+
+    try:
+        timestamp = float(raw_timestamp)
+    except (TypeError, ValueError):
+        return parse_bitrix_datetime(raw_timestamp, timezone_name)
+    if timestamp > 10_000_000_000:
+        timestamp /= 1000
+
+    try:
+        tz = ZoneInfo(raw_timezone)
+    except Exception:
+        tz = ZoneInfo(timezone_name)
+    return datetime.fromtimestamp(timestamp, tz).astimezone(ZoneInfo(timezone_name))
+
+
+def booking_start_datetime(booking: dict[str, Any], timezone_name: str) -> datetime | None:
+    date_period = booking.get("datePeriod")
+    if isinstance(date_period, dict):
+        for key in ("from", "dateFrom"):
+            parsed = parse_booking_datetime(date_period.get(key), timezone_name)
+            if parsed:
+                return parsed
+    for key in ("dateFrom", "DATE_FROM", "dateStart", "DATE_START"):
+        parsed = parse_booking_datetime(booking.get(key), timezone_name)
+        if parsed:
+            return parsed
+    return None
+
+
+def extract_bitrix_result_items(payload: dict[str, Any], key: str, method_name: str) -> list[dict[str, Any]]:
+    result = payload.get("result", [])
+    if isinstance(result, dict):
+        result = result.get(key, [])
+    if not isinstance(result, list):
+        raise RuntimeError(f"Unexpected Bitrix API response for {method_name}: result is not a list.")
+    return [item for item in result if isinstance(item, dict)]
+
+
+def fetch_booking_records(
+    session: requests.Session,
+    settings: Settings,
+    window: ReportWindow,
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    next_page: int | None = 0
+    while next_page is not None:
+        payload = execute_bitrix_json_method(
+            session,
+            settings,
+            "booking.v1.booking.list",
+            {
+                "filter": {
+                    "within": {
+                        "dateFrom": int(window.start.timestamp()),
+                        "dateTo": int(window.end.timestamp()),
+                    }
+                },
+                "order": {"id": "ASC"},
+                "start": next_page,
+            },
+            webhook_url=settings.bitrix_booking_webhook_url,
+        )
+        records.extend(extract_bitrix_result_items(payload, "booking", "booking.v1.booking.list"))
+        raw_next = payload.get("next")
+        if raw_next is None and isinstance(payload.get("result"), dict):
+            raw_next = payload["result"].get("next")
+        next_page = int(raw_next) if raw_next is not None else None
+    return records
+
+
+def fetch_booking_external_data(
+    session: requests.Session,
+    settings: Settings,
+    booking_id: str,
+) -> list[dict[str, Any]]:
+    payload = execute_bitrix_json_method(
+        session,
+        settings,
+        "booking.v1.booking.externalData.list",
+        {"bookingId": int(booking_id) if str(booking_id).isdigit() else booking_id},
+        webhook_url=settings.bitrix_booking_webhook_url,
+    )
+    return extract_bitrix_result_items(payload, "externalData", "booking.v1.booking.externalData.list")
+
+
+def is_deal_external_link(link: dict[str, Any]) -> bool:
+    module_id = normalize_key(link.get("moduleId") or link.get("module_id"))
+    entity_type_id = normalize_key(link.get("entityTypeId") or link.get("entity_type_id"))
+    return module_id == "crm" and entity_type_id in {"deal", "2"}
+
+
+def build_booking_reservation_events(
+    data: MopReportData,
+    session: requests.Session,
+    settings: Settings,
+    window: ReportWindow,
+) -> list[BookingReservationEvent]:
+    try:
+        bookings = fetch_booking_records(session, settings, window)
+    except Exception as exc:
+        message = safe_error_text(exc)
+        if "insufficient_scope" in message:
+            message += "; нужен webhook с правом booking"
+        data.warnings.append(f"Брони не посчитаны из [CRM] Брони: {message}")
+        return []
+
+    events: list[BookingReservationEvent] = []
+    skipped_without_deal = 0
+    seen: set[tuple[str, str]] = set()
+
+    for booking in bookings:
+        booking_id = str(booking.get("id") or booking.get("ID") or "").strip()
+        if not booking_id:
+            continue
+        started_at = booking_start_datetime(booking, settings.report_timezone)
+        if started_at is None:
+            skipped_without_deal += 1
+            continue
+        event_date = started_at.date()
+        if event_date < window.start.date() or event_date > window.end.date():
+            continue
+
+        try:
+            links = fetch_booking_external_data(session, settings, booking_id)
+        except Exception as exc:
+            data.warnings.append(f"Бронь {booking_id}: не удалось получить связь со сделкой: {safe_error_text(exc)}")
+            continue
+        deal_ids = {
+            str(link.get("value") or link.get("VALUE") or "").strip()
+            for link in links
+            if is_deal_external_link(link)
+        }
+        deal_ids.discard("")
+        if not deal_ids:
+            skipped_without_deal += 1
+            continue
+
+        for deal_id in sorted(deal_ids, key=lambda value: int(value) if value.isdigit() else value):
+            key = (booking_id, deal_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            events.append(BookingReservationEvent(booking_id=booking_id, deal_id=deal_id, date=event_date))
+
+    if skipped_without_deal:
+        data.warnings.append(f"Брони: {skipped_without_deal} записей из [CRM] Брони не связаны со сделками.")
+    return events
 
 
 def parse_numeric_id(value: Any) -> str:
@@ -1390,6 +1575,7 @@ def build_deal_metric_facts(
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
+    booking_events: list[BookingReservationEvent],
 ) -> None:
     deal_date_field = mop_settings.deal_date_field or "DATE_CREATE"
     deal_select_fields = unique_fields(
@@ -1471,14 +1657,6 @@ def build_deal_metric_facts(
             [],
             resolve_boolean_field,
         ),
-        (
-            "reservations",
-            "Брони",
-            settings.bitrix_reservation_field,
-            mop_settings.reservation_date_field,
-            ["DATE_CREATE"],
-            resolve_non_empty_field,
-        ),
     ]
     for metric_name, metric_label, metric_field, date_field, fallback_date_fields, resolver in metric_specs:
         if not metric_field:
@@ -1487,10 +1665,7 @@ def build_deal_metric_facts(
         if mop_settings.assigned_field not in select_fields:
             select_fields.append(mop_settings.assigned_field)
 
-        if metric_name == "reservations":
-            filter_date_fields = ["DATE_CREATE"]
-        else:
-            filter_date_fields = unique_fields([date_field, *fallback_date_fields])
+        filter_date_fields = unique_fields([date_field, *fallback_date_fields])
         failed_filter_fields: set[str] = set()
         records_by_id: dict[str, tuple[dict[str, Any], date]] = {}
         missing_id_index = 0
@@ -1519,10 +1694,7 @@ def build_deal_metric_facts(
         for record, current_date in records_by_id.values():
             if not resolver(record.get(metric_field)):
                 continue
-            if metric_name == "reservations":
-                event_datetime = parse_bitrix_datetime(record.get("DATE_CREATE"), settings.report_timezone)
-            else:
-                event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
+            event_datetime = parse_bitrix_datetime(record.get(date_field), settings.report_timezone)
             if event_datetime is None:
                 for fallback_date_field in fallback_date_fields:
                     event_datetime = parse_bitrix_datetime(record.get(fallback_date_field), settings.report_timezone)
@@ -1532,6 +1704,20 @@ def build_deal_metric_facts(
             if event_date < window.start.date() or event_date > window.end.date():
                 continue
             add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), metric_name, 1)
+
+    deal_cache: dict[str, dict[str, Any]] = {}
+    for event in booking_events:
+        deal = deal_cache.get(event.deal_id)
+        if deal is None:
+            try:
+                deal = execute_bitrix_deal_get(session, settings, event.deal_id)
+            except Exception as exc:
+                data.warnings.append(
+                    f"Бронь {event.booking_id}: не удалось получить сделку {event.deal_id}: {safe_error_text(exc)}"
+                )
+                continue
+            deal_cache[event.deal_id] = deal
+        add_fact(data, event.date, extract_assigned_user_id(deal, mop_settings), "reservations", 1)
 
 
 def build_meeting_facts(
@@ -1802,15 +1988,14 @@ def build_active_deals_payload(
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
+    booking_events: list[BookingReservationEvent],
 ) -> dict[str, Any]:
     select_fields = unique_fields(
         ACTIVE_DEAL_BASE_FIELDS
         + [
             mop_settings.assigned_field,
             settings.bitrix_approved_mortgage_field,
-            settings.bitrix_reservation_field,
             mop_settings.approved_mortgage_date_field,
-            mop_settings.reservation_date_field,
         ]
     )
     known_user_names = {
@@ -1898,6 +2083,10 @@ def build_active_deals_payload(
         data.warnings.append(f"Активности по активным сделкам не загружены: {safe_error_text(exc)}")
         activity_events_by_deal = {}
 
+    reservation_dates_by_deal: dict[str, list[date]] = defaultdict(list)
+    for event in booking_events:
+        reservation_dates_by_deal[event.deal_id].append(event.date)
+
     rows: list[dict[str, Any]] = []
     mop_names: set[str] = set()
     for record, deal_id, mop_id, mop_name in allowed_records:
@@ -1907,15 +2096,13 @@ def build_active_deals_payload(
         last_activity_date = max((event.date for event in activity_events), default=None)
 
         approved = resolve_boolean_field(record.get(settings.bitrix_approved_mortgage_field))
-        reservation = resolve_non_empty_field(record.get(settings.bitrix_reservation_field))
+        reservation_dates = sorted(reservation_dates_by_deal.get(deal_id, []))
+        reservation = bool(reservation_dates)
         approved_date = (
             parse_bitrix_date(record.get(mop_settings.approved_mortgage_date_field), settings.report_timezone)
             or parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
         )
-        reservation_date = (
-            parse_bitrix_date(record.get(mop_settings.reservation_date_field), settings.report_timezone)
-            or parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
-        )
+        reservation_date = reservation_dates[0] if reservation_dates else None
         create_date = parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
         close_date = parse_bitrix_date(record.get("CLOSEDATE"), settings.report_timezone)
         modify_date = parse_bitrix_date(record.get("DATE_MODIFY"), settings.report_timezone)
@@ -2081,7 +2268,8 @@ def main() -> int:
         session = build_bitrix_session()
 
         data = MopReportData()
-        build_deal_metric_facts(data, session, settings, mop_settings, window)
+        booking_events = build_booking_reservation_events(data, session, settings, window)
+        build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
         build_meeting_facts(data, service, session, settings, mop_settings, window)
         build_call_facts(data, session, settings, mop_settings, window)
 
@@ -2094,7 +2282,15 @@ def main() -> int:
         plan_entries = load_plan_entries(service, settings, mop_settings, window)
         apply_plan_entries(data, plan_entries, user_names)
 
-        active_deals_payload = build_active_deals_payload(data, service, session, settings, mop_settings, window)
+        active_deals_payload = build_active_deals_payload(
+            data,
+            service,
+            session,
+            settings,
+            mop_settings,
+            window,
+            booking_events,
+        )
         built_report = build_report_rows(data, mop_settings)
         payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload)
         write_dashboard_files(payload, mop_settings.dashboard_dir)
