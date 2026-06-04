@@ -139,12 +139,14 @@ python scripts/import_vats_data.py
 ## Важные настройки
 
 - `BITRIX_APPROVED_MORTGAGE_FIELD` - поле сделки для одобренной ипотеки
-- `BITRIX_BOOKING_WEBHOOK_URL` - webhook с правом `booking` для чтения раздела `[CRM] Брони`; если пустой, используется `BITRIX_WEBHOOK_URL`
+- `BITRIX_BOOKING_WEBHOOK_URL` - отдельный webhook для чтения списка `[CRM] Брони`; если пустой, используется `BITRIX_WEBHOOK_URL`
+- `BITRIX_BOOKING_LIST_ID` - ID списка `[CRM] Брони`, по умолчанию `38`
+- `BITRIX_BOOKING_LIST_DATE_FIELD` / `BITRIX_BOOKING_LIST_MOP_FIELD` / `BITRIX_BOOKING_LIST_DEAL_FIELD` - поля даты брони, МОПа и связанной сделки
 - `BITRIX_STAGE_FIELD` - поле стадии сделки для продаж, по умолчанию `STAGE_ID`
 - `BITRIX_SUCCESS_STAGE_IDS` - успешные стадии для продаж, по умолчанию `WON,CLOSED`; также учитывается `STAGE_SEMANTIC_ID=S`
 - `MOP_DEAL_DATE_FIELD` - базовое поле даты для фактов по сделкам, по умолчанию `DATE_CREATE`
 - `MOP_APPROVED_MORTGAGE_DATE_FIELD` - поле даты для ипотек, если отличается
-- факты по броням считаются из `[CRM] Брони` через `booking.v1.booking.list`; МОП определяется по связанной сделке
+- факты по броням считаются из списка `[CRM] Брони` через `lists.element.get`; МОП берется из поля `МОП постановщик`
 - `MOP_ASSIGNED_FIELD` - поле ответственного, по умолчанию `ASSIGNED_BY_ID`
 - `MOP_CALL_MIN_DURATION_SECONDS` - минимальная длительность звонка для учета, по умолчанию `0`
 - `MOP_ACTIVE_DEAL_CATEGORY_NAMES` - воронки для учета сделок и отчета по активным сделкам, по умолчанию `Льготная ипотека`

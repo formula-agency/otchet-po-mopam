@@ -24,6 +24,12 @@ GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
 DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
+DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
+DEFAULT_BOOKING_LIST_ID = "38"
+DEFAULT_BOOKING_LIST_NAME = "[CRM] Брони"
+DEFAULT_BOOKING_LIST_DATE_FIELD = "PROPERTY_98"
+DEFAULT_BOOKING_LIST_MOP_FIELD = "PROPERTY_89"
+DEFAULT_BOOKING_LIST_DEAL_FIELD = "PROPERTY_118"
 SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
 DEFAULT_INCLUDED_MOPS = (
     "Черткова Ирина",
@@ -202,6 +208,12 @@ class ReportWindow:
 class Settings:
     bitrix_webhook_url: str
     bitrix_booking_webhook_url: str
+    bitrix_booking_list_iblock_type: str
+    bitrix_booking_list_id: str
+    bitrix_booking_list_name: str
+    bitrix_booking_list_date_field: str
+    bitrix_booking_list_mop_field: str
+    bitrix_booking_list_deal_field: str
     bitrix_request_timeout: int
     bitrix_approved_mortgage_field: str
     bitrix_stage_field: str
@@ -250,6 +262,7 @@ class ActiveDealActivity:
 class BookingReservationEvent:
     booking_id: str
     deal_id: str
+    mop_id: str
     date: date
 
 
@@ -420,6 +433,30 @@ def load_settings() -> Settings:
     return Settings(
         bitrix_webhook_url=bitrix_webhook_url,
         bitrix_booking_webhook_url=os.getenv("BITRIX_BOOKING_WEBHOOK_URL", "").strip() or bitrix_webhook_url,
+        bitrix_booking_list_iblock_type=(
+            os.getenv("BITRIX_BOOKING_LIST_IBLOCK_TYPE", DEFAULT_BOOKING_LIST_IBLOCK_TYPE).strip()
+            or DEFAULT_BOOKING_LIST_IBLOCK_TYPE
+        ),
+        bitrix_booking_list_id=(
+            os.getenv("BITRIX_BOOKING_LIST_ID", DEFAULT_BOOKING_LIST_ID).strip()
+            or DEFAULT_BOOKING_LIST_ID
+        ),
+        bitrix_booking_list_name=(
+            os.getenv("BITRIX_BOOKING_LIST_NAME", DEFAULT_BOOKING_LIST_NAME).strip()
+            or DEFAULT_BOOKING_LIST_NAME
+        ),
+        bitrix_booking_list_date_field=(
+            os.getenv("BITRIX_BOOKING_LIST_DATE_FIELD", DEFAULT_BOOKING_LIST_DATE_FIELD).strip()
+            or DEFAULT_BOOKING_LIST_DATE_FIELD
+        ),
+        bitrix_booking_list_mop_field=(
+            os.getenv("BITRIX_BOOKING_LIST_MOP_FIELD", DEFAULT_BOOKING_LIST_MOP_FIELD).strip()
+            or DEFAULT_BOOKING_LIST_MOP_FIELD
+        ),
+        bitrix_booking_list_deal_field=(
+            os.getenv("BITRIX_BOOKING_LIST_DEAL_FIELD", DEFAULT_BOOKING_LIST_DEAL_FIELD).strip()
+            or DEFAULT_BOOKING_LIST_DEAL_FIELD
+        ),
         bitrix_request_timeout=read_positive_int_env("BITRIX_REQUEST_TIMEOUT", 120),
         bitrix_approved_mortgage_field=(
             os.getenv("BITRIX_APPROVED_MORTGAGE_FIELD", DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD).strip()
@@ -836,45 +873,6 @@ def fetch_paged_method(
     return records
 
 
-def parse_booking_datetime(value: Any, timezone_name: str) -> datetime | None:
-    if isinstance(value, dict):
-        raw_timestamp = value.get("timestamp")
-        raw_timezone = str(value.get("timezone") or timezone_name)
-    else:
-        raw_timestamp = value
-        raw_timezone = timezone_name
-
-    if raw_timestamp is None or str(raw_timestamp).strip() == "":
-        return parse_bitrix_datetime(value, timezone_name)
-
-    try:
-        timestamp = float(raw_timestamp)
-    except (TypeError, ValueError):
-        return parse_bitrix_datetime(raw_timestamp, timezone_name)
-    if timestamp > 10_000_000_000:
-        timestamp /= 1000
-
-    try:
-        tz = ZoneInfo(raw_timezone)
-    except Exception:
-        tz = ZoneInfo(timezone_name)
-    return datetime.fromtimestamp(timestamp, tz).astimezone(ZoneInfo(timezone_name))
-
-
-def booking_start_datetime(booking: dict[str, Any], timezone_name: str) -> datetime | None:
-    date_period = booking.get("datePeriod")
-    if isinstance(date_period, dict):
-        for key in ("from", "dateFrom"):
-            parsed = parse_booking_datetime(date_period.get(key), timezone_name)
-            if parsed:
-                return parsed
-    for key in ("dateFrom", "DATE_FROM", "dateStart", "DATE_START"):
-        parsed = parse_booking_datetime(booking.get(key), timezone_name)
-        if parsed:
-            return parsed
-    return None
-
-
 def extract_bitrix_result_items(payload: dict[str, Any], key: str, method_name: str) -> list[dict[str, Any]]:
     result = payload.get("result", [])
     if isinstance(result, dict):
@@ -884,10 +882,20 @@ def extract_bitrix_result_items(payload: dict[str, Any], key: str, method_name: 
     return [item for item in result if isinstance(item, dict)]
 
 
-def fetch_booking_records(
+def list_property_value(record: dict[str, Any], field_name: str) -> Any:
+    value = record.get(field_name)
+    if isinstance(value, dict):
+        values = [item for item in value.values() if item not in (None, "")]
+        return values[0] if values else ""
+    if isinstance(value, list):
+        values = [item for item in value if item not in (None, "")]
+        return values[0] if values else ""
+    return value
+
+
+def fetch_booking_list_elements(
     session: requests.Session,
     settings: Settings,
-    window: ReportWindow,
 ) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     next_page: int | None = 0
@@ -895,46 +903,21 @@ def fetch_booking_records(
         payload = execute_bitrix_json_method(
             session,
             settings,
-            "booking.v1.booking.list",
+            "lists.element.get",
             {
-                "filter": {
-                    "within": {
-                        "dateFrom": int(window.start.timestamp()),
-                        "dateTo": int(window.end.timestamp()),
-                    }
-                },
-                "order": {"id": "ASC"},
+                "IBLOCK_TYPE_ID": settings.bitrix_booking_list_iblock_type,
+                "IBLOCK_ID": settings.bitrix_booking_list_id,
+                "FILTER": {},
                 "start": next_page,
             },
             webhook_url=settings.bitrix_booking_webhook_url,
         )
-        records.extend(extract_bitrix_result_items(payload, "booking", "booking.v1.booking.list"))
+        records.extend(extract_bitrix_result_items(payload, "element", "lists.element.get"))
         raw_next = payload.get("next")
         if raw_next is None and isinstance(payload.get("result"), dict):
             raw_next = payload["result"].get("next")
         next_page = int(raw_next) if raw_next is not None else None
     return records
-
-
-def fetch_booking_external_data(
-    session: requests.Session,
-    settings: Settings,
-    booking_id: str,
-) -> list[dict[str, Any]]:
-    payload = execute_bitrix_json_method(
-        session,
-        settings,
-        "booking.v1.booking.externalData.list",
-        {"bookingId": int(booking_id) if str(booking_id).isdigit() else booking_id},
-        webhook_url=settings.bitrix_booking_webhook_url,
-    )
-    return extract_bitrix_result_items(payload, "externalData", "booking.v1.booking.externalData.list")
-
-
-def is_deal_external_link(link: dict[str, Any]) -> bool:
-    module_id = normalize_key(link.get("moduleId") or link.get("module_id"))
-    entity_type_id = normalize_key(link.get("entityTypeId") or link.get("entity_type_id"))
-    return module_id == "crm" and entity_type_id in {"deal", "2"}
 
 
 def build_booking_reservation_events(
@@ -944,54 +927,51 @@ def build_booking_reservation_events(
     window: ReportWindow,
 ) -> list[BookingReservationEvent]:
     try:
-        bookings = fetch_booking_records(session, settings, window)
+        bookings = fetch_booking_list_elements(session, settings)
     except Exception as exc:
         message = safe_error_text(exc)
         if "insufficient_scope" in message:
-            message += "; нужен webhook с правом booking"
-        data.warnings.append(f"Брони не посчитаны из [CRM] Брони: {message}")
+            message += "; нужен webhook с правом lists"
+        data.warnings.append(f"Брони не посчитаны из списка {settings.bitrix_booking_list_name}: {message}")
         return []
 
     events: list[BookingReservationEvent] = []
-    skipped_without_deal = 0
-    seen: set[tuple[str, str]] = set()
+    skipped_without_date = 0
+    skipped_without_mop = 0
+    seen: set[str] = set()
 
     for booking in bookings:
         booking_id = str(booking.get("id") or booking.get("ID") or "").strip()
         if not booking_id:
             continue
-        started_at = booking_start_datetime(booking, settings.report_timezone)
-        if started_at is None:
-            skipped_without_deal += 1
+        if booking_id in seen:
             continue
-        event_date = started_at.date()
+        seen.add(booking_id)
+
+        event_date = parse_bitrix_date(
+            list_property_value(booking, settings.bitrix_booking_list_date_field),
+            settings.report_timezone,
+        )
+        if event_date is None:
+            skipped_without_date += 1
+            continue
         if event_date < window.start.date() or event_date > window.end.date():
             continue
 
-        try:
-            links = fetch_booking_external_data(session, settings, booking_id)
-        except Exception as exc:
-            data.warnings.append(f"Бронь {booking_id}: не удалось получить связь со сделкой: {safe_error_text(exc)}")
-            continue
-        deal_ids = {
-            str(link.get("value") or link.get("VALUE") or "").strip()
-            for link in links
-            if is_deal_external_link(link)
-        }
-        deal_ids.discard("")
-        if not deal_ids:
-            skipped_without_deal += 1
+        mop_id = parse_numeric_id(list_property_value(booking, settings.bitrix_booking_list_mop_field))
+        if not mop_id:
+            mop_id = parse_numeric_id(booking.get("CREATED_BY"))
+        if not mop_id:
+            skipped_without_mop += 1
             continue
 
-        for deal_id in sorted(deal_ids, key=lambda value: int(value) if value.isdigit() else value):
-            key = (booking_id, deal_id)
-            if key in seen:
-                continue
-            seen.add(key)
-            events.append(BookingReservationEvent(booking_id=booking_id, deal_id=deal_id, date=event_date))
+        deal_id = parse_numeric_id(list_property_value(booking, settings.bitrix_booking_list_deal_field))
+        events.append(BookingReservationEvent(booking_id=booking_id, deal_id=deal_id, mop_id=mop_id, date=event_date))
 
-    if skipped_without_deal:
-        data.warnings.append(f"Брони: {skipped_without_deal} записей из [CRM] Брони не связаны со сделками.")
+    if skipped_without_date:
+        data.warnings.append(f"Брони: {skipped_without_date} записей из {settings.bitrix_booking_list_name} без даты создания брони.")
+    if skipped_without_mop:
+        data.warnings.append(f"Брони: {skipped_without_mop} записей из {settings.bitrix_booking_list_name} без МОП.")
     return events
 
 
@@ -1707,6 +1687,11 @@ def build_deal_metric_facts(
 
     deal_cache: dict[str, dict[str, Any]] = {}
     for event in booking_events:
+        if event.mop_id:
+            add_fact(data, event.date, event.mop_id, "reservations", 1)
+            continue
+        if not event.deal_id:
+            continue
         deal = deal_cache.get(event.deal_id)
         if deal is None:
             try:
