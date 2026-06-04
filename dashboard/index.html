@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260603-8">
+  <link rel="stylesheet" href="./styles.css?v=20260604-1">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script defer src="./data/mop-report-data.js?v=20260603-9"></script>
-  <script defer src="./app.js?v=20260603-9"></script>
+  <script defer src="./data/mop-report-data.js?v=20260604-1"></script>
+  <script defer src="./app.js?v=20260604-1"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -19,6 +19,7 @@
         <button class="side-nav__item" type="button" data-view-link="airtime">Табло</button>
       </nav>
     </aside>
+    <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Скрыть меню" aria-expanded="true">‹</button>
 
     <main id="top" class="app-main">
       <div class="view is-active" data-view-panel="summary">
@@ -189,8 +190,7 @@
         <section class="airtime-scoreboard" aria-label="Табло план-факт по МОПам">
           <div class="airtime-scoreboard__top">
             <div>
-              <p class="eyebrow">План-факт по периоду</p>
-              <h1>Табло план-факт</h1>
+              <p id="airtime-freshness" class="airtime-freshness"></p>
               <p id="airtime-period-label" class="airtime-period"></p>
             </div>
             <div class="airtime-controls">

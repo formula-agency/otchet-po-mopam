@@ -84,10 +84,12 @@ class BeelineSummarySource:
 
 @dataclass(frozen=True)
 class CsvCallRecord:
+    path: Path
     day: date
     employee: str
     duration_seconds: int
     classification: str
+    source_kind: str
 
 
 def parse_args() -> argparse.Namespace:
@@ -192,6 +194,17 @@ def ensure_non_overlapping(ranges: list[SourceRange], provider_name: str) -> Non
             )
 
 
+def csv_source_kind(path: Path) -> str:
+    normalized = normalize_text(path.stem)
+    if "эфир" in normalized or "efir" in normalized or "air" in normalized:
+        return "air"
+    if "звонк" in normalized or normalized in {"calls", "call count", "call counts"}:
+        return "calls"
+    if "calls export" in normalized or "calls_export" in normalized:
+        return "combined"
+    return ""
+
+
 def discover_vats_files(vats_dir: Path) -> tuple[list[Path], list[Path], list[Path]]:
     megafon_files: list[Path] = []
     beeline_files: list[Path] = []
@@ -203,8 +216,14 @@ def discover_vats_files(vats_dir: Path) -> tuple[list[Path], list[Path], list[Pa
         if not path.is_file() or path.name.startswith("~$"):
             continue
         normalized = normalize_text(path.stem)
-        if path.suffix.lower() == ".csv" and ("calls export" in normalized or "calls_export" in normalized):
-            csv_files.append(path)
+        if path.suffix.lower() == ".csv":
+            if csv_source_kind(path):
+                csv_files.append(path)
+            else:
+                raise ImportErrorWithHint(
+                    f"Не удалось определить тип CSV-файла '{path.name}'. "
+                    "Используйте имя звонки.csv, эфир.csv или calls_export.csv.",
+                )
         elif path.suffix.lower() == ".xlsx" and ("megafon" in normalized or "мегафон" in normalized):
             megafon_files.append(path)
         elif path.suffix.lower() == ".xls" and ("beeline" in normalized or "билайн" in normalized):
@@ -283,7 +302,7 @@ def parse_csv_duration_seconds(value: Any) -> int:
     return parse_duration_seconds(text)
 
 
-def parse_csv_call_records(path: Path) -> list[CsvCallRecord]:
+def parse_csv_call_records(path: Path, source_kind: str) -> list[CsvCallRecord]:
     with path.open("r", encoding="utf-8-sig", newline="") as file:
         reader = csv.DictReader(file, delimiter=";")
         if not reader.fieldnames:
@@ -293,9 +312,13 @@ def parse_csv_call_records(path: Path) -> list[CsvCallRecord]:
         duration_header = header_by_key.get("длительность звонка")
         employee_header = header_by_key.get("менеджер")
         classification_header = header_by_key.get("классификация звонка")
-        if not date_header or not duration_header or not employee_header:
+        if not date_header or not employee_header or (source_kind != "calls" and not duration_header):
+            if source_kind == "calls":
+                required_columns = "'Дата звонка' и 'Менеджер'"
+            else:
+                required_columns = "'Дата звонка', 'Длительность звонка' и 'Менеджер'"
             raise ImportErrorWithHint(
-                "В CSV нужны колонки 'Дата звонка', 'Длительность звонка' и 'Менеджер'."
+                f"В CSV нужны колонки {required_columns}."
             )
 
         records: list[CsvCallRecord] = []
@@ -306,10 +329,12 @@ def parse_csv_call_records(path: Path) -> list[CsvCallRecord]:
                 continue
             records.append(
                 CsvCallRecord(
+                    path=path,
                     day=current_date,
                     employee=employee,
-                    duration_seconds=parse_csv_duration_seconds(row.get(duration_header)),
+                    duration_seconds=parse_csv_duration_seconds(row.get(duration_header)) if duration_header else 0,
                     classification=str(row.get(classification_header) or "").strip() if classification_header else "",
+                    source_kind=source_kind,
                 )
             )
     if not records:
@@ -321,13 +346,15 @@ def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRec
     records: list[CsvCallRecord] = []
     ranges: list[SourceRange] = []
     for path in paths:
+        source_kind = csv_source_kind(path)
+        if not source_kind:
+            continue
         try:
-            file_records = parse_csv_call_records(path)
+            file_records = parse_csv_call_records(path, source_kind)
         except ImportErrorWithHint as exc:
             raise ImportErrorWithHint(f"Не удалось прочитать CSV звонков {path}: {exc}") from exc
         ranges.append(source_range_for_records(path, vats_dir, (record.day for record in file_records)))
         records.extend(file_records)
-    ensure_non_overlapping(ranges, "CSV звонков")
     return records, ranges
 
 
@@ -339,24 +366,66 @@ def ranges_overlap(left: SourceRange, right: SourceRange) -> bool:
     return left.start <= right.end and right.start <= left.end
 
 
+def csv_metric_kinds(record: CsvCallRecord) -> tuple[str, ...]:
+    if record.source_kind == "calls":
+        return ("calls",)
+    if record.source_kind == "air":
+        return ("air",)
+    return ("calls", "air")
+
+
+def csv_source_priority(record: CsvCallRecord, ranges_by_path: dict[Path, SourceRange]) -> tuple[date, date, int, str]:
+    source_range = ranges_by_path.get(record.path)
+    end = source_range.end if source_range else record.day
+    start = source_range.start if source_range else record.day
+    specificity = 1 if record.source_kind in {"calls", "air"} else 0
+    return end, start, specificity, record.path.as_posix()
+
+
+def preferred_csv_sources(records: list[CsvCallRecord], ranges: list[SourceRange]) -> dict[tuple[str, date], Path]:
+    ranges_by_path = {source_range.path: source_range for source_range in ranges}
+    preferred: dict[tuple[str, date], tuple[tuple[date, date, int, str], Path]] = {}
+    for record in records:
+        for metric_kind in csv_metric_kinds(record):
+            key = (metric_kind, record.day)
+            priority = csv_source_priority(record, ranges_by_path)
+            current = preferred.get(key)
+            if current is None or priority > current[0]:
+                preferred[key] = (priority, record.path)
+    return {key: path for key, (_priority, path) in preferred.items()}
+
+
 def aggregate_csv_records(
     records: list[CsvCallRecord],
     name_map: dict[str, str],
-) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    preferred_sources: dict[tuple[str, date], Path],
+) -> tuple[list[dict[str, Any]], dict[str, int], set[Path], int, int]:
     by_week_mop: dict[tuple[date, str], dict[str, int]] = {}
     skipped_by_employee: dict[str, int] = {}
+    used_paths: set[Path] = set()
+    imported_call_count = 0
+    imported_air_seconds = 0
 
     for record in records:
         mop_name = name_map.get(normalize_text(record.employee))
         if not mop_name:
             skipped_by_employee[record.employee] = skipped_by_employee.get(record.employee, 0) + 1
             continue
+        use_calls = "calls" in csv_metric_kinds(record) and preferred_sources.get(("calls", record.day)) == record.path
+        use_air = "air" in csv_metric_kinds(record) and preferred_sources.get(("air", record.day)) == record.path
+        if not use_calls and not use_air:
+            continue
         key = (sprint_start_for_date(record.day), mop_name)
         metrics = by_week_mop.setdefault(key, {})
-        metrics["callsFact"] = metrics.get("callsFact", 0) + 1
-        metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
-        metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
-        metrics["crmAirTimeFactSeconds"] = metrics.get("crmAirTimeFactSeconds", 0) + record.duration_seconds
+        used_paths.add(record.path)
+        if use_calls:
+            metrics["callsFact"] = metrics.get("callsFact", 0) + 1
+            metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+            imported_call_count += 1
+        if use_air:
+            metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
+            metrics["crmAirTimeFactSeconds"] = metrics.get("crmAirTimeFactSeconds", 0) + record.duration_seconds
+            imported_air_seconds += record.duration_seconds
 
     rows: list[dict[str, Any]] = []
     for (week_start, mop_name), metrics in sorted(by_week_mop.items(), key=lambda item: (item[0][0], item[0][1])):
@@ -366,7 +435,7 @@ def aggregate_csv_records(
         row["callsSource"] = CRM_CALLS_SOURCE
         row["airTimeSource"] = CRM_CALLS_SOURCE
         rows.append(row)
-    return rows, skipped_by_employee
+    return rows, skipped_by_employee, used_paths, imported_call_count, imported_air_seconds
 
 
 def combine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -584,7 +653,13 @@ def main() -> int:
         imported_rows: list[dict[str, Any]] = []
 
         csv_records = filter_records_by_window(csv_records, report_from, upper_bound)
-        csv_rows, csv_skipped = aggregate_csv_records(csv_records, name_map)
+        csv_preferred_sources = preferred_csv_sources(csv_records, csv_ranges)
+        csv_rows, csv_skipped, csv_used_paths, csv_imported_calls, csv_imported_air = aggregate_csv_records(
+            csv_records,
+            name_map,
+            csv_preferred_sources,
+        )
+        csv_used_ranges = [source_range for source_range in csv_ranges if source_range.path in csv_used_paths]
         if csv_rows:
             merge_csv_call_rows(payload, csv_rows)
             imported_rows.extend(csv_rows)
@@ -616,11 +691,11 @@ def main() -> int:
         manual_imports[CRM_CALLS_SOURCE] = {
             "mode": "vats_directory",
             "importedAt": imported_at,
-            "files": [range_metadata(source_range) for source_range in csv_ranges],
-            "fileCount": len(csv_ranges),
+            "files": [range_metadata(source_range) for source_range in csv_used_ranges],
+            "fileCount": len(csv_used_ranges),
             "recordCount": len(csv_records),
-            "importedCallCount": sum(int(row.get("callsFact") or 0) for row in csv_rows),
-            "importedAirTimeSeconds": sum(int(row.get("airTimeFactSeconds") or 0) for row in csv_rows),
+            "importedCallCount": csv_imported_calls,
+            "importedAirTimeSeconds": csv_imported_air,
             "skippedCallCount": sum(csv_skipped.values()),
             "skippedEmployees": csv_skipped,
             "hasMopBreakdown": True,
@@ -659,7 +734,7 @@ def main() -> int:
 
         replace_vats_warnings(
             payload,
-            csv_file_count=len(csv_ranges),
+            csv_file_count=len(csv_used_ranges),
             csv_skipped=csv_skipped,
             megafon_file_count=len(megafon_ranges) if megafon_rows else 0,
             megafon_skipped=megafon_skipped,

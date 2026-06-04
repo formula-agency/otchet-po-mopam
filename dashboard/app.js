@@ -2,6 +2,7 @@ let data = null;
 
 const state = {
   view: 'summary',
+  sidebarCollapsed: false,
   mopName: 'all',
   month: '',
   sprint: '',
@@ -13,6 +14,8 @@ const state = {
 };
 
 const els = {
+  appFrame: document.querySelector('.app-frame'),
+  sidebarToggle: document.getElementById('sidebar-toggle'),
   siteHeader: document.querySelector('.site-header'),
   navLinks: [...document.querySelectorAll('.site-nav a')],
   viewLinks: [...document.querySelectorAll('[data-view-link]')],
@@ -57,6 +60,7 @@ const els = {
   activeReservationCount: document.getElementById('active-reservation-count'),
   airtimeMonth: document.getElementById('airtime-month'),
   airtimeSprint: document.getElementById('airtime-sprint'),
+  airtimeFreshness: document.getElementById('airtime-freshness'),
   airtimePeriodLabel: document.getElementById('airtime-period-label'),
   scoreboardSummary: document.getElementById('scoreboard-summary'),
   airtimeRows: document.getElementById('airtime-rows'),
@@ -101,7 +105,8 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260603-9';
+const DASHBOARD_DATA_VERSION = '20260604-1';
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
@@ -333,6 +338,10 @@ function parsePlanMonthDate(value) {
 
 function referenceDate() {
   return parseISODate(data.generatedAt) || parseISODate(data.report?.to) || todayUTC();
+}
+
+function actualDataDate() {
+  return new Date(referenceDate().getTime() - DAY_MS);
 }
 
 function weekRange() {
@@ -1234,6 +1243,9 @@ function renderAirTimePlanFact() {
   }, emptyScoreboardRow('Итого'));
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
 
+  if (els.airtimeFreshness) {
+    els.airtimeFreshness.textContent = `Данные актуальны на ${fullDate(actualDataDate())}`;
+  }
   els.airtimePeriodLabel.textContent = selectedSprint
     ? `${formatMonthLabel(state.airtimeMonth)} · ${selectedSprint.label}`
     : formatMonthLabel(state.airtimeMonth);
@@ -1513,7 +1525,33 @@ function viewFromHash() {
   return 'summary';
 }
 
+function readSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === '1';
+  } catch (_error) {
+    return false;
+  }
+}
+
+function setSidebarCollapsed(collapsed) {
+  state.sidebarCollapsed = Boolean(collapsed);
+  els.appFrame?.classList.toggle('is-sidebar-collapsed', state.sidebarCollapsed);
+  if (els.sidebarToggle) {
+    els.sidebarToggle.setAttribute('aria-expanded', String(!state.sidebarCollapsed));
+    els.sidebarToggle.setAttribute('aria-label', state.sidebarCollapsed ? 'Показать меню' : 'Скрыть меню');
+    els.sidebarToggle.textContent = state.sidebarCollapsed ? '›' : '‹';
+  }
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, state.sidebarCollapsed ? '1' : '0');
+  } catch (_error) {
+    // The control still works for the current session if storage is unavailable.
+  }
+}
+
 function bindControls() {
+  els.sidebarToggle?.addEventListener('click', () => {
+    setSidebarCollapsed(!state.sidebarCollapsed);
+  });
   els.mop.addEventListener('change', () => {
     state.mopName = els.mop.value;
     render();
@@ -1564,6 +1602,7 @@ function bindControls() {
 }
 
 function init() {
+  setSidebarCollapsed(readSidebarCollapsed());
   populateSelect(els.mop, data.filters?.mopNames || [], 'Все МОПы');
   setDefaultPeriod();
   setDefaultActiveDeals();

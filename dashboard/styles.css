@@ -39,6 +39,11 @@ body {
   display: grid;
   grid-template-columns: 244px minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns 180ms ease;
+}
+
+.app-frame.is-sidebar-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 
 .sidebar {
@@ -50,6 +55,42 @@ body {
   border-right: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
+  overflow: hidden;
+  transition: opacity 180ms ease, padding 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+.app-frame.is-sidebar-collapsed .sidebar {
+  padding-right: 0;
+  padding-left: 0;
+  border-color: transparent;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-18px);
+}
+
+.sidebar-toggle {
+  position: fixed;
+  z-index: 80;
+  top: 14px;
+  left: 228px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  box-shadow: 0 10px 26px rgba(22, 20, 20, 0.12);
+  cursor: pointer;
+  transition: left 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.sidebar-toggle:hover {
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.app-frame.is-sidebar-collapsed .sidebar-toggle {
+  left: 12px;
 }
 
 .app-main {
@@ -501,6 +542,13 @@ select {
   line-height: 0.95;
 }
 
+.airtime-freshness {
+  margin: 0 0 4px;
+  color: rgba(22, 20, 20, 0.64);
+  font-size: clamp(13px, 1vw, 16px);
+  font-weight: 700;
+}
+
 .airtime-period {
   margin: 0;
   color: var(--muted);
@@ -878,6 +926,10 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .app-frame.is-sidebar-collapsed {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     position: sticky;
     z-index: 60;
@@ -885,6 +937,21 @@ select {
     padding: 14px 10px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+
+  .app-frame.is-sidebar-collapsed .sidebar {
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+    transform: translateY(-10px);
+  }
+
+  .sidebar-toggle,
+  .app-frame.is-sidebar-collapsed .sidebar-toggle {
+    top: 10px;
+    right: 10px;
+    left: auto;
   }
 
   .sidebar .brand {
