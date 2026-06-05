@@ -56,6 +56,9 @@ DEFAULT_MOP_NAMES_BY_ID = {
     "197": "Гавриленко Елена",
 }
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
+MANUAL_SALES_DATE_OVERRIDES = {
+    "4986": date(2026, 5, 31),
+}
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
     "ID",
@@ -1695,7 +1698,8 @@ def build_deal_metric_facts(
                 f"Продажи: сделка {record.get('ID') or ''} в завершенной стадии без даты завершения пропущена."
             )
             continue
-        event_date = event_datetime.date()
+        deal_id = str(record.get("ID") or "").strip()
+        event_date = MANUAL_SALES_DATE_OVERRIDES.get(deal_id, event_datetime.date())
         if event_date < window.start.date() or event_date > window.end.date():
             continue
         add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), "sales", 1)
