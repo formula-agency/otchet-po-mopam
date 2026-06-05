@@ -1625,13 +1625,15 @@ def build_deal_metric_facts(
     booking_events: list[BookingReservationEvent],
 ) -> None:
     deal_date_field = mop_settings.deal_date_field or "DATE_CREATE"
+    sales_date_field = "CLOSEDATE"
     deal_select_fields = unique_fields(
         [
             "ID",
             "ASSIGNED_BY_ID",
             mop_settings.assigned_field,
-            deal_date_field,
+            sales_date_field,
             "DATE_CREATE",
+            "CLOSED",
             "CATEGORY_ID",
             "STAGE_ID",
             "STAGE_SEMANTIC_ID",
@@ -1653,8 +1655,8 @@ def build_deal_metric_facts(
     for current_date in iterate_report_dates(window):
         day_start, day_end = day_bounds(current_date, window)
         base_filters: dict[str, Any] = {
-            f">={deal_date_field}": day_start.isoformat(timespec="seconds"),
-            f"<={deal_date_field}": day_end.isoformat(timespec="seconds"),
+            f">={sales_date_field}": day_start.isoformat(timespec="seconds"),
+            f"<={sales_date_field}": day_end.isoformat(timespec="seconds"),
         }
         try:
             if category_ids:
@@ -1687,10 +1689,13 @@ def build_deal_metric_facts(
     for record, current_date in deal_records_by_id.values():
         if not resolve_deal_closed(record, settings):
             continue
-        event_datetime = parse_bitrix_datetime(record.get(deal_date_field), settings.report_timezone)
-        if event_datetime is None and deal_date_field != "DATE_CREATE":
-            event_datetime = parse_bitrix_datetime(record.get("DATE_CREATE"), settings.report_timezone)
-        event_date = event_datetime.date() if event_datetime else current_date
+        event_datetime = parse_bitrix_datetime(record.get(sales_date_field), settings.report_timezone)
+        if event_datetime is None:
+            data.warnings.append(
+                f"Продажи: сделка {record.get('ID') or ''} в завершенной стадии без даты завершения пропущена."
+            )
+            continue
+        event_date = event_datetime.date()
         if event_date < window.start.date() or event_date > window.end.date():
             continue
         add_fact(data, event_date, extract_assigned_user_id(record, mop_settings), "sales", 1)
