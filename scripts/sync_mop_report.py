@@ -42,6 +42,7 @@ DEFAULT_INCLUDED_MOPS = (
     "Камболин Александр",
     "Жуков Лев",
     "Гавриленко Елена",
+    "Войнов Данил",
 )
 DEFAULT_MOP_NAMES_BY_ID = {
     "39": "Погребинский Артем",
@@ -54,11 +55,24 @@ DEFAULT_MOP_NAMES_BY_ID = {
     "194": "Жуков Лев",
     "195": "Попова Юлия",
     "197": "Гавриленко Елена",
+    "199": "Войнов Данил",
 }
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 MANUAL_SALES_DATE_OVERRIDES = {
     "4986": date(2026, 5, 31),
 }
+MANUAL_MONTHLY_MOP_PLANS = (
+    {
+        "month_start": date(2026, 6, 1),
+        "mop_id": "199",
+        "mop_name": "Войнов Данил",
+        "sales": 1,
+        "meetings": 8,
+        "reservations": 7,
+        "approved_mortgages": 4,
+        "air_seconds": 400 * 60,
+    },
+)
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
     "ID",
@@ -2086,6 +2100,64 @@ def load_plan_entries(
     return entries
 
 
+def manual_monthly_plan_entries(window: ReportWindow) -> list[PlanEntry]:
+    entries: list[PlanEntry] = []
+    for item in MANUAL_MONTHLY_MOP_PLANS:
+        month_start = item["month_start"]
+        if not isinstance(month_start, date):
+            continue
+        if month_end_for_date(month_start) < window.start.date() or month_start > window.end.date():
+            continue
+        split_metrics = {
+            "sales": split_monthly_value(int(item.get("sales") or 0)),
+            "meetings": split_monthly_value(int(item.get("meetings") or 0)),
+            "reservations": split_monthly_value(int(item.get("reservations") or 0)),
+            "approved_mortgages": split_monthly_value(int(item.get("approved_mortgages") or 0)),
+            "air_seconds": split_monthly_value(int(item.get("air_seconds") or 0)),
+        }
+        for sprint_index, week_start in enumerate(sprint_starts_for_month(month_start)):
+            if week_end_for_start(week_start) < window.start.date():
+                continue
+            entries.append(
+                PlanEntry(
+                    week_start=week_start,
+                    mop_id=str(item.get("mop_id") or "").strip(),
+                    mop_name=str(item.get("mop_name") or "").strip(),
+                    metrics=MopMetricSet(
+                        sales=split_metrics["sales"][sprint_index],
+                        meetings=split_metrics["meetings"][sprint_index],
+                        reservations=split_metrics["reservations"][sprint_index],
+                        approved_mortgages=split_metrics["approved_mortgages"][sprint_index],
+                        air_seconds=split_metrics["air_seconds"][sprint_index],
+                    ),
+                )
+            )
+    return entries
+
+
+def apply_manual_monthly_plan_overrides(plan_entries: list[PlanEntry], window: ReportWindow) -> list[PlanEntry]:
+    manual_entries = manual_monthly_plan_entries(window)
+    if not manual_entries:
+        return plan_entries
+    manual_id_keys = {
+        (entry.week_start, normalize_key(entry.mop_id))
+        for entry in manual_entries
+        if normalize_key(entry.mop_id)
+    }
+    manual_name_keys = {
+        (entry.week_start, normalize_key(entry.mop_name))
+        for entry in manual_entries
+        if normalize_key(entry.mop_name)
+    }
+    filtered_entries = [
+        entry
+        for entry in plan_entries
+        if (entry.week_start, normalize_key(entry.mop_id)) not in manual_id_keys
+        and (entry.week_start, normalize_key(entry.mop_name)) not in manual_name_keys
+    ]
+    return filtered_entries + manual_entries
+
+
 def apply_plan_entries(data: MopReportData, plan_entries: list[PlanEntry], user_names: dict[str, str]) -> None:
     known_name_to_id = {normalize_key(name): user_id for user_id, name in user_names.items() if normalize_key(name)}
     for entry in plan_entries:
@@ -2481,7 +2553,10 @@ def main() -> int:
             data.warnings.append("Планы не загружены: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
         elif not mop_settings.plan_sheet_id:
             data.warnings.append("Планы не загружены: не задан MOP_PLAN_SHEET_ID или GOOGLE_SHEET_ID.")
-        plan_entries = load_plan_entries(service, settings, mop_settings, window)
+        plan_entries = apply_manual_monthly_plan_overrides(
+            load_plan_entries(service, settings, mop_settings, window),
+            window,
+        )
         apply_plan_entries(data, plan_entries, user_names)
 
         active_deals_payload = build_active_deals_payload(
