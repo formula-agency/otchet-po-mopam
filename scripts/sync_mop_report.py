@@ -73,6 +73,15 @@ MANUAL_MONTHLY_MOP_PLANS = (
         "air_seconds": 400 * 60,
     },
 )
+MANUAL_FACT_ADJUSTMENTS = (
+    {
+        "event_date": date(2026, 6, 10),
+        "mop_id": "190",
+        "mop_name": "Тончу Ростислав",
+        "calls": 5,
+        "air_seconds": 59 * 60 + 35,
+    },
+)
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
     "ID",
@@ -1579,6 +1588,28 @@ def add_plan(data: MopReportData, week_start: date, key: str, mop_id: str, mop_n
     data.plans[week_start][key].add(metrics)
 
 
+def apply_manual_fact_adjustments(data: MopReportData, window: ReportWindow) -> None:
+    for item in MANUAL_FACT_ADJUSTMENTS:
+        event_date = item.get("event_date")
+        if not isinstance(event_date, date):
+            continue
+        if event_date < window.start.date() or event_date > window.end.date():
+            continue
+        mop_id = str(item.get("mop_id") or "").strip()
+        mop_name = str(item.get("mop_name") or "").strip()
+        metrics = {
+            "sales": int(item.get("sales") or 0),
+            "meetings": int(item.get("meetings") or 0),
+            "reservations": int(item.get("reservations") or 0),
+            "approved_mortgages": int(item.get("approved_mortgages") or 0),
+            "calls": int(item.get("calls") or 0),
+            "air_seconds": int(item.get("air_seconds") or 0),
+        }
+        for metric_name, value in metrics.items():
+            if value:
+                add_fact(data, event_date, mop_id, metric_name, value, mop_name=mop_name)
+
+
 def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_ids: set[str]) -> dict[str, str]:
     user_names: dict[str, str] = {}
     for user_id in sorted(user_ids, key=lambda item: int(item) if item.isdigit() else item):
@@ -2546,6 +2577,7 @@ def main() -> int:
         build_meeting_facts(data, service, session, settings, mop_settings, window)
         if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
             build_call_facts(data, session, settings, mop_settings, window)
+        apply_manual_fact_adjustments(data, window)
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
         hydrate_fact_identities(data, user_names)
