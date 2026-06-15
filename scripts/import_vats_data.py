@@ -58,6 +58,8 @@ RANGE_PATTERN = re.compile(
 SUM_FIELDS = {
     "callsFact",
     "airTimeFactSeconds",
+    "targetMinutesAfterMeetingPlanSeconds",
+    "targetMinutesAfterMeetingFactSeconds",
     "beelineCallsFact",
     "beelineAirTimeFactSeconds",
     "beelineAnsweredCalls",
@@ -438,6 +440,44 @@ def aggregate_csv_records(
     return rows, skipped_by_employee, used_paths, imported_call_count, imported_air_seconds
 
 
+def aggregate_csv_daily_records(
+    records: list[CsvCallRecord],
+    name_map: dict[str, str],
+    preferred_sources: dict[tuple[str, date], Path],
+) -> list[dict[str, Any]]:
+    by_day_mop: dict[tuple[date, str], dict[str, int]] = {}
+
+    for record in records:
+        mop_name = name_map.get(normalize_text(record.employee))
+        if not mop_name:
+            continue
+        use_calls = "calls" in csv_metric_kinds(record) and preferred_sources.get(("calls", record.day)) == record.path
+        use_air = "air" in csv_metric_kinds(record) and preferred_sources.get(("air", record.day)) == record.path
+        if not use_calls and not use_air:
+            continue
+        key = (record.day, mop_name)
+        metrics = by_day_mop.setdefault(key, {})
+        if use_calls:
+            metrics["callsFact"] = metrics.get("callsFact", 0) + 1
+            metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+        if use_air:
+            metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
+            metrics["crmAirTimeFactSeconds"] = metrics.get("crmAirTimeFactSeconds", 0) + record.duration_seconds
+
+    rows: list[dict[str, Any]] = []
+    for (current_date, mop_name), metrics in sorted(by_day_mop.items(), key=lambda item: (item[0][0], item[0][1])):
+        week_start = sprint_start_for_date(current_date)
+        row = empty_metric_row(week_start, mop_name=mop_name, mop_id="", manual_aggregate=False)
+        row["date"] = current_date.isoformat()
+        row["dateLabel"] = current_date.strftime("%d.%m.%Y")
+        row.update(metrics)
+        row["airTimeFact"] = format_duration(row["airTimeFactSeconds"])
+        row["callsSource"] = CRM_CALLS_SOURCE
+        row["airTimeSource"] = CRM_CALLS_SOURCE
+        rows.append(row)
+    return rows
+
+
 def combine_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     combined: dict[tuple[str, str], dict[str, Any]] = {}
     for row in rows:
@@ -514,6 +554,48 @@ def merge_csv_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, Any]])
         key=lambda row: (str(row.get("weekStart", "")), str(row.get("mopName", ""))),
     )
     return payload["baseRows"]
+
+
+def merge_csv_daily_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    daily_rows = clear_existing_csv_call_data(payload.get("dailyRows", []))
+    rows_by_key = {
+        (str(row.get("date", "")), str(row.get("mopName", ""))): row
+        for row in daily_rows
+    }
+
+    for import_row in csv_rows:
+        key = (str(import_row.get("date", "")), str(import_row["mopName"]))
+        row = rows_by_key.get(key)
+        if row is None:
+            row = empty_metric_row(
+                date.fromisoformat(str(import_row["weekStart"])),
+                mop_name=str(import_row["mopName"]),
+                mop_id=str(import_row.get("mopId", "")),
+                manual_aggregate=False,
+            )
+            row["date"] = str(import_row.get("date", ""))
+            row["dateLabel"] = str(import_row.get("dateLabel", ""))
+            daily_rows.append(row)
+            rows_by_key[key] = row
+
+        base_calls = int(row.get("callsFact") or 0)
+        base_air = int(row.get("airTimeFactSeconds") or 0)
+        row["callsFactBaseBeforeCrmCalls"] = base_calls
+        row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
+        row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["airTimeFactSeconds"] = base_air + int(import_row.get("airTimeFactSeconds") or 0)
+        row["airTimeFact"] = format_duration(int(row["airTimeFactSeconds"]))
+        row["callsSource"] = CRM_CALLS_SOURCE
+        row["airTimeSource"] = CRM_CALLS_SOURCE
+        row["crmCallsFact"] = int(import_row.get("crmCallsFact") or 0)
+        row["crmAirTimeFactSeconds"] = int(import_row.get("crmAirTimeFactSeconds") or 0)
+        row.pop("sharedPlanOnlyRow", None)
+
+    payload["dailyRows"] = sorted(
+        daily_rows,
+        key=lambda row: (str(row.get("date", "")), str(row.get("mopName", ""))),
+    )
+    return payload["dailyRows"]
 
 
 def display_path(path: Path) -> str:
@@ -649,6 +731,7 @@ def main() -> int:
         payload["baseRows"] = clear_existing_beeline_data(payload.get("baseRows", []))
         payload["baseRows"] = clear_existing_megafon_data(payload.get("baseRows", []))
         payload["baseRows"] = clear_existing_csv_call_data(payload.get("baseRows", []))
+        payload["dailyRows"] = clear_existing_csv_call_data(payload.get("dailyRows", []))
         name_map = canonical_mop_names(payload)
         imported_rows: list[dict[str, Any]] = []
 
@@ -662,6 +745,8 @@ def main() -> int:
         csv_used_ranges = [source_range for source_range in csv_ranges if source_range.path in csv_used_paths]
         if csv_rows:
             merge_csv_call_rows(payload, csv_rows)
+            csv_daily_rows = aggregate_csv_daily_records(csv_records, name_map, csv_preferred_sources)
+            merge_csv_daily_call_rows(payload, csv_daily_rows)
             imported_rows.extend(csv_rows)
 
         megafon_records = filter_records_by_window(megafon_records, report_from, upper_bound)

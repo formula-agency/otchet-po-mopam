@@ -318,7 +318,7 @@ select {
 
 .filters-band {
   display: grid;
-  grid-template-columns: minmax(180px, 1.1fr) minmax(150px, 0.9fr) minmax(150px, 0.9fr) minmax(220px, 1.2fr) auto;
+  grid-template-columns: minmax(170px, 1fr) minmax(140px, 0.8fr) minmax(150px, 0.9fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) minmax(190px, 1fr) auto;
   gap: 12px;
   align-items: end;
   padding: 16px;
@@ -563,9 +563,9 @@ select {
 
 .airtime-controls {
   display: grid;
-  grid-template-columns: minmax(170px, 220px) minmax(230px, 320px);
+  grid-template-columns: minmax(150px, 200px) minmax(210px, 280px) minmax(140px, 170px) minmax(140px, 170px);
   gap: 12px;
-  width: min(560px, 100%);
+  width: min(900px, 100%);
 }
 
 .airtime-summary {
@@ -917,7 +917,7 @@ select {
   }
 
   .filters-band {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .panel,

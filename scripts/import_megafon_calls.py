@@ -20,6 +20,7 @@ XML_NS = {
 MEGAFON_MOP_ID = "__megafon_vats__"
 MEGAFON_MOP_NAME = "ВАТС МегаФон (общий итог)"
 MEGAFON_SOURCE = "megafon_vats"
+POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_MOP_NAMES = (
     "Черткова Ирина",
     "Газисова Мария",
@@ -44,6 +45,7 @@ METRIC_ZEROES = {
     "callsFact": 0,
     "airTimePlanSeconds": 0,
     "airTimeFactSeconds": 0,
+    "targetMinutesAfterMeetingPlanSeconds": 0,
     "targetMinutesAfterMeetingFactSeconds": 0,
 }
 
@@ -171,6 +173,10 @@ def format_week_label(week_start: date) -> str:
 def format_duration(seconds: int) -> str:
     minutes, secs = divmod(max(0, seconds), 60)
     return f"{minutes:02d}:{secs:02d}"
+
+
+def post_meeting_air_plan_seconds(air_seconds: int) -> int:
+    return max(0, round(int(air_seconds or 0) * POST_MEETING_AIR_PLAN_RATIO))
 
 
 def column_index(cell_ref: str) -> int:
@@ -525,10 +531,17 @@ def update_filters(payload: dict[str, Any], rows: list[dict[str, Any]]) -> None:
 def recompute_totals(payload: dict[str, Any]) -> None:
     totals = {key: 0 for key in METRIC_ZEROES}
     for row in payload.get("baseRows", []):
+        if not row.get("targetMinutesAfterMeetingPlanSeconds"):
+            row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+                parse_int(row.get("airTimePlanSeconds"))
+            )
         for key in totals:
             totals[key] += parse_int(row.get(key))
     totals["airTimePlan"] = format_duration(totals["airTimePlanSeconds"])
     totals["airTimeFact"] = format_duration(totals["airTimeFactSeconds"])
+    totals["targetMinutesAfterMeetingPlan"] = format_duration(
+        totals["targetMinutesAfterMeetingPlanSeconds"]
+    )
     totals["targetMinutesAfterMeetingFact"] = format_duration(
         totals["targetMinutesAfterMeetingFactSeconds"]
     )

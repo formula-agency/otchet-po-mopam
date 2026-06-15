@@ -13,6 +13,7 @@ from import_megafon_calls import (
     empty_metric_row,
     format_duration,
     normalize_text,
+    post_meeting_air_plan_seconds,
     parse_int,
     read_xlsx_rows,
     update_filters,
@@ -386,10 +387,39 @@ def sprint_starts(month: str) -> list[date]:
     return [start.replace(day=day) for day in (1, 8, 15, 22)]
 
 
+def sprint_end(current: date) -> date:
+    if current.day >= 22:
+        return month_end(current)
+    return current + timedelta(days=6)
+
+
+def parse_iso_date(value: Any) -> date | None:
+    try:
+        return datetime.strptime(str(value or "")[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def dates_between(start: date, end: date) -> list[date]:
+    result: list[date] = []
+    current = start
+    while current <= end:
+        result.append(current)
+        current += timedelta(days=1)
+    return result
+
+
 def split_monthly_value(value: Any) -> list[int]:
     total = max(0, parse_int(value))
     base = total // 4
     return [base, base, base, base + total - base * 4]
+
+
+def split_value_for_days(value: Any, parts: int) -> list[int]:
+    total = max(0, parse_int(value))
+    parts = max(1, int(parts or 1))
+    base, remainder = divmod(total, parts)
+    return [base + (1 if index < remainder else 0) for index in range(parts)]
 
 
 def clear_existing_shared_plans(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -401,6 +431,12 @@ def clear_existing_shared_plans(rows: list[dict[str, Any]]) -> list[dict[str, An
             for field, base_field in BASE_PLAN_FIELDS.items():
                 row[field] = parse_int(row.get(base_field))
                 row.pop(base_field, None)
+            row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+                parse_int(row.get("airTimePlanSeconds"))
+            )
+            row["targetMinutesAfterMeetingPlan"] = format_duration(
+                row["targetMinutesAfterMeetingPlanSeconds"]
+            )
             row["airTimePlan"] = format_duration(parse_int(row.get("airTimePlanSeconds")))
             row.pop("planSource", None)
             row.pop("aggregatePlan", None)
@@ -427,6 +463,12 @@ def build_shared_plan_rows(store: dict[str, Any]) -> list[dict[str, Any]]:
                 for field in PLAN_FIELDS:
                     row[field] = split_values[field][sprint_index]
                 row["airTimePlan"] = format_duration(row["airTimePlanSeconds"])
+                row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+                    row["airTimePlanSeconds"]
+                )
+                row["targetMinutesAfterMeetingPlan"] = format_duration(
+                    row["targetMinutesAfterMeetingPlanSeconds"]
+                )
                 row["planSource"] = SHARED_PLAN_SOURCE
                 row["sharedPlanOnlyRow"] = True
                 if aggregate_plan:
@@ -454,6 +496,10 @@ def merge_shared_plan_rows(payload: dict[str, Any], shared_rows: list[dict[str, 
             row[base_field] = parse_int(row.get(field))
             row[field] = parse_int(shared_row.get(field))
         row["airTimePlan"] = format_duration(row["airTimePlanSeconds"])
+        row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+            row["airTimePlanSeconds"]
+        )
+        row["targetMinutesAfterMeetingPlan"] = format_duration(row["targetMinutesAfterMeetingPlanSeconds"])
         row["planSource"] = SHARED_PLAN_SOURCE
 
     payload["baseRows"] = sorted(
@@ -463,15 +509,69 @@ def merge_shared_plan_rows(payload: dict[str, Any], shared_rows: list[dict[str, 
     return payload["baseRows"]
 
 
+def merge_shared_daily_plan_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    daily_rows = clear_existing_shared_plans(payload.get("dailyRows", []))
+    rows_by_key = {
+        (str(row.get("date", "")), str(row.get("weekStart", "")), normalize_name(row.get("mopName"))): row
+        for row in daily_rows
+    }
+    for base_row in payload.get("baseRows", []):
+        week_start = parse_iso_date(base_row.get("weekStart"))
+        if week_start is None:
+            continue
+        days = dates_between(week_start, sprint_end(week_start))
+        split_values = {field: split_value_for_days(base_row.get(field), len(days)) for field in PLAN_FIELDS}
+        for index, current_date in enumerate(days):
+            key = (current_date.isoformat(), week_start.isoformat(), normalize_name(base_row.get("mopName")))
+            row = rows_by_key.get(key)
+            if row is None:
+                row = empty_metric_row(
+                    week_start,
+                    mop_name=str(base_row.get("mopName") or ""),
+                    mop_id=str(base_row.get("mopId") or ""),
+                    manual_aggregate=False,
+                )
+                row["date"] = current_date.isoformat()
+                row["dateLabel"] = current_date.strftime("%d.%m.%Y")
+                daily_rows.append(row)
+                rows_by_key[key] = row
+            for field in PLAN_FIELDS:
+                row[field] = split_values[field][index]
+            row["airTimePlan"] = format_duration(row["airTimePlanSeconds"])
+            row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+                row["airTimePlanSeconds"]
+            )
+            row["targetMinutesAfterMeetingPlan"] = format_duration(row["targetMinutesAfterMeetingPlanSeconds"])
+            if base_row.get("planSource") == SHARED_PLAN_SOURCE:
+                row["planSource"] = SHARED_PLAN_SOURCE
+            if base_row.get("aggregatePlan"):
+                row["manualAggregate"] = True
+                row["aggregatePlan"] = True
+                row["aggregatePlanFields"] = base_row.get("aggregatePlanFields") or list(PLAN_FIELDS)
+
+    payload["dailyRows"] = sorted(
+        daily_rows,
+        key=lambda row: (str(row.get("date", "")), normalize_name(row.get("mopName"))),
+    )
+    return payload["dailyRows"]
+
+
 def recompute_totals(payload: dict[str, Any]) -> None:
     totals = {key: 0 for key in METRIC_ZEROES}
     for row in payload.get("baseRows", []):
         if row.get("aggregatePlan"):
             continue
+        if not row.get("targetMinutesAfterMeetingPlanSeconds"):
+            row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+                parse_int(row.get("airTimePlanSeconds"))
+            )
         for key in totals:
             totals[key] += parse_int(row.get(key))
     totals["airTimePlan"] = format_duration(totals["airTimePlanSeconds"])
     totals["airTimeFact"] = format_duration(totals["airTimeFactSeconds"])
+    totals["targetMinutesAfterMeetingPlan"] = format_duration(
+        totals["targetMinutesAfterMeetingPlanSeconds"]
+    )
     totals["targetMinutesAfterMeetingFact"] = format_duration(
         totals["targetMinutesAfterMeetingFactSeconds"]
     )
@@ -510,6 +610,7 @@ def apply_store_to_dashboard(store_path: Path, data_path: Path) -> None:
 
     shared_rows = build_shared_plan_rows(store)
     rows = merge_shared_plan_rows(payload, shared_rows)
+    merge_shared_daily_plan_rows(payload)
     payload["sharedPlans"] = shared_plan_metadata(store)
     payload["generatedAt"] = datetime.now().isoformat(timespec="seconds")
     update_filters(payload, rows)

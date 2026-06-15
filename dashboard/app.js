@@ -6,11 +6,15 @@ const state = {
   mopName: 'all',
   month: '',
   sprint: '',
+  dateFrom: '',
+  dateTo: '',
   search: '',
   activeDate: '',
   activeMopName: '',
   airtimeMonth: '',
   airtimeSprint: '',
+  airtimeDateFrom: '',
+  airtimeDateTo: '',
 };
 
 const els = {
@@ -23,6 +27,8 @@ const els = {
   mop: document.getElementById('filter-mop'),
   month: document.getElementById('filter-month'),
   sprint: document.getElementById('filter-sprint'),
+  dateFrom: document.getElementById('filter-date-from'),
+  dateTo: document.getElementById('filter-date-to'),
   search: document.getElementById('filter-search'),
   reset: document.getElementById('reset-filters'),
   activeFilters: document.getElementById('active-filters'),
@@ -47,6 +53,7 @@ const els = {
   kpiAir: document.getElementById('kpi-air'),
   kpiAirRate: document.getElementById('kpi-air-rate'),
   kpiTargetAfterMeeting: document.getElementById('kpi-target-after-meeting'),
+  kpiTargetAfterMeetingRate: document.getElementById('kpi-target-after-meeting-rate'),
   detailCaption: document.getElementById('detail-caption'),
   detailBody: document.getElementById('detail-body'),
   activeDealDate: document.getElementById('active-deal-date'),
@@ -62,6 +69,8 @@ const els = {
   activeReservationCount: document.getElementById('active-reservation-count'),
   airtimeMonth: document.getElementById('airtime-month'),
   airtimeSprint: document.getElementById('airtime-sprint'),
+  airtimeDateFrom: document.getElementById('airtime-date-from'),
+  airtimeDateTo: document.getElementById('airtime-date-to'),
   airtimeFreshness: document.getElementById('airtime-freshness'),
   airtimePeriodLabel: document.getElementById('airtime-period-label'),
   scoreboardSummary: document.getElementById('scoreboard-summary'),
@@ -87,6 +96,7 @@ const percentFormatter = new Intl.NumberFormat('ru-RU', {
 });
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WHOLE_MONTH_VALUE = '__whole_month__';
+const POST_MEETING_AIR_PLAN_RATIO = 0.35;
 const MONTH_NAMES = [
   'Январь',
   'Февраль',
@@ -107,7 +117,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260615-1';
+const DASHBOARD_DATA_VERSION = '20260615-2';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -120,7 +130,7 @@ const PLAN_METRIC_FIELDS = [
 const SCOREBOARD_METRICS = [
   { label: 'Звонки', fact: 'callsFact', kind: 'number', weight: 1 },
   { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
-  { label: 'Целевые минуты', fact: 'targetMinutesAfterMeetingFactSeconds', kind: 'duration', weight: 1 / 60 },
+  { label: 'Эфир после встречи', plan: 'targetMinutesAfterMeetingPlanSeconds', fact: 'targetMinutesAfterMeetingFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
   { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
   { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
@@ -161,6 +171,22 @@ function pair(plan, fact) {
 
 function durationPair(plan, fact) {
   return `${formatDuration(plan)} / ${formatDuration(fact)}`;
+}
+
+function postMeetingAirPlanSeconds(airPlanSeconds) {
+  return Math.max(0, Math.round(Number(airPlanSeconds || 0) * POST_MEETING_AIR_PLAN_RATIO));
+}
+
+function normalizedDateRange(fromValue, toValue) {
+  let from = String(fromValue || '').trim();
+  let to = String(toValue || '').trim();
+  if (from && to && from > to) [from, to] = [to, from];
+  return { from, to };
+}
+
+function hasDateRange(fromValue, toValue) {
+  const range = normalizedDateRange(fromValue, toValue);
+  return Boolean(range.from || range.to);
 }
 
 function normalizeSearch(value) {
@@ -376,6 +402,14 @@ function reportRows() {
   return data.baseRows || [];
 }
 
+function dailyRows() {
+  return data.dailyRows || [];
+}
+
+function rowsForDateFilters(fromValue, toValue) {
+  return hasDateRange(fromValue, toValue) ? dailyRows() : reportRows();
+}
+
 function allWeekOptions() {
   const byWeek = new Map();
   for (const row of reportRows()) {
@@ -496,6 +530,20 @@ function rowMatchesPeriod(row, selectedMonth, selectedSprint) {
     return sprintBelongsToMonth(row.weekStart, selectedMonth);
   }
   return true;
+}
+
+function rowMatchesDateRange(row, fromValue, toValue) {
+  const rowDate = String(row.date || '').slice(0, 10);
+  if (!rowDate) return false;
+  const range = normalizedDateRange(fromValue, toValue);
+  if (range.from && rowDate < range.from) return false;
+  if (range.to && rowDate > range.to) return false;
+  return true;
+}
+
+function rowMatchesPeriodOrDates(row, selectedMonth, selectedSprint, fromValue, toValue) {
+  if (hasDateRange(fromValue, toValue)) return rowMatchesDateRange(row, fromValue, toValue);
+  return rowMatchesPeriod(row, selectedMonth, selectedSprint);
 }
 
 function activeDealsData() {
@@ -626,9 +674,9 @@ function filteredActiveDeals() {
 
 function filteredRows() {
   const query = normalizeSearch(state.search);
-  return reportRows().filter((row) => {
+  return rowsForDateFilters(state.dateFrom, state.dateTo).filter((row) => {
     if (state.mopName !== 'all' && row.mopName !== state.mopName) return false;
-    if (!rowMatchesPeriod(row, state.month, state.sprint)) return false;
+    if (!rowMatchesPeriodOrDates(row, state.month, state.sprint, state.dateFrom, state.dateTo)) return false;
     if (!query) return true;
     return normalizeSearch(row.mopName).includes(query);
   });
@@ -997,6 +1045,7 @@ function summarizeRows(rows) {
     callsFact: 0,
     airTimePlanSeconds: 0,
     airTimeFactSeconds: 0,
+    targetMinutesAfterMeetingPlanSeconds: 0,
     targetMinutesAfterMeetingFactSeconds: 0,
   };
 
@@ -1012,7 +1061,7 @@ function summarizeRows(rows) {
     }, 0);
   }
 
-  return factRows.reduce((acc, row) => {
+  const result = factRows.reduce((acc, row) => {
     acc.salesFact += Number(row.salesFact ?? row.dealsFact ?? 0);
     acc.meetingsFact += Number(row.meetingsFact || 0);
     acc.reservationsFact += Number(row.reservationsFact || 0);
@@ -1022,6 +1071,8 @@ function summarizeRows(rows) {
     acc.targetMinutesAfterMeetingFactSeconds += Number(row.targetMinutesAfterMeetingFactSeconds || 0);
     return acc;
   }, summary);
+  result.targetMinutesAfterMeetingPlanSeconds = postMeetingAirPlanSeconds(result.airTimePlanSeconds);
+  return result;
 }
 
 function summarizeByWeek(rows) {
@@ -1057,7 +1108,10 @@ function renderHero(rows) {
   els.heroReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
   els.heroMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
   els.heroAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
-  els.heroTargetAfterMeeting.textContent = formatDuration(summary.targetMinutesAfterMeetingFactSeconds);
+  els.heroTargetAfterMeeting.textContent = durationPair(
+    summary.targetMinutesAfterMeetingPlanSeconds,
+    summary.targetMinutesAfterMeetingFactSeconds
+  );
 }
 
 function renderKpis(rows) {
@@ -1073,7 +1127,14 @@ function renderKpis(rows) {
   els.kpiCalls.textContent = formatNumber(summary.callsFact);
   els.kpiAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
   els.kpiAirRate.textContent = completion(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
-  els.kpiTargetAfterMeeting.textContent = formatDuration(summary.targetMinutesAfterMeetingFactSeconds);
+  els.kpiTargetAfterMeeting.textContent = durationPair(
+    summary.targetMinutesAfterMeetingPlanSeconds,
+    summary.targetMinutesAfterMeetingFactSeconds
+  );
+  els.kpiTargetAfterMeetingRate.textContent = completion(
+    summary.targetMinutesAfterMeetingFactSeconds,
+    summary.targetMinutesAfterMeetingPlanSeconds
+  );
 }
 
 function renderActiveState(rows) {
@@ -1081,8 +1142,17 @@ function renderActiveState(rows) {
   const month = selectedOption(monthOptions(), state.month);
   const sprint = selectedOption(sprintOptionsForMonth(state.month), state.sprint);
   if (state.mopName !== 'all') chips.push(`МОП: ${state.mopName}`);
-  if (month) chips.push(`Месяц: ${month.label}`);
-  if (sprint) chips.push(`Период: ${sprint.label}`);
+  const dateRange = normalizedDateRange(state.dateFrom, state.dateTo);
+  if (dateRange.from || dateRange.to) {
+    const from = dateRange.from ? formatDate(dateRange.from) : 'начало';
+    const to = dateRange.to ? formatDate(dateRange.to) : 'сегодня';
+    chips.push(dateRange.from && dateRange.to && dateRange.from === dateRange.to
+      ? `Дата: ${from}`
+      : `Даты: ${from}-${to}`);
+  } else {
+    if (month) chips.push(`Месяц: ${month.label}`);
+    if (sprint) chips.push(`Период: ${sprint.label}`);
+  }
   if (normalizeSearch(state.search)) chips.push(`Поиск: ${state.search.trim()}`);
 
   els.activeFilters.innerHTML = chips.length
@@ -1103,10 +1173,13 @@ function renderDetailTable(rows) {
 
   els.detailBody.innerHTML = rows
     .slice()
-    .sort((a, b) => a.weekStart.localeCompare(b.weekStart) || a.mopName.localeCompare(b.mopName))
+    .sort((a, b) => (
+      (a.date || a.weekStart).localeCompare(b.date || b.weekStart)
+      || a.mopName.localeCompare(b.mopName)
+    ))
     .map((row) => `
       <tr${row.manualAggregate ? ' class="manual-row"' : ''}>
-        <td>${escapeHtml(row.weekLabel)}</td>
+        <td>${escapeHtml(row.dateLabel || row.weekLabel)}</td>
         <td>${escapeHtml(row.mopName)}</td>
         <td>${pair(row.salesPlan ?? row.dealsPlan, row.salesFact ?? row.dealsFact)} <span>${completion(row.salesFact ?? row.dealsFact, row.salesPlan ?? row.dealsPlan)}</span></td>
         <td>${pair(row.meetingsPlan, row.meetingsFact)} <span>${completion(row.meetingsFact, row.meetingsPlan)}</span></td>
@@ -1114,7 +1187,7 @@ function renderDetailTable(rows) {
         <td>${pair(row.approvedMortgagesPlan, row.approvedMortgagesFact)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
         <td>${formatNumber(row.callsFact)}</td>
         <td>${durationPair(row.airTimePlanSeconds, row.airTimeFactSeconds)} <span>${completion(row.airTimeFactSeconds, row.airTimePlanSeconds)}</span></td>
-        <td>${formatDuration(row.targetMinutesAfterMeetingFactSeconds)}</td>
+        <td>${durationPair(row.targetMinutesAfterMeetingPlanSeconds, row.targetMinutesAfterMeetingFactSeconds)} <span>${completion(row.targetMinutesAfterMeetingFactSeconds, row.targetMinutesAfterMeetingPlanSeconds)}</span></td>
       </tr>
     `)
     .join('');
@@ -1201,8 +1274,17 @@ function scoreboardRatio(row) {
 function scoreboardRows() {
   const rowsByMop = new Map((data.filters?.mopNames || []).map((name) => [name, emptyScoreboardRow(name)]));
 
-  for (const row of reportRows()) {
-    if (row.manualAggregate || !rowMatchesPeriod(row, state.airtimeMonth, state.airtimeSprint)) continue;
+  for (const row of rowsForDateFilters(state.airtimeDateFrom, state.airtimeDateTo)) {
+    if (
+      row.manualAggregate
+      || !rowMatchesPeriodOrDates(
+        row,
+        state.airtimeMonth,
+        state.airtimeSprint,
+        state.airtimeDateFrom,
+        state.airtimeDateTo
+      )
+    ) continue;
     if (!rowsByMop.has(row.mopName)) {
       rowsByMop.set(row.mopName, emptyScoreboardRow(row.mopName));
     }
@@ -1257,9 +1339,18 @@ function renderAirTimePlanFact() {
   if (els.airtimeFreshness) {
     els.airtimeFreshness.textContent = `Данные актуальны на ${fullDate(actualDataDate())}`;
   }
-  els.airtimePeriodLabel.textContent = selectedSprint
-    ? `${formatMonthLabel(state.airtimeMonth)} · ${selectedSprint.label}`
-    : formatMonthLabel(state.airtimeMonth);
+  const airtimeRange = normalizedDateRange(state.airtimeDateFrom, state.airtimeDateTo);
+  if (airtimeRange.from || airtimeRange.to) {
+    const from = airtimeRange.from ? formatDate(airtimeRange.from) : 'начало';
+    const to = airtimeRange.to ? formatDate(airtimeRange.to) : 'сегодня';
+    els.airtimePeriodLabel.textContent = airtimeRange.from && airtimeRange.to && airtimeRange.from === airtimeRange.to
+      ? `Дата: ${from}`
+      : `Даты: ${from}-${to}`;
+  } else {
+    els.airtimePeriodLabel.textContent = selectedSprint
+      ? `${formatMonthLabel(state.airtimeMonth)} · ${selectedSprint.label}`
+      : formatMonthLabel(state.airtimeMonth);
+  }
   els.scoreboardSummary.innerHTML = SCOREBOARD_METRICS.map((metric) => `
     <article>
       <span>${escapeHtml(metric.label)}</span>
@@ -1445,9 +1536,9 @@ function renderWarnings() {
 }
 
 function exportCsv(rows) {
-  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт', 'Целевые минуты после встречи факт'];
+  const header = ['Период', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт', 'Эфир после встречи план', 'Эфир после встречи факт'];
   const body = rows.map((row) => [
-    row.weekLabel,
+    row.dateLabel || row.weekLabel,
     row.mopName,
     row.salesPlan ?? row.dealsPlan,
     row.salesFact ?? row.dealsFact,
@@ -1460,6 +1551,7 @@ function exportCsv(rows) {
     row.callsFact,
     formatDuration(row.airTimePlanSeconds),
     formatDuration(row.airTimeFactSeconds),
+    formatDuration(row.targetMinutesAfterMeetingPlanSeconds),
     formatDuration(row.targetMinutesAfterMeetingFactSeconds),
   ]);
   const csv = [header, ...body].map((line) => line.map(csvEscape).join(';')).join('\r\n');
@@ -1577,6 +1669,14 @@ function bindControls() {
     state.sprint = els.sprint.value;
     render();
   });
+  els.dateFrom.addEventListener('change', () => {
+    state.dateFrom = els.dateFrom.value;
+    render();
+  });
+  els.dateTo.addEventListener('change', () => {
+    state.dateTo = els.dateTo.value;
+    render();
+  });
   els.search.addEventListener('input', () => {
     state.search = els.search.value;
     render();
@@ -1598,9 +1698,21 @@ function bindControls() {
     state.airtimeSprint = els.airtimeSprint.value;
     renderAirTimePlanFact();
   });
+  els.airtimeDateFrom.addEventListener('change', () => {
+    state.airtimeDateFrom = els.airtimeDateFrom.value;
+    renderAirTimePlanFact();
+  });
+  els.airtimeDateTo.addEventListener('change', () => {
+    state.airtimeDateTo = els.airtimeDateTo.value;
+    renderAirTimePlanFact();
+  });
   els.reset.addEventListener('click', () => {
     state.mopName = 'all';
     state.search = '';
+    state.dateFrom = '';
+    state.dateTo = '';
+    state.airtimeDateFrom = '';
+    state.airtimeDateTo = '';
     setDefaultPeriod();
     els.mop.value = 'all';
     els.month.value = state.month;
@@ -1608,6 +1720,10 @@ function bindControls() {
     els.airtimeMonth.value = state.airtimeMonth;
     syncAirTimeSprintSelect(true);
     els.search.value = '';
+    els.dateFrom.value = '';
+    els.dateTo.value = '';
+    els.airtimeDateFrom.value = '';
+    els.airtimeDateTo.value = '';
     render();
   });
   els.exportCsv.addEventListener('click', () => exportCsv(filteredRows()));
@@ -1621,6 +1737,11 @@ function init() {
   populateSelect(els.month, monthOptions(), '', false);
   els.month.value = state.month;
   syncSprintSelect(true);
+  for (const input of [els.dateFrom, els.dateTo, els.airtimeDateFrom, els.airtimeDateTo]) {
+    input.min = data.report?.from || '';
+    input.max = data.report?.to || '';
+    input.value = '';
+  }
   populateSelect(els.airtimeMonth, monthOptions(), '', false);
   els.airtimeMonth.value = state.airtimeMonth;
   syncAirTimeSprintSelect(true);

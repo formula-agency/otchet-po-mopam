@@ -25,6 +25,7 @@ DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
 DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_ID = "1XWdY18re5lhXgaVzeOtf6tDWfQt8MrLOUT5yLiLtj6U"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_GID = "0"
+POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
 DEFAULT_BOOKING_LIST_ID = "38"
@@ -134,7 +135,9 @@ MOP_REPORT_HEADERS = [
     "Эфир план",
     "Эфир факт",
     "Эфир %",
-    "Целевые минуты после встречи факт",
+    "Эфир после встречи план",
+    "Эфир после встречи факт",
+    "Эфир после встречи %",
 ]
 
 PLAN_HEADER_ALIASES = {
@@ -298,6 +301,8 @@ TARGET_AFTER_MEETING_HEADER_ALIASES = {
         "employee",
     },
     "minutes": {
+        "эфир после встречи",
+        "эфир после встречи факт",
         "целевые минуты после встречи",
         "целевые минуты",
         "минуты после встречи",
@@ -422,6 +427,11 @@ class MopMetricSet:
             f"approvedMortgages{suffix}": self.approved_mortgages,
             f"airTime{suffix}Seconds": self.air_seconds,
         }
+        if suffix == "Plan":
+            result["targetMinutesAfterMeetingPlanSeconds"] = (
+                self.target_minutes_after_meeting_seconds
+                or post_meeting_air_plan_seconds(self.air_seconds)
+            )
         if suffix == "Fact":
             result["callsFact"] = self.calls
             result["targetMinutesAfterMeetingFactSeconds"] = self.target_minutes_after_meeting_seconds
@@ -437,6 +447,9 @@ class MopIdentity:
 @dataclass
 class MopReportData:
     facts: dict[date, dict[str, MopMetricSet]] = field(
+        default_factory=lambda: defaultdict(lambda: defaultdict(MopMetricSet))
+    )
+    daily_facts: dict[date, dict[str, MopMetricSet]] = field(
         default_factory=lambda: defaultdict(lambda: defaultdict(MopMetricSet))
     )
     plans: dict[date, dict[str, MopMetricSet]] = field(
@@ -1467,6 +1480,44 @@ def format_duration(seconds: int) -> str:
     return f"{minutes:02d}:{seconds:02d}"
 
 
+def post_meeting_air_plan_seconds(air_seconds: int) -> int:
+    return max(0, round(int(air_seconds or 0) * POST_MEETING_AIR_PLAN_RATIO))
+
+
+def split_value(value: int, parts: int) -> list[int]:
+    value = max(0, int(value or 0))
+    parts = max(1, int(parts or 1))
+    base, remainder = divmod(value, parts)
+    return [base + (1 if index < remainder else 0) for index in range(parts)]
+
+
+def split_metric_set_by_days(metrics: MopMetricSet, days: list[date]) -> dict[date, MopMetricSet]:
+    result: dict[date, MopMetricSet] = {}
+    if not days:
+        return result
+    target_plan = metrics.target_minutes_after_meeting_seconds or post_meeting_air_plan_seconds(metrics.air_seconds)
+    split_metrics = {
+        "sales": split_value(metrics.sales, len(days)),
+        "meetings": split_value(metrics.meetings, len(days)),
+        "reservations": split_value(metrics.reservations, len(days)),
+        "approved_mortgages": split_value(metrics.approved_mortgages, len(days)),
+        "calls": split_value(metrics.calls, len(days)),
+        "air_seconds": split_value(metrics.air_seconds, len(days)),
+        "target_minutes_after_meeting_seconds": split_value(target_plan, len(days)),
+    }
+    for index, current_date in enumerate(days):
+        result[current_date] = MopMetricSet(
+            sales=split_metrics["sales"][index],
+            meetings=split_metrics["meetings"][index],
+            reservations=split_metrics["reservations"][index],
+            approved_mortgages=split_metrics["approved_mortgages"][index],
+            calls=split_metrics["calls"][index],
+            air_seconds=split_metrics["air_seconds"][index],
+            target_minutes_after_meeting_seconds=split_metrics["target_minutes_after_meeting_seconds"][index],
+        )
+    return result
+
+
 def completion_cell(plan: int, fact: int) -> str:
     if plan <= 0:
         return "—" if fact > 0 else ""
@@ -1769,6 +1820,8 @@ def add_fact(
     remember_identity(data, key, mop_id, mop_name)
     metrics = data.facts[week_start_for_date(event_date)][key]
     setattr(metrics, metric_name, value + getattr(metrics, metric_name))
+    daily_metrics = data.daily_facts[event_date][key]
+    setattr(daily_metrics, metric_name, value + getattr(daily_metrics, metric_name))
 
 
 def add_plan(data: MopReportData, week_start: date, key: str, mop_id: str, mop_name: str, metrics: MopMetricSet) -> None:
@@ -2103,7 +2156,7 @@ def build_target_after_meeting_facts(
         return
     if service is None:
         data.warnings.append(
-            "Целевые минуты после встречи не посчитаны: "
+            "Эфир после встречи не посчитан: "
             "не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON."
         )
         return
@@ -2111,10 +2164,10 @@ def build_target_after_meeting_facts(
     try:
         entries = build_target_after_meeting_entries(service, settings)
     except ConfigError as exc:
-        data.warnings.append(f"Целевые минуты после встречи не посчитаны: {safe_error_text(exc)}")
+        data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
         return
     except Exception as exc:
-        data.warnings.append(f"Целевые минуты после встречи не посчитаны: {safe_error_text(exc)}")
+        data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
         return
 
     skipped_names: dict[str, int] = defaultdict(int)
@@ -2137,11 +2190,11 @@ def build_target_after_meeting_facts(
         imported_count += 1
     if skipped_names:
         data.warnings.append(
-            "Целевые минуты после встречи: пропущено "
+            "Эфир после встречи: пропущено "
             f"{sum(skipped_names.values())} строк по МОПам вне списка."
         )
     if not imported_count:
-        data.warnings.append("Целевые минуты после встречи: нет строк в выбранном периоде.")
+        data.warnings.append("Эфир после встречи: нет строк в выбранном периоде.")
 
 
 def infer_plan_column_from_header(normalized_header: str) -> str:
@@ -2451,6 +2504,10 @@ def sum_metrics(items: list[MopMetricSet]) -> MopMetricSet:
 
 
 def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: MopMetricSet) -> list[Any]:
+    post_meeting_plan = (
+        plan.target_minutes_after_meeting_seconds
+        or post_meeting_air_plan_seconds(plan.air_seconds)
+    )
     return [
         sprint_label,
         mop_name,
@@ -2470,7 +2527,9 @@ def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: 
         format_duration(plan.air_seconds),
         format_duration(fact.air_seconds),
         completion_cell(plan.air_seconds, fact.air_seconds),
+        format_duration(post_meeting_plan),
         format_duration(fact.target_minutes_after_meeting_seconds),
+        completion_cell(post_meeting_plan, fact.target_minutes_after_meeting_seconds),
     ]
 
 
@@ -2524,6 +2583,74 @@ def build_report_rows(data: MopReportData, mop_settings: MopSettings) -> BuiltRe
         detail_count=max(0, len(rows) - len(summary_rows) - 1),
         week_count=len(week_starts),
         mop_count=len(detail_keys),
+    )
+
+
+def sprint_dates_within_window(week_start: date, window: ReportWindow) -> list[date]:
+    current = max(week_start, window.start.date())
+    end = min(week_end_for_start(week_start), window.end.date())
+    result: list[date] = []
+    while current <= end:
+        result.append(current)
+        current += timedelta(days=1)
+    return result
+
+
+def build_daily_dashboard_rows(
+    data: MopReportData,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    week_starts = sorted(set(data.facts) | set(data.plans) | {week_start_for_date(day) for day in data.daily_facts})
+
+    for week_start in week_starts:
+        days = sprint_dates_within_window(week_start, window)
+        if not days:
+            continue
+        keys = sorted(
+            set(data.facts.get(week_start, {}))
+            | set(data.plans.get(week_start, {}))
+            | {
+                key
+                for current_date in days
+                for key in data.daily_facts.get(current_date, {})
+            },
+            key=lambda key: data.identities.get(key, MopIdentity(mop_name=key)).mop_name,
+        )
+        for key in keys:
+            identity = data.identities.get(key, MopIdentity(mop_name=key))
+            if not mop_is_allowed(identity.mop_id, identity.mop_name, mop_settings):
+                continue
+            weekly_plan = data.plans.get(week_start, {}).get(key, MopMetricSet())
+            daily_plans = split_metric_set_by_days(weekly_plan, days)
+            for current_date in days:
+                plan = daily_plans.get(current_date, MopMetricSet())
+                fact = data.daily_facts.get(current_date, {}).get(key, MopMetricSet())
+                row = {
+                    "date": current_date.isoformat(),
+                    "dateLabel": current_date.strftime("%d.%m.%Y"),
+                    "weekStart": week_start.isoformat(),
+                    "weekEnd": week_end_for_start(week_start).isoformat(),
+                    "weekLabel": format_week_label(week_start),
+                    "mopId": identity.mop_id,
+                    "mopName": identity.mop_name,
+                    "airTimePlan": format_duration(plan.air_seconds),
+                    "airTimeFact": format_duration(fact.air_seconds),
+                }
+                row.update(plan.as_dict("Plan"))
+                row.update(fact.as_dict("Fact"))
+                row["targetMinutesAfterMeetingPlan"] = format_duration(
+                    int(row.get("targetMinutesAfterMeetingPlanSeconds") or 0)
+                )
+                row["targetMinutesAfterMeetingFact"] = format_duration(
+                    fact.target_minutes_after_meeting_seconds
+                )
+                rows.append(row)
+
+    return sorted(
+        rows,
+        key=lambda row: (str(row.get("date", "")), str(row.get("mopName", ""))),
     )
 
 
@@ -2736,12 +2863,15 @@ def build_dashboard_payload(
                 "mopName": identity.mop_name,
                 "airTimePlan": format_duration(plan.air_seconds),
                 "airTimeFact": format_duration(fact.air_seconds),
-                "targetMinutesAfterMeetingFact": format_duration(
-                    fact.target_minutes_after_meeting_seconds
-                ),
             }
             row.update(plan.as_dict("Plan"))
             row.update(fact.as_dict("Fact"))
+            row["targetMinutesAfterMeetingPlan"] = format_duration(
+                int(row.get("targetMinutesAfterMeetingPlanSeconds") or 0)
+            )
+            row["targetMinutesAfterMeetingFact"] = format_duration(
+                fact.target_minutes_after_meeting_seconds
+            )
             rows.append(row)
 
     generated_at = datetime.now(ZoneInfo(settings.report_timezone)).isoformat()
@@ -2770,6 +2900,9 @@ def build_dashboard_payload(
             **totals_fact.as_dict("Fact"),
             "airTimePlan": format_duration(totals_plan.air_seconds),
             "airTimeFact": format_duration(totals_fact.air_seconds),
+            "targetMinutesAfterMeetingPlanSeconds": post_meeting_air_plan_seconds(totals_plan.air_seconds),
+            "targetMinutesAfterMeetingFactSeconds": totals_fact.target_minutes_after_meeting_seconds,
+            "targetMinutesAfterMeetingPlan": format_duration(post_meeting_air_plan_seconds(totals_plan.air_seconds)),
             "targetMinutesAfterMeetingFact": format_duration(
                 totals_fact.target_minutes_after_meeting_seconds
             ),
@@ -2783,6 +2916,7 @@ def build_dashboard_payload(
         },
         "warnings": data.warnings,
         "baseRows": rows,
+        "dailyRows": build_daily_dashboard_rows(data, mop_settings, window),
     }
 
 
