@@ -472,6 +472,9 @@ def recompute_totals(payload: dict[str, Any]) -> None:
             totals[key] += parse_int(row.get(key))
     totals["airTimePlan"] = format_duration(totals["airTimePlanSeconds"])
     totals["airTimeFact"] = format_duration(totals["airTimeFactSeconds"])
+    totals["targetMinutesAfterMeetingFact"] = format_duration(
+        totals["targetMinutesAfterMeetingFactSeconds"]
+    )
     payload["totals"] = totals
 
 

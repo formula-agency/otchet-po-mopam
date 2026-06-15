@@ -267,7 +267,7 @@ select {
 
 .summary-band__stats {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   gap: 12px;
   margin-top: 18px;
 }
@@ -461,7 +461,7 @@ select {
 .accent-coral { color: var(--coral); }
 
 .kpi-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .panel,
@@ -570,7 +570,7 @@ select {
 
 .airtime-summary {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -618,7 +618,7 @@ select {
 
 .airtime-row {
   display: grid;
-  grid-template-columns: 44px minmax(180px, 1fr) minmax(100px, 0.7fr) repeat(6, minmax(88px, 0.55fr));
+  grid-template-columns: 44px minmax(180px, 1fr) minmax(100px, 0.7fr) repeat(7, minmax(84px, 0.55fr));
   gap: 8px;
   align-items: center;
   min-height: 48px;
@@ -802,7 +802,7 @@ select {
 
 .data-table {
   width: 100%;
-  min-width: 980px;
+  min-width: 1120px;
   border-collapse: collapse;
 }
 

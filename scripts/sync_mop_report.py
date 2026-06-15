@@ -23,6 +23,8 @@ from urllib3.util.retry import Retry
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
 DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
+DEFAULT_TARGET_AFTER_MEETING_SHEET_ID = "1XWdY18re5lhXgaVzeOtf6tDWfQt8MrLOUT5yLiLtj6U"
+DEFAULT_TARGET_AFTER_MEETING_SHEET_GID = "0"
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
 DEFAULT_BOOKING_LIST_ID = "38"
@@ -132,6 +134,7 @@ MOP_REPORT_HEADERS = [
     "Эфир план",
     "Эфир факт",
     "Эфир %",
+    "Целевые минуты после встречи факт",
 ]
 
 PLAN_HEADER_ALIASES = {
@@ -270,6 +273,43 @@ MEETING_LOG_HEADER_ALIASES = {
     "deal_link": {"ссылка на сделку", "deal link", "link"},
 }
 
+TARGET_AFTER_MEETING_HEADER_ALIASES = {
+    "date": {
+        "дата",
+        "день",
+        "дата звонка",
+        "дата активности",
+        "дата встречи",
+        "начало встречи",
+        "date",
+        "day",
+        "activity date",
+        "meeting date",
+    },
+    "responsible": {
+        "моп",
+        "менеджер",
+        "ответственный",
+        "сотрудник",
+        "фио",
+        "sales manager",
+        "manager",
+        "responsible",
+        "employee",
+    },
+    "minutes": {
+        "целевые минуты после встречи",
+        "целевые минуты",
+        "минуты после встречи",
+        "минуты",
+        "целевые минуты факт",
+        "target minutes after meeting",
+        "target minutes",
+        "minutes after meeting",
+        "minutes",
+    },
+}
+
 
 class ConfigError(RuntimeError):
     pass
@@ -299,6 +339,9 @@ class Settings:
     google_service_account_json: str | None
     google_meeting_log_sheet_id: str
     google_meeting_log_sheet_name: str
+    google_target_after_meeting_sheet_id: str
+    google_target_after_meeting_sheet_name: str
+    google_target_after_meeting_sheet_gid: str
     report_timezone: str
     report_period_mode: str
     report_start_date: str
@@ -331,6 +374,13 @@ class MeetingLogEntry:
 
 
 @dataclass(frozen=True)
+class TargetAfterMeetingEntry:
+    event_date: date
+    mop_name: str
+    seconds: int
+
+
+@dataclass(frozen=True)
 class ActiveDealActivity:
     date: date
     kind: str
@@ -353,6 +403,7 @@ class MopMetricSet:
     approved_mortgages: int = 0
     calls: int = 0
     air_seconds: int = 0
+    target_minutes_after_meeting_seconds: int = 0
 
     def add(self, other: "MopMetricSet") -> None:
         self.sales += other.sales
@@ -361,6 +412,7 @@ class MopMetricSet:
         self.approved_mortgages += other.approved_mortgages
         self.calls += other.calls
         self.air_seconds += other.air_seconds
+        self.target_minutes_after_meeting_seconds += other.target_minutes_after_meeting_seconds
 
     def as_dict(self, suffix: str) -> dict[str, int]:
         result = {
@@ -372,6 +424,7 @@ class MopMetricSet:
         }
         if suffix == "Fact":
             result["callsFact"] = self.calls
+            result["targetMinutesAfterMeetingFactSeconds"] = self.target_minutes_after_meeting_seconds
         return result
 
 
@@ -552,6 +605,17 @@ def load_settings() -> Settings:
         google_meeting_log_sheet_name=(
             os.getenv("GOOGLE_MEETING_LOG_SHEET_NAME", DEFAULT_MEETING_LOG_SHEET_NAME).strip()
             or DEFAULT_MEETING_LOG_SHEET_NAME
+        ),
+        google_target_after_meeting_sheet_id=(
+            os.getenv("GOOGLE_TARGET_AFTER_MEETING_SHEET_ID", DEFAULT_TARGET_AFTER_MEETING_SHEET_ID).strip()
+            or DEFAULT_TARGET_AFTER_MEETING_SHEET_ID
+        ),
+        google_target_after_meeting_sheet_name=(
+            os.getenv("GOOGLE_TARGET_AFTER_MEETING_SHEET_NAME", "").strip()
+        ),
+        google_target_after_meeting_sheet_gid=(
+            os.getenv("GOOGLE_TARGET_AFTER_MEETING_SHEET_GID", DEFAULT_TARGET_AFTER_MEETING_SHEET_GID).strip()
+            or DEFAULT_TARGET_AFTER_MEETING_SHEET_GID
         ),
         report_timezone=os.getenv("REPORT_TIMEZONE", "Asia/Yekaterinburg").strip() or "Asia/Yekaterinburg",
         report_period_mode=os.getenv("REPORT_PERIOD_MODE", "from_start_date").strip().lower()
@@ -1163,6 +1227,130 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
     return entries
 
 
+def find_target_after_meeting_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
+    column_map: dict[str, int] = {}
+    matched_rows: list[int] = []
+    responsible_match = find_matching_column(rows[:20], TARGET_AFTER_MEETING_HEADER_ALIASES["responsible"])
+    if responsible_match is None:
+        raise ConfigError("Не найдена колонка МОП/менеджер.")
+    row_index, column_index = responsible_match
+    column_map["responsible"] = column_index
+    matched_rows.append(row_index)
+
+    minutes_match = find_matching_column(rows[:20], TARGET_AFTER_MEETING_HEADER_ALIASES["minutes"])
+    if minutes_match is not None:
+        row_index, column_index = minutes_match
+        column_map["minutes"] = column_index
+        matched_rows.append(row_index)
+
+    date_match = find_matching_column(rows[:20], TARGET_AFTER_MEETING_HEADER_ALIASES["date"])
+    if date_match is not None:
+        row_index, column_index = date_match
+        column_map["date"] = column_index
+        matched_rows.append(row_index)
+    return max(matched_rows), column_map
+
+
+def parse_minutes_cell_seconds(value: Any) -> int:
+    text = str(value or "").strip()
+    if not text:
+        return 0
+    parsed_as_duration = parse_duration_seconds(text)
+    if parsed_as_duration:
+        return parsed_as_duration
+    return max(0, round(parse_number(text) * 60))
+
+
+def parse_target_after_meeting_long_rows(
+    rows: list[list[Any]],
+    header_row_index: int,
+    column_map: dict[str, int],
+    hidden_row_indexes: set[int],
+    settings: Settings,
+) -> list[TargetAfterMeetingEntry]:
+    entries: list[TargetAfterMeetingEntry] = []
+    date_index = column_map.get("date")
+    if date_index is None or "minutes" not in column_map:
+        return entries
+    for row_index, row in enumerate(rows[header_row_index + 1 :], start=header_row_index + 1):
+        if row_index in hidden_row_indexes:
+            continue
+        current_date = parse_sheet_datetime(cell(row, column_map, "date"), settings.report_timezone)
+        if current_date is None:
+            continue
+        mop_name = str(cell(row, column_map, "responsible") or "").strip()
+        seconds = parse_minutes_cell_seconds(cell(row, column_map, "minutes"))
+        if mop_name and seconds > 0:
+            entries.append(TargetAfterMeetingEntry(current_date.date(), mop_name, seconds))
+    return entries
+
+
+def parse_target_after_meeting_wide_rows(
+    rows: list[list[Any]],
+    header_row_index: int,
+    column_map: dict[str, int],
+    hidden_row_indexes: set[int],
+    settings: Settings,
+) -> list[TargetAfterMeetingEntry]:
+    header_row = rows[header_row_index] if header_row_index < len(rows) else []
+    responsible_index = column_map["responsible"]
+    date_columns: list[tuple[int, date]] = []
+    for column_index, value in enumerate(header_row):
+        if column_index == responsible_index:
+            continue
+        parsed = parse_sheet_datetime(value, settings.report_timezone)
+        if parsed is not None:
+            date_columns.append((column_index, parsed.date()))
+    if not date_columns:
+        return []
+
+    entries: list[TargetAfterMeetingEntry] = []
+    for row_index, row in enumerate(rows[header_row_index + 1 :], start=header_row_index + 1):
+        if row_index in hidden_row_indexes:
+            continue
+        mop_name = str(row[responsible_index] if responsible_index < len(row) else "").strip()
+        if not mop_name:
+            continue
+        for column_index, current_date in date_columns:
+            seconds = parse_minutes_cell_seconds(row[column_index] if column_index < len(row) else "")
+            if seconds > 0:
+                entries.append(TargetAfterMeetingEntry(current_date, mop_name, seconds))
+    return entries
+
+
+def build_target_after_meeting_entries(service: Any, settings: Settings) -> list[TargetAfterMeetingEntry]:
+    if not settings.google_target_after_meeting_sheet_id:
+        return []
+    sheet_title = resolve_sheet_title(
+        service,
+        settings.google_target_after_meeting_sheet_id,
+        settings.google_target_after_meeting_sheet_name,
+        settings.google_target_after_meeting_sheet_gid,
+    )
+    values = execute_google_request(
+        service.spreadsheets()
+        .values()
+        .get(
+            spreadsheetId=settings.google_target_after_meeting_sheet_id,
+            range=f"{quote_sheet_title(sheet_title)}!A:AZ",
+            majorDimension="ROWS",
+        )
+    ).get("values", [])
+    if not values:
+        return []
+
+    hidden_row_indexes = fetch_user_hidden_sheet_row_indexes(
+        service,
+        settings.google_target_after_meeting_sheet_id,
+        sheet_title,
+    )
+    header_row_index, column_map = find_target_after_meeting_columns(values)
+    entries = parse_target_after_meeting_long_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
+    if entries:
+        return entries
+    return parse_target_after_meeting_wide_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
+
+
 def iterate_report_dates(window: ReportWindow) -> list[date]:
     days: list[date] = []
     current = window.start.date()
@@ -1604,6 +1792,7 @@ def apply_manual_fact_adjustments(data: MopReportData, window: ReportWindow) -> 
             "approved_mortgages": int(item.get("approved_mortgages") or 0),
             "calls": int(item.get("calls") or 0),
             "air_seconds": int(item.get("air_seconds") or 0),
+            "target_minutes_after_meeting_seconds": int(item.get("target_minutes_after_meeting_seconds") or 0),
         }
         for metric_name, value in metrics.items():
             if value:
@@ -1901,6 +2090,58 @@ def build_call_facts(
             call_date = call_datetime.date() if call_datetime else current_date
             add_fact(data, call_date, mop_id, "calls", 1)
             add_fact(data, call_date, mop_id, "air_seconds", duration)
+
+
+def build_target_after_meeting_facts(
+    data: MopReportData,
+    service: Any,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> None:
+    if not settings.google_target_after_meeting_sheet_id:
+        return
+    if service is None:
+        data.warnings.append(
+            "Целевые минуты после встречи не посчитаны: "
+            "не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON."
+        )
+        return
+
+    try:
+        entries = build_target_after_meeting_entries(service, settings)
+    except ConfigError as exc:
+        data.warnings.append(f"Целевые минуты после встречи не посчитаны: {safe_error_text(exc)}")
+        return
+    except Exception as exc:
+        data.warnings.append(f"Целевые минуты после встречи не посчитаны: {safe_error_text(exc)}")
+        return
+
+    skipped_names: dict[str, int] = defaultdict(int)
+    imported_count = 0
+    for entry in entries:
+        if entry.event_date < window.start.date() or entry.event_date > window.end.date():
+            continue
+        mop_name = canonical_mop_label(entry.mop_name, mop_settings)
+        if not mop_name:
+            skipped_names[entry.mop_name] += 1
+            continue
+        add_fact(
+            data,
+            entry.event_date,
+            "",
+            "target_minutes_after_meeting_seconds",
+            entry.seconds,
+            mop_name=mop_name,
+        )
+        imported_count += 1
+    if skipped_names:
+        data.warnings.append(
+            "Целевые минуты после встречи: пропущено "
+            f"{sum(skipped_names.values())} строк по МОПам вне списка."
+        )
+    if not imported_count:
+        data.warnings.append("Целевые минуты после встречи: нет строк в выбранном периоде.")
 
 
 def infer_plan_column_from_header(normalized_header: str) -> str:
@@ -2229,6 +2470,7 @@ def row_for_metrics(sprint_label: str, mop_name: str, plan: MopMetricSet, fact: 
         format_duration(plan.air_seconds),
         format_duration(fact.air_seconds),
         completion_cell(plan.air_seconds, fact.air_seconds),
+        format_duration(fact.target_minutes_after_meeting_seconds),
     ]
 
 
@@ -2494,6 +2736,9 @@ def build_dashboard_payload(
                 "mopName": identity.mop_name,
                 "airTimePlan": format_duration(plan.air_seconds),
                 "airTimeFact": format_duration(fact.air_seconds),
+                "targetMinutesAfterMeetingFact": format_duration(
+                    fact.target_minutes_after_meeting_seconds
+                ),
             }
             row.update(plan.as_dict("Plan"))
             row.update(fact.as_dict("Fact"))
@@ -2525,6 +2770,9 @@ def build_dashboard_payload(
             **totals_fact.as_dict("Fact"),
             "airTimePlan": format_duration(totals_plan.air_seconds),
             "airTimeFact": format_duration(totals_fact.air_seconds),
+            "targetMinutesAfterMeetingFact": format_duration(
+                totals_fact.target_minutes_after_meeting_seconds
+            ),
         },
         "overview": {"mopCount": len(mop_names), "weekCount": len(weeks)},
         "activeDeals": active_deals_payload or {
@@ -2575,6 +2823,7 @@ def main() -> int:
         booking_events = build_booking_reservation_events(data, session, settings, window)
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
         build_meeting_facts(data, service, session, settings, mop_settings, window)
+        build_target_after_meeting_facts(data, service, settings, mop_settings, window)
         if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
             build_call_facts(data, session, settings, mop_settings, window)
         apply_manual_fact_adjustments(data, window)

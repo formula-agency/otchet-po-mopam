@@ -44,6 +44,7 @@ METRIC_ZEROES = {
     "callsFact": 0,
     "airTimePlanSeconds": 0,
     "airTimeFactSeconds": 0,
+    "targetMinutesAfterMeetingFactSeconds": 0,
 }
 
 
@@ -528,6 +529,9 @@ def recompute_totals(payload: dict[str, Any]) -> None:
             totals[key] += parse_int(row.get(key))
     totals["airTimePlan"] = format_duration(totals["airTimePlanSeconds"])
     totals["airTimeFact"] = format_duration(totals["airTimeFactSeconds"])
+    totals["targetMinutesAfterMeetingFact"] = format_duration(
+        totals["targetMinutesAfterMeetingFactSeconds"]
+    )
     payload["totals"] = totals
 
 

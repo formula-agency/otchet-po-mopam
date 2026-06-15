@@ -34,6 +34,7 @@ const els = {
   heroReservations: document.getElementById('hero-reservations'),
   heroMortgages: document.getElementById('hero-mortgages'),
   heroAir: document.getElementById('hero-air'),
+  heroTargetAfterMeeting: document.getElementById('hero-target-after-meeting'),
   kpiSales: document.getElementById('kpi-sales'),
   kpiSalesRate: document.getElementById('kpi-sales-rate'),
   kpiMeetings: document.getElementById('kpi-meetings'),
@@ -45,6 +46,7 @@ const els = {
   kpiCalls: document.getElementById('kpi-calls'),
   kpiAir: document.getElementById('kpi-air'),
   kpiAirRate: document.getElementById('kpi-air-rate'),
+  kpiTargetAfterMeeting: document.getElementById('kpi-target-after-meeting'),
   detailCaption: document.getElementById('detail-caption'),
   detailBody: document.getElementById('detail-body'),
   activeDealDate: document.getElementById('active-deal-date'),
@@ -105,7 +107,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260604-2';
+const DASHBOARD_DATA_VERSION = '20260615-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -118,6 +120,7 @@ const PLAN_METRIC_FIELDS = [
 const SCOREBOARD_METRICS = [
   { label: 'Звонки', fact: 'callsFact', kind: 'number', weight: 1 },
   { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
+  { label: 'Целевые минуты', fact: 'targetMinutesAfterMeetingFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
   { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
   { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
@@ -994,6 +997,7 @@ function summarizeRows(rows) {
     callsFact: 0,
     airTimePlanSeconds: 0,
     airTimeFactSeconds: 0,
+    targetMinutesAfterMeetingFactSeconds: 0,
   };
 
   for (const field of PLAN_METRIC_FIELDS) {
@@ -1015,6 +1019,7 @@ function summarizeRows(rows) {
     acc.approvedMortgagesFact += Number(row.approvedMortgagesFact || 0);
     acc.callsFact += Number(row.callsFact || 0);
     acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
+    acc.targetMinutesAfterMeetingFactSeconds += Number(row.targetMinutesAfterMeetingFactSeconds || 0);
     return acc;
   }, summary);
 }
@@ -1052,6 +1057,7 @@ function renderHero(rows) {
   els.heroReservations.textContent = pair(summary.reservationsPlan, summary.reservationsFact);
   els.heroMortgages.textContent = pair(summary.approvedMortgagesPlan, summary.approvedMortgagesFact);
   els.heroAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
+  els.heroTargetAfterMeeting.textContent = formatDuration(summary.targetMinutesAfterMeetingFactSeconds);
 }
 
 function renderKpis(rows) {
@@ -1067,6 +1073,7 @@ function renderKpis(rows) {
   els.kpiCalls.textContent = formatNumber(summary.callsFact);
   els.kpiAir.textContent = durationPair(summary.airTimePlanSeconds, summary.airTimeFactSeconds);
   els.kpiAirRate.textContent = completion(summary.airTimeFactSeconds, summary.airTimePlanSeconds);
+  els.kpiTargetAfterMeeting.textContent = formatDuration(summary.targetMinutesAfterMeetingFactSeconds);
 }
 
 function renderActiveState(rows) {
@@ -1090,7 +1097,7 @@ function renderActiveState(rows) {
 function renderDetailTable(rows) {
   els.detailCaption.textContent = `${formatNumber(rows.length)} строк`;
   if (!rows.length) {
-    els.detailBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
+    els.detailBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет данных</td></tr>';
     return;
   }
 
@@ -1107,6 +1114,7 @@ function renderDetailTable(rows) {
         <td>${pair(row.approvedMortgagesPlan, row.approvedMortgagesFact)} <span>${completion(row.approvedMortgagesFact, row.approvedMortgagesPlan)}</span></td>
         <td>${formatNumber(row.callsFact)}</td>
         <td>${durationPair(row.airTimePlanSeconds, row.airTimeFactSeconds)} <span>${completion(row.airTimeFactSeconds, row.airTimePlanSeconds)}</span></td>
+        <td>${formatDuration(row.targetMinutesAfterMeetingFactSeconds)}</td>
       </tr>
     `)
     .join('');
@@ -1437,7 +1445,7 @@ function renderWarnings() {
 }
 
 function exportCsv(rows) {
-  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт'];
+  const header = ['Спринт', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт', 'Целевые минуты после встречи факт'];
   const body = rows.map((row) => [
     row.weekLabel,
     row.mopName,
@@ -1452,6 +1460,7 @@ function exportCsv(rows) {
     row.callsFact,
     formatDuration(row.airTimePlanSeconds),
     formatDuration(row.airTimeFactSeconds),
+    formatDuration(row.targetMinutesAfterMeetingFactSeconds),
   ]);
   const csv = [header, ...body].map((line) => line.map(csvEscape).join(';')).join('\r\n');
   const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
