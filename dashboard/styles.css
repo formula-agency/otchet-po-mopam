@@ -498,6 +498,38 @@ select {
   font-size: 13px;
 }
 
+.active-deal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.active-efficiency-badge {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  gap: 8px;
+  align-items: baseline;
+  min-height: 34px;
+  padding: 7px 11px;
+  border: 1px solid rgba(47, 140, 255, 0.22);
+  border-radius: var(--radius);
+  background: #f5f9ff;
+  color: var(--ink);
+}
+
+.active-efficiency-badge span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.active-efficiency-badge strong {
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 800;
+}
+
 .active-deal-tools {
   display: grid;
   grid-template-columns: repeat(2, minmax(140px, 1fr)) minmax(220px, 1.2fr);

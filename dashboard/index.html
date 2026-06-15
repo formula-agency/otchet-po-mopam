@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260604-2">
+  <link rel="stylesheet" href="./styles.css?v=20260615-5">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260615-2"></script>
   <script defer src="./app.js?v=20260615-2"></script>
@@ -163,7 +163,13 @@
           <section class="panel panel-wide">
             <div class="panel-head panel-head-inline">
               <div>
-                <h2>Сделки МОПа</h2>
+                <div class="active-deal-title-row">
+                  <h2>Сделки МОПа</h2>
+                  <div class="active-efficiency-badge" aria-label="Коэффициент эффективности">
+                    <span>Коэффициент эффективности</span>
+                    <strong id="active-efficiency-ratio">—</strong>
+                  </div>
+                </div>
                 <p id="active-deal-caption">0 сделок</p>
               </div>
               <div class="active-deal-tools">
