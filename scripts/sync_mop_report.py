@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import os
 import re
@@ -1331,9 +1333,49 @@ def parse_target_after_meeting_wide_rows(
     return entries
 
 
+def parse_target_after_meeting_rows(
+    values: list[list[Any]],
+    hidden_row_indexes: set[int],
+    settings: Settings,
+) -> list[TargetAfterMeetingEntry]:
+    if not values:
+        return []
+    header_row_index, column_map = find_target_after_meeting_columns(values)
+    entries = parse_target_after_meeting_long_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
+    if entries:
+        return entries
+    return parse_target_after_meeting_wide_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
+
+
+def fetch_public_google_sheet_csv(sheet_id: str, gid: str) -> list[list[str]]:
+    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export"
+    response = requests.get(
+        url,
+        params={"format": "csv", "gid": gid or "0"},
+        timeout=30,
+    )
+    if response.status_code in {401, 403}:
+        raise ConfigError(
+            "публичный CSV недоступен; откройте таблицу для всех по ссылке или опубликуйте лист в веб."
+        )
+    response.raise_for_status()
+    text = response.content.decode("utf-8-sig")
+    return [row for row in csv.reader(io.StringIO(text)) if any(str(cell).strip() for cell in row)]
+
+
+def build_target_after_meeting_public_entries(settings: Settings) -> list[TargetAfterMeetingEntry]:
+    values = fetch_public_google_sheet_csv(
+        settings.google_target_after_meeting_sheet_id,
+        settings.google_target_after_meeting_sheet_gid,
+    )
+    return parse_target_after_meeting_rows(values, set(), settings)
+
+
 def build_target_after_meeting_entries(service: Any, settings: Settings) -> list[TargetAfterMeetingEntry]:
     if not settings.google_target_after_meeting_sheet_id:
         return []
+    if service is None:
+        return build_target_after_meeting_public_entries(settings)
     sheet_title = resolve_sheet_title(
         service,
         settings.google_target_after_meeting_sheet_id,
@@ -1357,11 +1399,7 @@ def build_target_after_meeting_entries(service: Any, settings: Settings) -> list
         settings.google_target_after_meeting_sheet_id,
         sheet_title,
     )
-    header_row_index, column_map = find_target_after_meeting_columns(values)
-    entries = parse_target_after_meeting_long_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
-    if entries:
-        return entries
-    return parse_target_after_meeting_wide_rows(values, header_row_index, column_map, hidden_row_indexes, settings)
+    return parse_target_after_meeting_rows(values, hidden_row_indexes, settings)
 
 
 def iterate_report_dates(window: ReportWindow) -> list[date]:
@@ -2167,8 +2205,14 @@ def build_target_after_meeting_facts(
         data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
         return
     except Exception as exc:
-        data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
-        return
+        try:
+            entries = build_target_after_meeting_public_entries(settings)
+        except Exception as public_exc:
+            data.warnings.append(
+                "Эфир после встречи не посчитан: "
+                f"Google API: {safe_error_text(exc)}; публичный CSV: {safe_error_text(public_exc)}"
+            )
+            return
 
     skipped_names: dict[str, int] = defaultdict(int)
     imported_count = 0
