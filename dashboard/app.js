@@ -9,7 +9,8 @@ const state = {
   dateFrom: '',
   dateTo: '',
   search: '',
-  activeDate: '',
+  activeDateFrom: '',
+  activeDateTo: '',
   activeMopName: '',
   airtimeMonth: '',
   airtimeSprint: '',
@@ -56,17 +57,23 @@ const els = {
   kpiTargetAfterMeetingRate: document.getElementById('kpi-target-after-meeting-rate'),
   detailCaption: document.getElementById('detail-caption'),
   detailBody: document.getElementById('detail-body'),
-  activeDealDate: document.getElementById('active-deal-date'),
+  activeDealDateFrom: document.getElementById('active-deal-date-from'),
+  activeDealDateTo: document.getElementById('active-deal-date-to'),
   activeDealMop: document.getElementById('active-deal-mop'),
   activeDealCaption: document.getElementById('active-deal-caption'),
   activeDealSummary: document.getElementById('active-deal-summary'),
   activeDealBody: document.getElementById('active-deal-body'),
   activeDealCount: document.getElementById('active-deal-count'),
-  activeActivityCount: document.getElementById('active-activity-count'),
+  activeLeadCount: document.getElementById('active-lead-count'),
   activeMeetingCount: document.getElementById('active-meeting-count'),
-  activeSelectionCount: document.getElementById('active-selection-count'),
+  activeScheduledMeetingCount: document.getElementById('active-scheduled-meeting-count'),
   activeCallCount: document.getElementById('active-call-count'),
+  activeTargetCallCount: document.getElementById('active-target-call-count'),
+  activeTargetSuccessCallCount: document.getElementById('active-target-success-call-count'),
+  activeAirCount: document.getElementById('active-air-count'),
   activeReservationCount: document.getElementById('active-reservation-count'),
+  activeMortgageCount: document.getElementById('active-mortgage-count'),
+  activeGapCount: document.getElementById('active-gap-count'),
   airtimeMonth: document.getElementById('airtime-month'),
   airtimeSprint: document.getElementById('airtime-sprint'),
   airtimeDateFrom: document.getElementById('airtime-date-from'),
@@ -117,7 +124,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260615-2';
+const DASHBOARD_DATA_VERSION = '20260615-3';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -140,9 +147,7 @@ const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
   approvedMortgages: 'Ипотека',
   reservations: 'Бронь',
-  selections: 'Подборка',
   calls: 'Звонок',
-  tasks: 'Задача',
   emails: 'Письмо',
   other: 'Другая активность',
 };
@@ -557,16 +562,34 @@ function activeMopOptions() {
   return names.map((name) => ({ value: name, label: name }));
 }
 
+function clampActiveDate(value) {
+  const minDate = activeDealsData().minDate || data.report?.from || '';
+  const maxDate = activeDealsData().maxDate || data.report?.to || '';
+  let dateValue = String(value || '').slice(0, 10);
+  if (minDate && dateValue && dateValue < minDate) dateValue = minDate;
+  if (maxDate && dateValue && dateValue > maxDate) dateValue = maxDate;
+  return dateValue;
+}
+
 function defaultActiveDate() {
-  return activeDealsData().maxDate || data.report?.to || isoDate(referenceDate());
+  return clampActiveDate(isoDate(actualDataDate()))
+    || activeDealsData().maxDate
+    || data.report?.to
+    || isoDate(referenceDate());
+}
+
+function activeDealRange() {
+  const fallback = defaultActiveDate();
+  const fromValue = state.activeDateFrom || fallback;
+  const toValue = state.activeDateTo || state.activeDateFrom || fallback;
+  return normalizedDateRange(fromValue, toValue);
 }
 
 function setDefaultActiveDeals() {
-  const options = activeMopOptions();
-  state.activeDate = defaultActiveDate();
-  state.activeMopName = options.some((option) => option.value === state.mopName)
-    ? state.mopName
-    : (options[0]?.value || '');
+  const selectedDate = defaultActiveDate();
+  state.activeDateFrom = selectedDate;
+  state.activeDateTo = selectedDate;
+  state.activeMopName = 'all';
 }
 
 function formatDate(value) {
@@ -574,15 +597,20 @@ function formatDate(value) {
   return parsed ? fullDate(parsed) : '—';
 }
 
-function isDateOnOrBefore(value, selectedDate) {
-  return Boolean(value) && value <= selectedDate;
+function dateInRange(value, fromValue, toValue) {
+  if (!value) return false;
+  if (fromValue && value < fromValue) return false;
+  if (toValue && value > toValue) return false;
+  return true;
 }
 
-function dealIsActiveOnDate(deal, selectedDate) {
-  if (deal.dateCreate && deal.dateCreate > selectedDate) return false;
+function dealIsActiveInRange(deal, fromValue, toValue) {
+  const startDate = fromValue || toValue || defaultActiveDate();
+  const endDate = toValue || fromValue || defaultActiveDate();
+  if (deal.dateCreate && deal.dateCreate > endDate) return false;
   if (!deal.closed) return true;
   const closeDate = deal.closeDate || deal.dateModify;
-  return closeDate ? closeDate > selectedDate : false;
+  return closeDate ? closeDate >= startDate : false;
 }
 
 function emptyDealCounters() {
@@ -590,26 +618,24 @@ function emptyDealCounters() {
     meetings: 0,
     approvedMortgages: 0,
     reservations: 0,
-    selections: 0,
     calls: 0,
-    tasks: 0,
     emails: 0,
     other: 0,
     total: 0,
   };
 }
 
-function dealCounters(deal, selectedDate) {
+function dealCounters(deal, fromValue, toValue) {
   const counters = emptyDealCounters();
-  if (deal.approvedMortgage && (!deal.approvedMortgageDate || isDateOnOrBefore(deal.approvedMortgageDate, selectedDate))) {
+  if (deal.approvedMortgage && dateInRange(deal.approvedMortgageDate || deal.dateCreate, fromValue, toValue)) {
     counters.approvedMortgages += 1;
   }
-  if (deal.reservation && (!deal.reservationDate || isDateOnOrBefore(deal.reservationDate, selectedDate))) {
+  if (deal.reservation && dateInRange(deal.reservationDate || deal.dateCreate, fromValue, toValue)) {
     counters.reservations += 1;
   }
 
   for (const event of deal.activities || []) {
-    if (!event.date || event.date > selectedDate) continue;
+    if (!dateInRange(event.date, fromValue, toValue)) continue;
     const kind = counters[event.kind] === undefined ? 'other' : event.kind;
     counters[kind] += 1;
   }
@@ -617,9 +643,9 @@ function dealCounters(deal, selectedDate) {
   counters.total = counters.meetings
     + counters.approvedMortgages
     + counters.reservations
-    + counters.selections
     + counters.calls
-    + counters.tasks;
+    + counters.emails
+    + counters.other;
   return counters;
 }
 
@@ -664,12 +690,35 @@ function lastDealActivity(deal, selectedDate) {
 }
 
 function filteredActiveDeals() {
-  const selectedDate = state.activeDate || defaultActiveDate();
+  const range = activeDealRange();
   return (activeDealsData().rows || [])
-    .filter((deal) => !state.activeMopName || deal.mopName === state.activeMopName)
-    .filter((deal) => dealIsActiveOnDate(deal, selectedDate))
-    .map((deal) => ({ ...deal, counters: dealCounters(deal, selectedDate) }))
+    .filter((deal) => state.activeMopName === 'all' || !state.activeMopName || deal.mopName === state.activeMopName)
+    .filter((deal) => dealIsActiveInRange(deal, range.from, range.to))
+    .map((deal) => ({ ...deal, counters: dealCounters(deal, range.from, range.to) }))
     .sort((a, b) => b.counters.total - a.counters.total || a.title.localeCompare(b.title));
+}
+
+function activeDailyRowsInRange(range) {
+  return dailyRows().filter((row) => (
+    !row.aggregatePlan
+    && rowMatchesDateRange(row, range.from, range.to)
+    && (state.activeMopName === 'all' || !state.activeMopName || row.mopName === state.activeMopName)
+  ));
+}
+
+function activeDealLeadCount(range) {
+  return (activeDealsData().rows || []).filter((deal) => (
+    dateInRange(deal.dateCreate, range.from, range.to)
+    && (state.activeMopName === 'all' || !state.activeMopName || deal.mopName === state.activeMopName)
+  )).length;
+}
+
+function activeDealGapCount() {
+  const rows = data.activeDeals?.communicationGaps || [];
+  return rows.filter((row) => (
+    (state.activeMopName === 'all' || !state.activeMopName || row.mopName === state.activeMopName)
+    && Number(row.gapDays || 0) >= 14
+  )).length;
 }
 
 function filteredRows() {
@@ -1194,29 +1243,57 @@ function renderDetailTable(rows) {
 }
 
 function renderActiveDeals() {
+  const range = activeDealRange();
   const rows = filteredActiveDeals();
-  const summary = rows.reduce((acc, row) => {
+  const dealSummary = rows.reduce((acc, row) => {
     for (const key of Object.keys(acc)) acc[key] += row.counters[key] || 0;
     return acc;
   }, emptyDealCounters());
+  const dailySummary = activeDailyRowsInRange(range).reduce((acc, row) => {
+    acc.callsFact += Number(row.callsFact || 0);
+    acc.targetCallsFact += Number(row.targetCallsFact || 0);
+    acc.targetSuccessfulCallsFact += Number(row.targetSuccessfulCallsFact || 0);
+    acc.airTimeFactSeconds += Number(row.airTimeFactSeconds || 0);
+    acc.meetingsFact += Number(row.meetingsFact || 0);
+    acc.reservationsFact += Number(row.reservationsFact || 0);
+    acc.approvedMortgagesFact += Number(row.approvedMortgagesFact || 0);
+    return acc;
+  }, {
+    callsFact: 0,
+    targetCallsFact: 0,
+    targetSuccessfulCallsFact: 0,
+    airTimeFactSeconds: 0,
+    meetingsFact: 0,
+    reservationsFact: 0,
+    approvedMortgagesFact: 0,
+  });
+  const mopLabel = state.activeMopName === 'all' || !state.activeMopName ? 'Все МОПы' : state.activeMopName;
+  const periodLabel = range.from === range.to
+    ? formatDate(range.from)
+    : `${formatDate(range.from)}–${formatDate(range.to)}`;
 
   els.activeDealCaption.textContent = `${formatNumber(rows.length)} активных сделок`;
-  els.activeDealSummary.textContent = `Дата: ${formatDate(state.activeDate)} · МОП: ${state.activeMopName || '—'} · Активностей: ${formatNumber(summary.total)}`;
+  els.activeDealSummary.textContent = `Период: ${periodLabel} · МОП: ${mopLabel} · Активностей по сделкам: ${formatNumber(dealSummary.total)}`;
   els.activeDealCount.textContent = formatNumber(rows.length);
-  els.activeActivityCount.textContent = formatNumber(summary.total);
-  els.activeMeetingCount.textContent = formatNumber(summary.meetings);
-  els.activeSelectionCount.textContent = formatNumber(summary.selections);
-  els.activeCallCount.textContent = formatNumber(summary.calls);
-  els.activeReservationCount.textContent = formatNumber(summary.reservations);
+  els.activeLeadCount.textContent = formatNumber(activeDealLeadCount(range));
+  els.activeCallCount.textContent = formatNumber(dailySummary.callsFact);
+  els.activeTargetCallCount.textContent = formatNumber(dailySummary.targetCallsFact);
+  els.activeTargetSuccessCallCount.textContent = formatNumber(dailySummary.targetSuccessfulCallsFact);
+  els.activeAirCount.textContent = formatDuration(dailySummary.airTimeFactSeconds);
+  els.activeScheduledMeetingCount.textContent = formatNumber(dealSummary.meetings);
+  els.activeMeetingCount.textContent = formatNumber(dailySummary.meetingsFact);
+  els.activeReservationCount.textContent = formatNumber(dailySummary.reservationsFact);
+  els.activeMortgageCount.textContent = formatNumber(dailySummary.approvedMortgagesFact);
+  els.activeGapCount.textContent = formatNumber(activeDealGapCount());
 
   if (!rows.length) {
-    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="11">Нет активных сделок для выбранной даты и МОПа</td></tr>';
+    els.activeDealBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет активных сделок для выбранного периода и МОПа</td></tr>';
     return;
   }
 
   els.activeDealBody.innerHTML = rows.map((deal) => {
     const counters = deal.counters;
-    const selectedDate = state.activeDate || defaultActiveDate();
+    const selectedDate = range.to || range.from || defaultActiveDate();
     const lastActivity = lastDealActivity(deal, selectedDate);
     const category = deal.categoryName ? `<span>${escapeHtml(deal.categoryName)}</span>` : '';
     const title = `#${deal.dealId} ${deal.title || 'Без названия'}`;
@@ -1233,9 +1310,7 @@ function renderActiveDeals() {
         <td>${formatNumber(counters.meetings)}</td>
         <td>${formatNumber(counters.approvedMortgages)}</td>
         <td>${formatNumber(counters.reservations)}</td>
-        <td>${formatNumber(counters.selections)}</td>
         <td>${formatNumber(counters.calls)}</td>
-        <td>${formatNumber(counters.tasks)}</td>
       </tr>
     `;
   }).join('');
@@ -1681,8 +1756,22 @@ function bindControls() {
     state.search = els.search.value;
     render();
   });
-  els.activeDealDate.addEventListener('change', () => {
-    state.activeDate = els.activeDealDate.value || defaultActiveDate();
+  els.activeDealDateFrom.addEventListener('change', () => {
+    state.activeDateFrom = els.activeDealDateFrom.value || defaultActiveDate();
+    const range = activeDealRange();
+    state.activeDateFrom = range.from;
+    state.activeDateTo = range.to;
+    els.activeDealDateFrom.value = state.activeDateFrom;
+    els.activeDealDateTo.value = state.activeDateTo;
+    renderActiveDeals();
+  });
+  els.activeDealDateTo.addEventListener('change', () => {
+    state.activeDateTo = els.activeDealDateTo.value || state.activeDateFrom || defaultActiveDate();
+    const range = activeDealRange();
+    state.activeDateFrom = range.from;
+    state.activeDateTo = range.to;
+    els.activeDealDateFrom.value = state.activeDateFrom;
+    els.activeDealDateTo.value = state.activeDateTo;
     renderActiveDeals();
   });
   els.activeDealMop.addEventListener('change', () => {
@@ -1745,11 +1834,14 @@ function init() {
   populateSelect(els.airtimeMonth, monthOptions(), '', false);
   els.airtimeMonth.value = state.airtimeMonth;
   syncAirTimeSprintSelect(true);
-  populateSelect(els.activeDealMop, activeMopOptions(), '', false);
+  populateSelect(els.activeDealMop, activeMopOptions(), 'Все МОПы');
   els.activeDealMop.value = state.activeMopName;
-  els.activeDealDate.min = activeDealsData().minDate || data.report?.from || '';
-  els.activeDealDate.max = activeDealsData().maxDate || data.report?.to || '';
-  els.activeDealDate.value = state.activeDate;
+  for (const input of [els.activeDealDateFrom, els.activeDealDateTo]) {
+    input.min = activeDealsData().minDate || data.report?.from || '';
+    input.max = activeDealsData().maxDate || data.report?.to || '';
+  }
+  els.activeDealDateFrom.value = state.activeDateFrom;
+  els.activeDealDateTo.value = state.activeDateTo;
   bindControls();
   bindViewNavigation();
   bindHeaderState();

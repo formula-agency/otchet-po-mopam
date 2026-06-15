@@ -57,6 +57,8 @@ RANGE_PATTERN = re.compile(
 )
 SUM_FIELDS = {
     "callsFact",
+    "targetCallsFact",
+    "targetSuccessfulCallsFact",
     "airTimeFactSeconds",
     "targetMinutesAfterMeetingPlanSeconds",
     "targetMinutesAfterMeetingFactSeconds",
@@ -67,6 +69,8 @@ SUM_FIELDS = {
     "beelineMissedCalls",
     "beelineOutgoingCalls",
     "crmCallsFact",
+    "crmTargetCallsFact",
+    "crmTargetSuccessfulCallsFact",
     "crmAirTimeFactSeconds",
 }
 
@@ -376,6 +380,13 @@ def csv_metric_kinds(record: CsvCallRecord) -> tuple[str, ...]:
     return ("calls", "air")
 
 
+def csv_target_call_flags(classification: str) -> tuple[bool, bool]:
+    normalized = normalize_text(classification)
+    is_target = normalized.startswith("целевой")
+    is_successful = normalized == "целевой результативный"
+    return is_target, is_successful
+
+
 def csv_source_priority(record: CsvCallRecord, ranges_by_path: dict[Path, SourceRange]) -> tuple[date, date, int, str]:
     source_range = ranges_by_path.get(record.path)
     end = source_range.end if source_range else record.day
@@ -423,6 +434,13 @@ def aggregate_csv_records(
         if use_calls:
             metrics["callsFact"] = metrics.get("callsFact", 0) + 1
             metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+            is_target, is_successful = csv_target_call_flags(record.classification)
+            if is_target:
+                metrics["targetCallsFact"] = metrics.get("targetCallsFact", 0) + 1
+                metrics["crmTargetCallsFact"] = metrics.get("crmTargetCallsFact", 0) + 1
+            if is_successful:
+                metrics["targetSuccessfulCallsFact"] = metrics.get("targetSuccessfulCallsFact", 0) + 1
+                metrics["crmTargetSuccessfulCallsFact"] = metrics.get("crmTargetSuccessfulCallsFact", 0) + 1
             imported_call_count += 1
         if use_air:
             metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
@@ -460,6 +478,13 @@ def aggregate_csv_daily_records(
         if use_calls:
             metrics["callsFact"] = metrics.get("callsFact", 0) + 1
             metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+            is_target, is_successful = csv_target_call_flags(record.classification)
+            if is_target:
+                metrics["targetCallsFact"] = metrics.get("targetCallsFact", 0) + 1
+                metrics["crmTargetCallsFact"] = metrics.get("crmTargetCallsFact", 0) + 1
+            if is_successful:
+                metrics["targetSuccessfulCallsFact"] = metrics.get("targetSuccessfulCallsFact", 0) + 1
+                metrics["crmTargetSuccessfulCallsFact"] = metrics.get("crmTargetSuccessfulCallsFact", 0) + 1
         if use_air:
             metrics["airTimeFactSeconds"] = metrics.get("airTimeFactSeconds", 0) + record.duration_seconds
             metrics["crmAirTimeFactSeconds"] = metrics.get("crmAirTimeFactSeconds", 0) + record.duration_seconds
@@ -496,8 +521,12 @@ def clear_existing_csv_call_data(rows: list[dict[str, Any]]) -> list[dict[str, A
     cleaned: list[dict[str, Any]] = []
     csv_keys = {
         "callsFactBaseBeforeCrmCalls",
+        "targetCallsFactBaseBeforeCrmCalls",
+        "targetSuccessfulCallsFactBaseBeforeCrmCalls",
         "airTimeFactSecondsBaseBeforeCrmCalls",
         "crmCallsFact",
+        "crmTargetCallsFact",
+        "crmTargetSuccessfulCallsFact",
         "crmAirTimeFactSeconds",
     }
     for row in rows:
@@ -505,6 +534,8 @@ def clear_existing_csv_call_data(rows: list[dict[str, Any]]) -> list[dict[str, A
             continue
         if row.get("callsSource") == CRM_CALLS_SOURCE:
             row["callsFact"] = int(row.get("callsFactBaseBeforeCrmCalls") or 0)
+            row["targetCallsFact"] = int(row.get("targetCallsFactBaseBeforeCrmCalls") or 0)
+            row["targetSuccessfulCallsFact"] = int(row.get("targetSuccessfulCallsFactBaseBeforeCrmCalls") or 0)
             row.pop("callsSource", None)
         if row.get("airTimeSource") == CRM_CALLS_SOURCE:
             row["airTimeFactSeconds"] = int(row.get("airTimeFactSecondsBaseBeforeCrmCalls") or 0)
@@ -537,15 +568,25 @@ def merge_csv_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, Any]])
             rows_by_key[key] = row
 
         base_calls = int(row.get("callsFact") or 0)
+        base_target_calls = int(row.get("targetCallsFact") or 0)
+        base_successful_target_calls = int(row.get("targetSuccessfulCallsFact") or 0)
         base_air = int(row.get("airTimeFactSeconds") or 0)
         row["callsFactBaseBeforeCrmCalls"] = base_calls
+        row["targetCallsFactBaseBeforeCrmCalls"] = base_target_calls
+        row["targetSuccessfulCallsFactBaseBeforeCrmCalls"] = base_successful_target_calls
         row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
         row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["targetCallsFact"] = base_target_calls + int(import_row.get("targetCallsFact") or 0)
+        row["targetSuccessfulCallsFact"] = (
+            base_successful_target_calls + int(import_row.get("targetSuccessfulCallsFact") or 0)
+        )
         row["airTimeFactSeconds"] = base_air + int(import_row.get("airTimeFactSeconds") or 0)
         row["airTimeFact"] = format_duration(int(row["airTimeFactSeconds"]))
         row["callsSource"] = CRM_CALLS_SOURCE
         row["airTimeSource"] = CRM_CALLS_SOURCE
         row["crmCallsFact"] = int(import_row.get("crmCallsFact") or 0)
+        row["crmTargetCallsFact"] = int(import_row.get("crmTargetCallsFact") or 0)
+        row["crmTargetSuccessfulCallsFact"] = int(import_row.get("crmTargetSuccessfulCallsFact") or 0)
         row["crmAirTimeFactSeconds"] = int(import_row.get("crmAirTimeFactSeconds") or 0)
         row.pop("sharedPlanOnlyRow", None)
 
@@ -579,15 +620,25 @@ def merge_csv_daily_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, 
             rows_by_key[key] = row
 
         base_calls = int(row.get("callsFact") or 0)
+        base_target_calls = int(row.get("targetCallsFact") or 0)
+        base_successful_target_calls = int(row.get("targetSuccessfulCallsFact") or 0)
         base_air = int(row.get("airTimeFactSeconds") or 0)
         row["callsFactBaseBeforeCrmCalls"] = base_calls
+        row["targetCallsFactBaseBeforeCrmCalls"] = base_target_calls
+        row["targetSuccessfulCallsFactBaseBeforeCrmCalls"] = base_successful_target_calls
         row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
         row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["targetCallsFact"] = base_target_calls + int(import_row.get("targetCallsFact") or 0)
+        row["targetSuccessfulCallsFact"] = (
+            base_successful_target_calls + int(import_row.get("targetSuccessfulCallsFact") or 0)
+        )
         row["airTimeFactSeconds"] = base_air + int(import_row.get("airTimeFactSeconds") or 0)
         row["airTimeFact"] = format_duration(int(row["airTimeFactSeconds"]))
         row["callsSource"] = CRM_CALLS_SOURCE
         row["airTimeSource"] = CRM_CALLS_SOURCE
         row["crmCallsFact"] = int(import_row.get("crmCallsFact") or 0)
+        row["crmTargetCallsFact"] = int(import_row.get("crmTargetCallsFact") or 0)
+        row["crmTargetSuccessfulCallsFact"] = int(import_row.get("crmTargetSuccessfulCallsFact") or 0)
         row["crmAirTimeFactSeconds"] = int(import_row.get("crmAirTimeFactSeconds") or 0)
         row.pop("sharedPlanOnlyRow", None)
 

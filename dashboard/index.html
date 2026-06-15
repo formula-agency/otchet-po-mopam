@@ -141,16 +141,21 @@
       <div class="view" data-view-panel="deals" hidden>
         <section class="summary-band section-anchor deals-summary" id="active-deals" aria-labelledby="active-deals-title">
           <div>
-            <p class="eyebrow">Срез по конкретной дате</p>
+            <p class="eyebrow">Срез по диапазону дат</p>
             <h1 id="active-deals-title">Активные сделки</h1>
           </div>
           <div class="summary-band__stats" aria-label="Сводка по сделкам">
             <article><span>Сделок</span><strong id="active-deal-count">0</strong></article>
-            <article><span>Активностей</span><strong id="active-activity-count">0</strong></article>
-            <article><span>Встречи</span><strong id="active-meeting-count">0</strong></article>
-            <article><span>Подборки</span><strong id="active-selection-count">0</strong></article>
+            <article><span>Лиды</span><strong id="active-lead-count">0</strong></article>
             <article><span>Звонки</span><strong id="active-call-count">0</strong></article>
+            <article><span>Целевые звонки</span><strong id="active-target-call-count">0</strong></article>
+            <article><span>Результативные</span><strong id="active-target-success-call-count">0</strong></article>
+            <article><span>Эфир</span><strong id="active-air-count">00:00</strong></article>
+            <article><span>Назначены встречи</span><strong id="active-scheduled-meeting-count">0</strong></article>
+            <article><span>Проведены встречи</span><strong id="active-meeting-count">0</strong></article>
             <article><span>Брони</span><strong id="active-reservation-count">0</strong></article>
+            <article><span>Заявки на ипотеки</span><strong id="active-mortgage-count">0</strong></article>
+            <article><span>Разрыв 14+ дней</span><strong id="active-gap-count">0</strong></article>
           </div>
         </section>
 
@@ -163,8 +168,12 @@
               </div>
               <div class="active-deal-tools">
                 <label class="field">
-                  <span>Дата</span>
-                  <input id="active-deal-date" type="date">
+                  <span>С</span>
+                  <input id="active-deal-date-from" type="date">
+                </label>
+                <label class="field">
+                  <span>По</span>
+                  <input id="active-deal-date-to" type="date">
                 </label>
                 <label class="field">
                   <span>МОП</span>
@@ -182,12 +191,10 @@
                     <th>Создана</th>
                     <th>Последняя активность</th>
                     <th>Тип последней активности</th>
-                    <th>Встречи</th>
+                    <th>Назначены встречи</th>
                     <th>Ипотека</th>
                     <th>Бронь</th>
-                    <th>Подборки</th>
                     <th>Звонки</th>
-                    <th>Задачи</th>
                   </tr>
                 </thead>
                 <tbody id="active-deal-body"></tbody>

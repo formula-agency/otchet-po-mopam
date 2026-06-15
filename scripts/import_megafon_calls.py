@@ -43,6 +43,8 @@ METRIC_ZEROES = {
     "approvedMortgagesPlan": 0,
     "approvedMortgagesFact": 0,
     "callsFact": 0,
+    "targetCallsFact": 0,
+    "targetSuccessfulCallsFact": 0,
     "airTimePlanSeconds": 0,
     "airTimeFactSeconds": 0,
     "targetMinutesAfterMeetingPlanSeconds": 0,

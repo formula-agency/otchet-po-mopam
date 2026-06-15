@@ -500,10 +500,10 @@ select {
 
 .active-deal-tools {
   display: grid;
-  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.2fr);
+  grid-template-columns: repeat(2, minmax(140px, 1fr)) minmax(220px, 1.2fr);
   gap: 12px;
   align-items: end;
-  width: min(460px, 100%);
+  width: min(640px, 100%);
 }
 
 .chart-frame {
@@ -845,7 +845,7 @@ select {
 }
 
 .active-deals-table {
-  min-width: 1180px;
+  min-width: 1080px;
 }
 
 .active-deals-table td:nth-child(2),
