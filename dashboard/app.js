@@ -124,7 +124,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260615-3';
+const DASHBOARD_DATA_VERSION = '20260615-4';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -142,6 +142,7 @@ const SCOREBOARD_METRICS = [
   { label: 'Брони', plan: 'reservationsPlan', fact: 'reservationsFact', kind: 'number', weight: 120 },
   { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
   { label: 'Продажи', plan: 'salesPlan', fact: 'salesFact', kind: 'number', weight: 80 },
+  { label: 'Сделки', fact: 'activeDealsFact', kind: 'number', weight: 0 },
 ];
 const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
@@ -1346,8 +1347,49 @@ function scoreboardRatio(row) {
   return ratios.reduce((sum, value) => sum + value, 0) / ratios.length;
 }
 
+function scoreboardDateRange() {
+  const customRange = normalizedDateRange(state.airtimeDateFrom, state.airtimeDateTo);
+  if (customRange.from || customRange.to) return customRange;
+
+  const selectedSprint = state.airtimeSprint;
+  if (selectedSprint && selectedSprint !== WHOLE_MONTH_VALUE) {
+    const sprintStart = parseISODate(selectedSprint);
+    return {
+      from: selectedSprint,
+      to: sprintStart ? isoDate(sprintEndForStart(sprintStart)) : selectedSprint,
+    };
+  }
+
+  if (state.airtimeMonth) {
+    const [year, month] = state.airtimeMonth.split('-').map(Number);
+    const monthStart = new Date(Date.UTC(year, month - 1, 1));
+    return {
+      from: isoDate(monthStart),
+      to: isoDate(addDays(nextMonth(monthStart), -1)),
+    };
+  }
+
+  return {
+    from: data.report?.from || '',
+    to: data.report?.to || '',
+  };
+}
+
+function activeDealCountsByMopForRange(range) {
+  const counts = new Map();
+  for (const deal of activeDealsData().rows || []) {
+    if (!deal.mopName || !dealIsActiveInRange(deal, range.from, range.to)) continue;
+    counts.set(deal.mopName, (counts.get(deal.mopName) || 0) + 1);
+  }
+  return counts;
+}
+
 function scoreboardRows() {
-  const rowsByMop = new Map((data.filters?.mopNames || []).map((name) => [name, emptyScoreboardRow(name)]));
+  const scoreboardMopNames = new Set([
+    ...(data.filters?.mopNames || []),
+    ...(activeDealsData().mopNames || []),
+  ]);
+  const rowsByMop = new Map([...scoreboardMopNames].map((name) => [name, emptyScoreboardRow(name)]));
 
   for (const row of rowsForDateFilters(state.airtimeDateFrom, state.airtimeDateTo)) {
     if (
@@ -1368,6 +1410,14 @@ function scoreboardRows() {
       if (metric.plan) target[metric.plan] += Number(row[metric.plan] || 0);
       target[metric.fact] += Number(row[metric.fact] || 0);
     }
+  }
+
+  const activeDealCounts = activeDealCountsByMopForRange(scoreboardDateRange());
+  for (const [mopName, count] of activeDealCounts.entries()) {
+    if (!rowsByMop.has(mopName)) {
+      rowsByMop.set(mopName, emptyScoreboardRow(mopName));
+    }
+    rowsByMop.get(mopName).activeDealsFact = count;
   }
 
   return [...rowsByMop.values()]
