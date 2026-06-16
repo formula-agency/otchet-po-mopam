@@ -652,7 +652,7 @@ def load_mop_settings(settings: Settings) -> MopSettings:
         dashboard_dir=Path(os.getenv("MOP_DASHBOARD_DIR", "dashboard").strip() or "dashboard"),
         deal_date_field=deal_date_field,
         approved_mortgage_date_field=(
-            os.getenv("MOP_APPROVED_MORTGAGE_DATE_FIELD", "").strip() or deal_date_field
+            os.getenv("MOP_APPROVED_MORTGAGE_DATE_FIELD", "").strip() or "DATE_MODIFY"
         ),
         assigned_field=os.getenv("MOP_ASSIGNED_FIELD", "ASSIGNED_BY_ID").strip() or "ASSIGNED_BY_ID",
         unknown_mop_name=os.getenv("MOP_UNKNOWN_USER", "Без ответственного").strip()
