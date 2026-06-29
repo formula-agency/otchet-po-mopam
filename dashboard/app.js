@@ -124,7 +124,7 @@ let mopChart;
 let factChart;
 
 const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260615-4';
+const DASHBOARD_DATA_VERSION = '20260629-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -143,6 +143,10 @@ const SCOREBOARD_METRICS = [
   { label: 'Ипотеки', plan: 'approvedMortgagesPlan', fact: 'approvedMortgagesFact', kind: 'number', weight: 120 },
   { label: 'Продажи', plan: 'salesPlan', fact: 'salesFact', kind: 'number', weight: 80 },
   { label: 'Сделки', fact: 'activeDealsFact', kind: 'number', weight: 0 },
+];
+const SCOREBOARD_EXCLUDED_MOP_NAMES = [
+  'Губайдулина Заррина',
+  'Попова Юлия',
 ];
 const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
@@ -221,6 +225,11 @@ function normalizeNameKey(value) {
     .replace(/\s+/g, ' ')
     .replace(/ё/g, 'е')
     .toLowerCase();
+}
+
+function isScoreboardMopIncluded(mopName) {
+  const mopKey = normalizeNameKey(mopName);
+  return !SCOREBOARD_EXCLUDED_MOP_NAMES.some((name) => normalizeNameKey(name) === mopKey);
 }
 
 function normalizePlanLabel(value) {
@@ -1378,7 +1387,7 @@ function scoreboardDateRange() {
 function activeDealCountsByMopForRange(range) {
   const counts = new Map();
   for (const deal of activeDealsData().rows || []) {
-    if (!deal.mopName || !dealIsActiveInRange(deal, range.from, range.to)) continue;
+    if (!deal.mopName || !isScoreboardMopIncluded(deal.mopName) || !dealIsActiveInRange(deal, range.from, range.to)) continue;
     counts.set(deal.mopName, (counts.get(deal.mopName) || 0) + 1);
   }
   return counts;
@@ -1388,12 +1397,13 @@ function scoreboardRows() {
   const scoreboardMopNames = new Set([
     ...(data.filters?.mopNames || []),
     ...(activeDealsData().mopNames || []),
-  ]);
+  ].filter(isScoreboardMopIncluded));
   const rowsByMop = new Map([...scoreboardMopNames].map((name) => [name, emptyScoreboardRow(name)]));
 
   for (const row of rowsForDateFilters(state.airtimeDateFrom, state.airtimeDateTo)) {
     if (
       row.manualAggregate
+      || !isScoreboardMopIncluded(row.mopName)
       || !rowMatchesPeriodOrDates(
         row,
         state.airtimeMonth,
