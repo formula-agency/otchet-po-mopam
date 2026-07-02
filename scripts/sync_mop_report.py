@@ -65,6 +65,10 @@ DEFAULT_MOP_NAMES_BY_ID = {
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 MANUAL_SALES_DATE_OVERRIDES = {
     "4986": date(2026, 5, 31),
+    "5394": date(2026, 6, 30),
+    "5461": date(2026, 6, 30),
+    "5497": date(2026, 6, 30),
+    "5518": date(2026, 6, 30),
 }
 MANUAL_MONTHLY_MOP_PLANS = (
     {
@@ -864,8 +868,20 @@ def resolve_plan_sheet_titles(
     if not sheets:
         raise ConfigError("The plan spreadsheet has no sheets.")
 
-    spreadsheet_title = str(metadata.get("properties", {}).get("title") or "")
+    monthly_titles: list[str] = []
     fallback_year = window.end.date().year
+    for sheet in sheets:
+        title = str(sheet.get("properties", {}).get("title") or "")
+        month_start = parse_plan_month(title, fallback_year)
+        if month_start is None:
+            continue
+        if month_end_for_date(month_start) < window.start.date() or month_start > window.end.date():
+            continue
+        monthly_titles.append(title)
+    if monthly_titles:
+        return monthly_titles
+
+    spreadsheet_title = str(metadata.get("properties", {}).get("title") or "")
     if mop_settings.plan_sheet_gid:
         selected_sheet = next(
             (
@@ -892,27 +908,12 @@ def resolve_plan_sheet_titles(
         None,
     )
 
-    monthly_titles: list[str] = []
-    for sheet in sheets:
-        title = str(sheet.get("properties", {}).get("title") or "")
-        month_start = parse_plan_month(title, fallback_year)
-        if month_start is None:
-            continue
-        if month_end_for_date(month_start) < window.start.date() or month_start > window.end.date():
-            continue
-        monthly_titles.append(title)
-
     if selected_title:
-        if parse_plan_month(str(selected_title), fallback_year) is not None and monthly_titles:
-            return monthly_titles
         return [str(selected_title)]
     if requested_title == spreadsheet_title and len(sheets) == 1:
         return [sheets[0]["properties"]["title"]]
     if len(sheets) == 1:
         return [sheets[0]["properties"]["title"]]
-    if monthly_titles:
-        return monthly_titles
-
     available = ", ".join(sheet["properties"]["title"] for sheet in sheets)
     raise ConfigError(f"Sheet '{requested_title}' not found. Available sheets: {available}")
 
