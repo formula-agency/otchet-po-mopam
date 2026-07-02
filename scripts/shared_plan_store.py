@@ -41,6 +41,7 @@ MOP_NAMES = (
     "Камболин Александр",
     "Жуков Лев",
     "Гавриленко Елена",
+    "Войнов Данил",
 )
 MOP_IDS_BY_NAME = {
     "Погребинский Артем": "39",
@@ -53,6 +54,7 @@ MOP_IDS_BY_NAME = {
     "Жуков Лев": "194",
     "Попова Юлия": "195",
     "Гавриленко Елена": "197",
+    "Войнов Данил": "199",
 }
 PLAN_FIELDS = (
     "salesPlan",
@@ -71,6 +73,9 @@ PLAN_HEADER_ALIASES = {
     "airTimePlanSeconds": {"эфир", "целевое эфирное время", "план эфирного времени"},
 }
 AGGREGATE_PLAN_ALIASES = {"общий план", "общий", "итого", "все мопы"}
+MOP_NAME_ALIASES = {
+    "войнов": "Войнов Данил",
+}
 
 
 class SharedPlanError(RuntimeError):
@@ -107,6 +112,8 @@ def canonical_mop_name(value: Any) -> str:
     key = normalize_name(value)
     if key in AGGREGATE_PLAN_ALIASES:
         return AGGREGATE_PLAN_NAME
+    if key in MOP_NAME_ALIASES:
+        return MOP_NAME_ALIASES[key]
     return next((name for name in MOP_NAMES if normalize_name(name) == key), "")
 
 

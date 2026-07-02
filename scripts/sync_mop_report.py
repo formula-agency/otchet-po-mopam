@@ -234,6 +234,7 @@ PLAN_MOP_NAME_ALIASES = {
     "камболин": "Камболин Александр",
     "жуков": "Жуков Лев",
     "гавриленко": "Гавриленко Елена",
+    "войнов": "Войнов Данил",
 }
 
 RUSSIAN_MONTHS = {
@@ -844,6 +845,76 @@ def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str,
         available = ", ".join(sheet["properties"]["title"] for sheet in sheets)
         raise ConfigError(f"Sheet '{requested_title}' not found. Available sheets: {available}")
     return selected_sheet["properties"]["title"]
+
+
+def resolve_plan_sheet_titles(
+    service: Any,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> list[str]:
+    metadata = execute_google_request(
+        service.spreadsheets()
+        .get(
+            spreadsheetId=mop_settings.plan_sheet_id,
+            fields="properties(title),sheets(properties(sheetId,title))",
+        )
+    )
+    sheets = metadata.get("sheets", [])
+    if not sheets:
+        raise ConfigError("The plan spreadsheet has no sheets.")
+
+    spreadsheet_title = str(metadata.get("properties", {}).get("title") or "")
+    fallback_year = window.end.date().year
+    if mop_settings.plan_sheet_gid:
+        selected_sheet = next(
+            (
+                sheet
+                for sheet in sheets
+                if str(sheet.get("properties", {}).get("sheetId", "")) == mop_settings.plan_sheet_gid
+            ),
+            None,
+        )
+        if selected_sheet is None:
+            available = ", ".join(
+                f"{sheet['properties']['title']} ({sheet['properties'].get('sheetId')})" for sheet in sheets
+            )
+            raise ConfigError(f"Sheet gid '{mop_settings.plan_sheet_gid}' not found. Available sheets: {available}")
+        return [selected_sheet["properties"]["title"]]
+
+    requested_title = mop_settings.plan_sheet_name
+    selected_title = next(
+        (
+            sheet.get("properties", {}).get("title")
+            for sheet in sheets
+            if sheet.get("properties", {}).get("title") == requested_title
+        ),
+        None,
+    )
+
+    monthly_titles: list[str] = []
+    for sheet in sheets:
+        title = str(sheet.get("properties", {}).get("title") or "")
+        month_start = parse_plan_month(title, fallback_year)
+        if month_start is None:
+            continue
+        if month_end_for_date(month_start) < window.start.date() or month_start > window.end.date():
+            continue
+        monthly_titles.append(title)
+
+    if selected_title:
+        if parse_plan_month(str(selected_title), fallback_year) is not None and monthly_titles:
+            return monthly_titles
+        return [str(selected_title)]
+    if requested_title == spreadsheet_title and len(sheets) == 1:
+        return [sheets[0]["properties"]["title"]]
+    if len(sheets) == 1:
+        return [sheets[0]["properties"]["title"]]
+    if monthly_titles:
+        return monthly_titles
+
+    available = ", ".join(sheet["properties"]["title"] for sheet in sheets)
+    raise ConfigError(f"Sheet '{requested_title}' not found. Available sheets: {available}")
 
 
 def fetch_user_hidden_sheet_row_indexes(service: Any, spreadsheet_id: str, sheet_title: str) -> set[int]:
@@ -2364,12 +2435,12 @@ def parse_plan_month(value: str, fallback_year: int) -> date | None:
 
 def resolve_plan_month_start(settings: Settings, mop_settings: MopSettings, sheet_title: str, window: ReportWindow) -> date:
     fallback = window.end.date()
-    configured = parse_plan_month(mop_settings.plan_month, fallback.year)
-    if configured is not None:
-        return configured
     from_sheet_title = parse_plan_month(sheet_title, fallback.year)
     if from_sheet_title is not None:
         return from_sheet_title
+    configured = parse_plan_month(mop_settings.plan_month, fallback.year)
+    if configured is not None:
+        return configured
     return date(fallback.year, fallback.month, 1)
 
 
@@ -2398,74 +2469,76 @@ def load_plan_entries(
             raise ConfigError("Set GOOGLE_SERVICE_ACCOUNT_FILE or GOOGLE_SERVICE_ACCOUNT_JSON for required plan loading.")
         return []
 
+    entries: list[PlanEntry] = []
     try:
-        sheet_title = resolve_sheet_title(
-            service,
-            mop_settings.plan_sheet_id,
-            mop_settings.plan_sheet_name,
-            mop_settings.plan_sheet_gid,
-        )
+        sheet_titles = resolve_plan_sheet_titles(service, settings, mop_settings, window)
     except ConfigError:
         if mop_settings.plan_required:
             raise
         return []
 
-    values = execute_google_request(
-        service.spreadsheets()
-        .values()
-        .get(
-            spreadsheetId=mop_settings.plan_sheet_id,
-            range=f"{quote_sheet_title(sheet_title)}!A:Z",
-            majorDimension="ROWS",
-        )
-    ).get("values", [])
-    if not values:
-        return []
-
-    header_row_index, column_map = find_plan_columns(values)
-    entries: list[PlanEntry] = []
-    has_week_column = "week" in column_map or "week_start" in column_map
-    for row in values[header_row_index + 1 :]:
-        mop_id = str(cell(row, column_map, "mop_id") or "").strip()
-        mop_name = canonical_plan_mop_name(cell(row, column_map, "mop_name"))
-        if not mop_id and not mop_name:
-            continue
-        metrics = metric_set_from_plan_row(row, column_map)
-        if has_week_column:
-            week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
-            week_start = parse_week_start(week_value, window, settings.report_timezone)
-            if week_start is None:
-                continue
-            if week_end_for_start(week_start) < window.start.date() or week_start > window.end.date():
-                continue
-            entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
-            continue
-
-        month_start = resolve_plan_month_start(settings, mop_settings, sheet_title, window)
-        split_metrics = {
-            "sales": split_monthly_value(metrics.sales),
-            "meetings": split_monthly_value(metrics.meetings),
-            "reservations": split_monthly_value(metrics.reservations),
-            "approved_mortgages": split_monthly_value(metrics.approved_mortgages),
-            "air_seconds": split_monthly_value(metrics.air_seconds),
-        }
-        for sprint_index, week_start in enumerate(sprint_starts_for_month(month_start)):
-            if week_end_for_start(week_start) < window.start.date():
-                continue
-            entries.append(
-                PlanEntry(
-                    week_start,
-                    mop_id,
-                    mop_name,
-                    MopMetricSet(
-                        sales=split_metrics["sales"][sprint_index],
-                        meetings=split_metrics["meetings"][sprint_index],
-                        reservations=split_metrics["reservations"][sprint_index],
-                        approved_mortgages=split_metrics["approved_mortgages"][sprint_index],
-                        air_seconds=split_metrics["air_seconds"][sprint_index],
-                    ),
-                )
+    for sheet_title in sheet_titles:
+        values = execute_google_request(
+            service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=mop_settings.plan_sheet_id,
+                range=f"{quote_sheet_title(sheet_title)}!A:Z",
+                majorDimension="ROWS",
             )
+        ).get("values", [])
+        if not values:
+            continue
+
+        try:
+            header_row_index, column_map = find_plan_columns(values)
+        except ConfigError:
+            if len(sheet_titles) == 1 or mop_settings.plan_required:
+                raise
+            continue
+
+        has_week_column = "week" in column_map or "week_start" in column_map
+        for row in values[header_row_index + 1 :]:
+            mop_id = str(cell(row, column_map, "mop_id") or "").strip()
+            mop_name = canonical_plan_mop_name(cell(row, column_map, "mop_name"))
+            if not mop_id and not mop_name:
+                continue
+            metrics = metric_set_from_plan_row(row, column_map)
+            if has_week_column:
+                week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
+                week_start = parse_week_start(week_value, window, settings.report_timezone)
+                if week_start is None:
+                    continue
+                if week_end_for_start(week_start) < window.start.date() or week_start > window.end.date():
+                    continue
+                entries.append(PlanEntry(week_start, mop_id, mop_name, metrics))
+                continue
+
+            month_start = resolve_plan_month_start(settings, mop_settings, sheet_title, window)
+            split_metrics = {
+                "sales": split_monthly_value(metrics.sales),
+                "meetings": split_monthly_value(metrics.meetings),
+                "reservations": split_monthly_value(metrics.reservations),
+                "approved_mortgages": split_monthly_value(metrics.approved_mortgages),
+                "air_seconds": split_monthly_value(metrics.air_seconds),
+            }
+            for sprint_index, week_start in enumerate(sprint_starts_for_month(month_start)):
+                if week_end_for_start(week_start) < window.start.date():
+                    continue
+                entries.append(
+                    PlanEntry(
+                        week_start,
+                        mop_id,
+                        mop_name,
+                        MopMetricSet(
+                            sales=split_metrics["sales"][sprint_index],
+                            meetings=split_metrics["meetings"][sprint_index],
+                            reservations=split_metrics["reservations"][sprint_index],
+                            approved_mortgages=split_metrics["approved_mortgages"][sprint_index],
+                            air_seconds=split_metrics["air_seconds"][sprint_index],
+                        ),
+                    )
+                )
     return entries
 
 
