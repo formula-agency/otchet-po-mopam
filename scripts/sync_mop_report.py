@@ -2330,22 +2330,45 @@ def infer_plan_column_from_header(normalized_header: str) -> str:
     return ""
 
 
-def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
+def columns_from_plan_header_row(row: list[Any]) -> dict[str, int]:
     column_map: dict[str, int] = {}
-    matched_rows: list[int] = []
+    for column_index, cell in enumerate(row):
+        normalized = normalize_text(cell)
+        inferred_name = infer_plan_column_from_header(normalized)
+        if inferred_name and inferred_name not in column_map:
+            column_map[inferred_name] = column_index
+            continue
+        for canonical_name, aliases in PLAN_HEADER_ALIASES.items():
+            if normalized in aliases and canonical_name not in column_map:
+                column_map[canonical_name] = column_index
+                break
+    return column_map
+
+
+def plan_header_score(column_map: dict[str, int]) -> int:
+    metric_columns = {
+        "sale_plan",
+        "meeting_plan",
+        "reservation_plan",
+        "mortgage_plan",
+        "air_time_plan",
+    }
+    identity_score = int("mop_id" in column_map or "mop_name" in column_map)
+    period_score = int("week" in column_map or "week_start" in column_map)
+    return len(metric_columns & set(column_map)) * 10 + identity_score * 2 + period_score
+
+
+def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
+    best_header_row_index = 0
+    best_score = 0
+    column_map: dict[str, int] = {}
     for row_index, row in enumerate(rows[:10]):
-        for column_index, cell in enumerate(row):
-            normalized = normalize_text(cell)
-            inferred_name = infer_plan_column_from_header(normalized)
-            if inferred_name and inferred_name not in column_map:
-                column_map[inferred_name] = column_index
-                matched_rows.append(row_index)
-                continue
-            for canonical_name, aliases in PLAN_HEADER_ALIASES.items():
-                if normalize_text(cell) in aliases:
-                    column_map[canonical_name] = column_index
-                    matched_rows.append(row_index)
-                    break
+        candidate_map = columns_from_plan_header_row(row)
+        candidate_score = plan_header_score(candidate_map)
+        if candidate_score > best_score:
+            best_header_row_index = row_index
+            best_score = candidate_score
+            column_map = candidate_map
     if "mortgage_plan" not in column_map:
         if "reservation_plan" in column_map:
             column_map["mortgage_plan"] = column_map["reservation_plan"] + 3
@@ -2360,7 +2383,7 @@ def find_plan_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
         column_map
     ):
         raise ConfigError("В листе планов не найдены плановые колонки по метрикам.")
-    return max(matched_rows) if matched_rows else 0, column_map
+    return best_header_row_index, column_map
 
 
 def cell(row: list[Any], column_map: dict[str, int], name: str) -> Any:
@@ -2499,12 +2522,33 @@ def load_plan_entries(
             continue
 
         has_week_column = "week" in column_map or "week_start" in column_map
+        started_monthly_plan_rows = False
         for row in values[header_row_index + 1 :]:
             mop_id = str(cell(row, column_map, "mop_id") or "").strip()
             mop_name = canonical_plan_mop_name(cell(row, column_map, "mop_name"))
+            metrics = metric_set_from_plan_row(row, column_map)
+            if not has_week_column:
+                has_identity = bool(mop_id or mop_name)
+                has_metric_cells = any(
+                    str(cell(row, column_map, name) or "").strip()
+                    for name in (
+                        "sale_plan",
+                        "meeting_plan",
+                        "reservation_plan",
+                        "mortgage_plan",
+                        "air_time_plan",
+                    )
+                )
+                if not has_identity and not has_metric_cells:
+                    if started_monthly_plan_rows:
+                        break
+                    continue
+                if has_identity:
+                    started_monthly_plan_rows = True
+                elif started_monthly_plan_rows:
+                    break
             if not mop_id and not mop_name:
                 continue
-            metrics = metric_set_from_plan_row(row, column_map)
             if has_week_column:
                 week_value = cell(row, column_map, "week_start") or cell(row, column_map, "week")
                 week_start = parse_week_start(week_value, window, settings.report_timezone)
