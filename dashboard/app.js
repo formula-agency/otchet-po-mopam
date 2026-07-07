@@ -1551,6 +1551,7 @@ function renderContest() {
   if (!els.contestRows || !els.contestSummary) return;
   const contest = contestData();
   const rows = contestRows();
+  els.contestRows.style.setProperty('--contest-row-count', String(Math.max(rows.length, 1)));
   const totals = rows.reduce((acc, row) => {
     acc.firstMeetingsFact += row.firstMeetingsFact;
     acc.salesFact += row.salesFact;
@@ -1811,6 +1812,7 @@ function setView(view, updateHash = true) {
   for (const link of els.viewLinks) {
     link.classList.toggle('is-active', link.dataset.viewLink === state.view);
   }
+  els.appFrame?.classList.toggle('is-contest-view', state.view === 'contest');
   if (updateHash && window.history) {
     window.history.replaceState(null, '', state.view === 'summary' ? '#summary' : `#${state.view}`);
   }

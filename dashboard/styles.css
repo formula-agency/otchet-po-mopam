@@ -99,6 +99,10 @@ body {
   transition: padding-left 180ms ease;
 }
 
+.app-frame.is-contest-view .app-main {
+  padding-bottom: 0;
+}
+
 .app-frame.is-sidebar-collapsed .app-main {
   padding-left: 52px;
 }
@@ -866,35 +870,38 @@ select {
 
 .contest-view {
   min-height: 100vh;
+  overflow: hidden;
   background: #f3f7fb;
 }
 
 .contest-scoreboard {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 12px;
-  min-height: calc(100vh - 36px);
-  padding: 18px 28px 12px;
+  gap: 8px;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 10px 28px;
 }
 
 .contest-scoreboard__top {
   display: flex;
   justify-content: space-between;
-  gap: 24px;
-  align-items: end;
+  gap: 18px;
+  align-items: center;
 }
 
 .contest-scoreboard h1 {
-  margin: 4px 0 6px;
-  font-size: clamp(42px, 5vw, 72px);
-  line-height: 0.92;
+  margin: 2px 0 4px;
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 0.95;
 }
 
 .contest-prize {
   display: grid;
-  grid-template-columns: 128px minmax(190px, 320px);
+  grid-template-columns: 96px minmax(180px, 280px);
   align-items: center;
-  min-height: 86px;
+  min-height: 64px;
   overflow: hidden;
   border-radius: var(--radius);
   background: #10251f;
@@ -909,25 +916,25 @@ select {
 }
 
 .contest-prize div {
-  padding: 12px 16px;
+  padding: 8px 12px;
 }
 
 .contest-prize strong {
   display: block;
-  margin-top: 4px;
-  font-size: clamp(18px, 1.4vw, 23px);
+  margin-top: 3px;
+  font-size: clamp(15px, 1.1vw, 19px);
   line-height: 1.05;
 }
 
 .contest-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
 }
 
 .contest-summary article {
-  min-height: 72px;
-  padding: 12px 16px;
+  min-height: 54px;
+  padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper);
@@ -942,15 +949,15 @@ select {
 
 .contest-summary strong {
   display: block;
-  margin-top: 4px;
-  font-size: clamp(24px, 2.4vw, 38px);
+  margin-top: 3px;
+  font-size: clamp(20px, 1.8vw, 30px);
   line-height: 1;
   overflow-wrap: anywhere;
 }
 
 .contest-summary small {
   display: block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 800;
@@ -958,20 +965,20 @@ select {
 
 .contest-rows {
   display: grid;
-  gap: 8px;
-  align-content: start;
+  gap: 5px;
+  align-content: stretch;
   min-height: 0;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: hidden;
 }
 
 .contest-row {
   display: grid;
-  grid-template-columns: 48px minmax(220px, 1.05fr) minmax(180px, 0.85fr) repeat(2, minmax(130px, 0.45fr));
-  gap: 12px;
+  grid-template-columns: 42px minmax(200px, 1fr) minmax(140px, 0.8fr) repeat(2, minmax(110px, 0.42fr));
+  gap: 8px;
   align-items: center;
-  min-height: 64px;
-  padding: 9px 14px;
+  min-height: 0;
+  height: clamp(40px, calc((100vh - 225px) / var(--contest-row-count, 8)), 58px);
+  padding: 5px 12px;
   border: 1px solid var(--line);
   border-left: 8px solid var(--coral);
   border-radius: var(--radius);
@@ -1018,17 +1025,24 @@ select {
 
 .contest-row__person strong {
   display: block;
-  font-size: clamp(20px, 1.7vw, 29px);
+  font-size: clamp(16px, 1.25vw, 22px);
   line-height: 1.02;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .contest-row__person span,
 .contest-row__metric span {
   color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .contest-row__bar {
-  height: 16px;
+  height: 11px;
   overflow: hidden;
   border-radius: 999px;
   background: #e7edf3;
@@ -1055,8 +1069,8 @@ select {
 
 .contest-row__metric strong {
   display: block;
-  margin-top: 3px;
-  font-size: clamp(24px, 2vw, 34px);
+  margin-top: 2px;
+  font-size: clamp(18px, 1.45vw, 25px);
   line-height: 1;
 }
 
@@ -1335,12 +1349,23 @@ select {
   }
 
   .contest-scoreboard {
+    height: auto;
     min-height: calc(100vh - 112px);
+    overflow: visible;
     padding: 14px 10px;
   }
 
   .contest-scoreboard__top {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .contest-view,
+  .contest-rows {
+    overflow: visible;
+  }
+
+  .contest-row {
+    height: auto;
   }
 }
