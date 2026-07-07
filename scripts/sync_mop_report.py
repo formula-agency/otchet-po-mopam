@@ -27,6 +27,7 @@ DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
 DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_ID = "1hvLyXXBQEwAeDFAKITr_lTE8pBHX8RLTy_S_0OECsjk"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_GID = "0"
+DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME = "Архив"
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
@@ -354,6 +355,7 @@ class Settings:
     google_target_after_meeting_sheet_id: str
     google_target_after_meeting_sheet_name: str
     google_target_after_meeting_sheet_gid: str
+    google_target_after_meeting_archive_sheet_name: str
     report_timezone: str
     report_period_mode: str
     report_start_date: str
@@ -636,6 +638,13 @@ def load_settings() -> Settings:
         google_target_after_meeting_sheet_gid=(
             os.getenv("GOOGLE_TARGET_AFTER_MEETING_SHEET_GID", DEFAULT_TARGET_AFTER_MEETING_SHEET_GID).strip()
             or DEFAULT_TARGET_AFTER_MEETING_SHEET_GID
+        ),
+        google_target_after_meeting_archive_sheet_name=(
+            os.getenv(
+                "GOOGLE_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME",
+                DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME,
+            ).strip()
+            or DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME
         ),
         report_timezone=os.getenv("REPORT_TIMEZONE", "Asia/Yekaterinburg").strip() or "Asia/Yekaterinburg",
         report_period_mode=os.getenv("REPORT_PERIOD_MODE", "from_start_date").strip().lower()
@@ -1443,17 +1452,11 @@ def build_target_after_meeting_public_entries(settings: Settings) -> list[Target
     return parse_target_after_meeting_rows(values, set(), settings)
 
 
-def build_target_after_meeting_entries(service: Any, settings: Settings) -> list[TargetAfterMeetingEntry]:
-    if not settings.google_target_after_meeting_sheet_id:
-        return []
-    if service is None:
-        return build_target_after_meeting_public_entries(settings)
-    sheet_title = resolve_sheet_title(
-        service,
-        settings.google_target_after_meeting_sheet_id,
-        settings.google_target_after_meeting_sheet_name,
-        settings.google_target_after_meeting_sheet_gid,
-    )
+def read_target_after_meeting_sheet_entries(
+    service: Any,
+    settings: Settings,
+    sheet_title: str,
+) -> list[TargetAfterMeetingEntry]:
     values = execute_google_request(
         service.spreadsheets()
         .values()
@@ -1472,6 +1475,37 @@ def build_target_after_meeting_entries(service: Any, settings: Settings) -> list
         sheet_title,
     )
     return parse_target_after_meeting_rows(values, hidden_row_indexes, settings)
+
+
+def build_target_after_meeting_entries(service: Any, settings: Settings) -> list[TargetAfterMeetingEntry]:
+    if not settings.google_target_after_meeting_sheet_id:
+        return []
+    if service is None:
+        return build_target_after_meeting_public_entries(settings)
+    sheet_title = resolve_sheet_title(
+        service,
+        settings.google_target_after_meeting_sheet_id,
+        settings.google_target_after_meeting_sheet_name,
+        settings.google_target_after_meeting_sheet_gid,
+    )
+    entries = read_target_after_meeting_sheet_entries(service, settings, sheet_title)
+
+    archive_title = settings.google_target_after_meeting_archive_sheet_name
+    if archive_title and archive_title != sheet_title:
+        metadata = execute_google_request(
+            service.spreadsheets()
+            .get(
+                spreadsheetId=settings.google_target_after_meeting_sheet_id,
+                fields="sheets(properties(title))",
+            )
+        )
+        has_archive = any(
+            sheet.get("properties", {}).get("title") == archive_title
+            for sheet in metadata.get("sheets", [])
+        )
+        if has_archive:
+            entries.extend(read_target_after_meeting_sheet_entries(service, settings, archive_title))
+    return entries
 
 
 def iterate_report_dates(window: ReportWindow) -> list[date]:
