@@ -28,6 +28,10 @@ DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_ID = "1hvLyXXBQEwAeDFAKITr_lTE8pBHX8RLTy_S_0OECsjk"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_GID = "0"
 DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME = "Архив"
+DEFAULT_CONTEST_MONTH = "2026-07"
+DEFAULT_CONTEST_FIRST_MEETING_FIELD = "UF_DEAL_SHOW"
+DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD = "UF_DEAL_DATE_FIRST_SUCCESSFUL_COMMUNICATION"
+DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES = ("4559", "1", "да", "yes", "y", "true")
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
@@ -356,6 +360,10 @@ class Settings:
     google_target_after_meeting_sheet_name: str
     google_target_after_meeting_sheet_gid: str
     google_target_after_meeting_archive_sheet_name: str
+    contest_month: str
+    contest_first_meeting_field: str
+    contest_first_meeting_date_field: str
+    contest_first_meeting_yes_values: tuple[str, ...]
     report_timezone: str
     report_period_mode: str
     report_start_date: str
@@ -645,6 +653,25 @@ def load_settings() -> Settings:
                 DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME,
             ).strip()
             or DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME
+        ),
+        contest_month=os.getenv("MOP_CONTEST_MONTH", DEFAULT_CONTEST_MONTH).strip() or DEFAULT_CONTEST_MONTH,
+        contest_first_meeting_field=(
+            os.getenv("MOP_CONTEST_FIRST_MEETING_FIELD", DEFAULT_CONTEST_FIRST_MEETING_FIELD).strip()
+            or DEFAULT_CONTEST_FIRST_MEETING_FIELD
+        ),
+        contest_first_meeting_date_field=(
+            os.getenv(
+                "MOP_CONTEST_FIRST_MEETING_DATE_FIELD",
+                DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD,
+            ).strip()
+            or DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD
+        ),
+        contest_first_meeting_yes_values=tuple(
+            normalize_key(value)
+            for value in read_filter_labels(
+                "MOP_CONTEST_FIRST_MEETING_YES_VALUES",
+                DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES,
+            )
         ),
         report_timezone=os.getenv("REPORT_TIMEZONE", "Asia/Yekaterinburg").strip() or "Asia/Yekaterinburg",
         report_period_mode=os.getenv("REPORT_PERIOD_MODE", "from_start_date").strip().lower()
@@ -2502,6 +2529,13 @@ def resolve_plan_month_start(settings: Settings, mop_settings: MopSettings, shee
     return date(fallback.year, fallback.month, 1)
 
 
+def resolve_contest_month_bounds(settings: Settings, window: ReportWindow) -> tuple[date, date]:
+    month_start = parse_plan_month(settings.contest_month, window.end.date().year)
+    if month_start is None:
+        month_start = date(window.end.date().year, window.end.date().month, 1)
+    return month_start, month_end_for_date(month_start)
+
+
 def metric_set_from_plan_row(row: list[Any], column_map: dict[str, int]) -> MopMetricSet:
     return MopMetricSet(
         sales=parse_number(cell(row, column_map, "sale_plan")),
@@ -3023,12 +3057,158 @@ def build_active_deals_payload(
     }
 
 
+def contest_first_meeting_confirmed(value: Any, settings: Settings) -> bool:
+    if isinstance(value, (list, tuple, set)):
+        return any(contest_first_meeting_confirmed(item, settings) for item in value)
+    if isinstance(value, dict):
+        return any(contest_first_meeting_confirmed(item, settings) for item in value.values())
+    normalized = normalize_key(value)
+    return normalized in settings.contest_first_meeting_yes_values or resolve_boolean_field(value)
+
+
+def empty_contest_row(mop_name: str) -> dict[str, Any]:
+    return {
+        "mopName": mop_name,
+        "firstMeetingsFact": 0,
+        "salesFact": 0,
+        "contestScore": 0,
+    }
+
+
+def build_contest_payload(
+    data: MopReportData,
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+    user_names: dict[str, str],
+) -> dict[str, Any]:
+    contest_start, contest_end = resolve_contest_month_bounds(settings, window)
+    rows_by_mop: dict[str, dict[str, Any]] = {}
+    configured_mop_names = {
+        label
+        for label in mop_settings.include_user_labels
+        if label and not normalize_key(label).isdigit() and not normalize_key(label).startswith("id:")
+    }
+    for mop_name in configured_mop_names:
+        rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
+
+    for event_date, facts_by_key in data.daily_facts.items():
+        if event_date < contest_start or event_date > contest_end:
+            continue
+        for key, metrics in facts_by_key.items():
+            if not metrics.sales:
+                continue
+            identity = data.identities.get(key, MopIdentity(mop_name=key))
+            mop_name = identity.mop_name or user_names.get(identity.mop_id, "")
+            if not mop_name or not mop_is_allowed(identity.mop_id, mop_name, mop_settings):
+                continue
+            row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
+            row["salesFact"] += metrics.sales
+
+    select_fields = unique_fields(
+        [
+            "ID",
+            "TITLE",
+            "ASSIGNED_BY_ID",
+            mop_settings.assigned_field,
+            "CATEGORY_ID",
+            settings.contest_first_meeting_field,
+            settings.contest_first_meeting_date_field,
+        ]
+    )
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    first_meeting_records: list[dict[str, Any]] = []
+    seen_deal_ids: set[str] = set()
+    current_date = contest_start
+    while current_date <= contest_end:
+        day_start, day_end = day_bounds(current_date, window)
+        base_filters: dict[str, Any] = {
+            f">={settings.contest_first_meeting_date_field}": day_start.isoformat(timespec="seconds"),
+            f"<={settings.contest_first_meeting_date_field}": day_end.isoformat(timespec="seconds"),
+        }
+        try:
+            if category_ids:
+                records: list[dict[str, Any]] = []
+                for category_id in sorted(category_ids, key=lambda item: int(item) if item.isdigit() else item):
+                    records.extend(
+                        fetch_deal_list(
+                            session,
+                            settings,
+                            {**base_filters, "CATEGORY_ID": category_id},
+                            select_fields,
+                        )
+                    )
+            else:
+                records = fetch_deal_list(session, settings, base_filters, select_fields)
+        except Exception as exc:
+            data.warnings.append(
+                f"Конкурс: не удалось загрузить первые встречи за {current_date.isoformat()}: {safe_error_text(exc)}"
+            )
+            current_date += timedelta(days=1)
+            continue
+
+        for record in records:
+            deal_id = str(record.get("ID") or "").strip()
+            if deal_id and deal_id in seen_deal_ids:
+                continue
+            if not contest_first_meeting_confirmed(record.get(settings.contest_first_meeting_field), settings):
+                continue
+            event_date = parse_bitrix_date(record.get(settings.contest_first_meeting_date_field), settings.report_timezone)
+            if event_date is None or event_date < contest_start or event_date > contest_end:
+                continue
+            if deal_id:
+                seen_deal_ids.add(deal_id)
+            first_meeting_records.append(record)
+        current_date += timedelta(days=1)
+
+    contest_user_names = dict(user_names)
+    contest_user_names.update(DEFAULT_MOP_NAMES_BY_ID)
+    assigned_ids = {
+        extract_assigned_user_id(record, mop_settings)
+        for record in first_meeting_records
+        if extract_assigned_user_id(record, mop_settings)
+    }
+    contest_user_names.update(fetch_bitrix_user_names(session, settings, assigned_ids))
+
+    for record in first_meeting_records:
+        mop_id = extract_assigned_user_id(record, mop_settings)
+        mop_name = contest_user_names.get(mop_id, f"Пользователь {mop_id}" if mop_id else mop_settings.unknown_mop_name)
+        if not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
+        row["firstMeetingsFact"] += 1
+
+    for row in rows_by_mop.values():
+        row["contestScore"] = row["salesFact"] * 100 + row["firstMeetingsFact"]
+
+    rows = sorted(
+        rows_by_mop.values(),
+        key=lambda row: (
+            -int(row["salesFact"]),
+            -int(row["firstMeetingsFact"]),
+            str(row["mopName"]),
+        ),
+    )
+    return {
+        "month": f"{contest_start:%Y-%m}",
+        "from": contest_start.isoformat(),
+        "to": contest_end.isoformat(),
+        "rankingRule": "sales_then_first_meetings",
+        "firstMeetingField": settings.contest_first_meeting_field,
+        "firstMeetingDateField": settings.contest_first_meeting_date_field,
+        "rows": rows,
+    }
+
+
 def build_dashboard_payload(
     data: MopReportData,
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
     active_deals_payload: dict[str, Any] | None = None,
+    contest_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -3110,6 +3290,13 @@ def build_dashboard_payload(
             "minDate": window.start.date().isoformat(),
             "maxDate": window.end.date().isoformat(),
         },
+        "contest": contest_payload or {
+            "month": "",
+            "from": "",
+            "to": "",
+            "rankingRule": "sales_then_first_meetings",
+            "rows": [],
+        },
         "warnings": data.warnings,
         "baseRows": rows,
         "dailyRows": build_daily_dashboard_rows(data, mop_settings, window),
@@ -3179,8 +3366,9 @@ def main() -> int:
             window,
             booking_events,
         )
+        contest_payload = build_contest_payload(data, session, settings, mop_settings, window, user_names)
         built_report = build_report_rows(data, mop_settings)
-        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload)
+        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload, contest_payload)
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
         print_summary(built_report, payload)

@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260615-5">
+  <link rel="stylesheet" href="./styles.css?v=20260707-1">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260615-2"></script>
-  <script defer src="./app.js?v=20260706-1"></script>
+  <script defer src="./app.js?v=20260707-1"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -17,6 +17,7 @@
         <button class="side-nav__item is-active" type="button" data-view-link="summary">План-факт</button>
         <button class="side-nav__item" type="button" data-view-link="deals">Сделки</button>
         <button class="side-nav__item" type="button" data-view-link="airtime">Табло</button>
+        <button class="side-nav__item" type="button" data-view-link="contest">Конкурс</button>
       </nav>
     </aside>
     <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Скрыть меню" aria-expanded="true">‹</button>
@@ -238,6 +239,34 @@
           </div>
           <div id="scoreboard-summary" class="airtime-summary"></div>
           <div id="airtime-rows" class="airtime-rows"></div>
+          <aside class="contest-banner" aria-label="Конкурс за сертификат">
+            <img src="./assets/ermolaev-bathhouse.jfif" alt="Бани Ермолаевъ">
+            <div class="contest-banner__copy">
+              <span>Конкурс месяца</span>
+              <strong>Больше первых встреч и закрытых сделок — сертификат в бани Ермолаевъ</strong>
+            </div>
+          </aside>
+        </section>
+      </div>
+
+      <div class="view contest-view" data-view-panel="contest" hidden>
+        <section class="contest-scoreboard" aria-label="Табло конкурса">
+          <div class="contest-scoreboard__top">
+            <div>
+              <p class="airtime-freshness">Конкурс месяца</p>
+              <h1>Конкурс</h1>
+              <p id="contest-period-label" class="airtime-period"></p>
+            </div>
+            <div class="contest-prize">
+              <img src="./assets/ermolaev-bathhouse.jfif" alt="Бани Ермолаевъ">
+              <div>
+                <span>Приз победителю</span>
+                <strong>Сертификат в бани Ермолаевъ</strong>
+              </div>
+            </div>
+          </div>
+          <div id="contest-summary" class="contest-summary"></div>
+          <div id="contest-rows" class="contest-rows"></div>
         </section>
       </div>
     </main>

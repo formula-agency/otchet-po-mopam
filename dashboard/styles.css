@@ -560,7 +560,7 @@ select {
 
 .airtime-scoreboard {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
   min-height: calc(100vh - 36px);
   padding: 14px 28px 10px;
@@ -823,6 +823,243 @@ select {
   text-align: center;
 }
 
+.contest-banner {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) minmax(0, 1fr);
+  align-items: stretch;
+  min-height: 104px;
+  overflow: hidden;
+  border: 1px solid rgba(90, 166, 143, 0.28);
+  border-radius: var(--radius);
+  background: #10251f;
+  color: #fff;
+  box-shadow: 0 14px 32px rgba(22, 20, 20, 0.12);
+}
+
+.contest-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contest-banner__copy {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 16px 22px;
+}
+
+.contest-banner__copy span,
+.contest-prize span,
+.contest-row__metric span,
+.contest-row__person span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.contest-banner__copy strong {
+  max-width: 980px;
+  font-size: clamp(22px, 2.1vw, 34px);
+  line-height: 1.04;
+}
+
+.contest-view {
+  min-height: 100vh;
+  background: #f3f7fb;
+}
+
+.contest-scoreboard {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 12px;
+  min-height: calc(100vh - 36px);
+  padding: 18px 28px 12px;
+}
+
+.contest-scoreboard__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+}
+
+.contest-scoreboard h1 {
+  margin: 4px 0 6px;
+  font-size: clamp(42px, 5vw, 72px);
+  line-height: 0.92;
+}
+
+.contest-prize {
+  display: grid;
+  grid-template-columns: 128px minmax(190px, 320px);
+  align-items: center;
+  min-height: 86px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: #10251f;
+  color: #fff;
+  box-shadow: 0 16px 34px rgba(22, 20, 20, 0.12);
+}
+
+.contest-prize img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.contest-prize div {
+  padding: 12px 16px;
+}
+
+.contest-prize strong {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(18px, 1.4vw, 23px);
+  line-height: 1.05;
+}
+
+.contest-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.contest-summary article {
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: 0 14px 28px rgba(22, 20, 20, 0.06);
+}
+
+.contest-summary span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.contest-summary strong {
+  display: block;
+  margin-top: 4px;
+  font-size: clamp(24px, 2.4vw, 38px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.contest-summary small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.contest-rows {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.contest-row {
+  display: grid;
+  grid-template-columns: 48px minmax(220px, 1.05fr) minmax(180px, 0.85fr) repeat(2, minmax(130px, 0.45fr));
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  padding: 9px 14px;
+  border: 1px solid var(--line);
+  border-left: 8px solid var(--coral);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+
+.contest-row.rank-gold {
+  border-left-color: #7c4dff;
+  background: linear-gradient(90deg, rgba(124, 77, 255, 0.2), var(--paper) 34%);
+}
+
+.contest-row.rank-green {
+  border-left-color: var(--green);
+  background: linear-gradient(90deg, rgba(90, 166, 143, 0.17), var(--paper) 34%);
+}
+
+.contest-row.rank-orange {
+  border-left-color: #f08a24;
+  background: linear-gradient(90deg, rgba(240, 138, 36, 0.18), var(--paper) 34%);
+}
+
+.contest-row.rank-red {
+  border-left-color: var(--coral);
+  background: linear-gradient(90deg, rgba(214, 107, 98, 0.17), var(--paper) 34%);
+}
+
+.contest-row.rank-gold .airtime-row__rank {
+  position: relative;
+  background: #ede7ff;
+  color: #38208c;
+}
+
+.contest-row.rank-green .airtime-row__rank {
+  background: rgba(90, 166, 143, 0.18);
+}
+
+.contest-row.rank-orange .airtime-row__rank {
+  background: rgba(240, 138, 36, 0.18);
+}
+
+.contest-row.rank-red .airtime-row__rank {
+  background: rgba(214, 107, 98, 0.18);
+}
+
+.contest-row__person strong {
+  display: block;
+  font-size: clamp(20px, 1.7vw, 29px);
+  line-height: 1.02;
+}
+
+.contest-row__person span,
+.contest-row__metric span {
+  color: var(--muted);
+}
+
+.contest-row__bar {
+  height: 16px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7edf3;
+}
+
+.contest-row__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #7c4dff;
+}
+
+.contest-row.rank-green .contest-row__bar span {
+  background: var(--green);
+}
+
+.contest-row.rank-orange .contest-row__bar span {
+  background: #f08a24;
+}
+
+.contest-row.rank-red .contest-row__bar span {
+  background: var(--coral);
+}
+
+.contest-row__metric strong {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(24px, 2vw, 34px);
+  line-height: 1;
+}
+
 .table-wrap {
   max-height: 620px;
   overflow: auto;
@@ -1001,7 +1238,7 @@ select {
   }
 
   .side-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .side-nav__item {
@@ -1059,18 +1296,22 @@ select {
   }
 
   .airtime-controls,
-  .airtime-summary {
+  .airtime-summary,
+  .contest-summary {
     grid-template-columns: 1fr;
     width: 100%;
   }
 
-  .airtime-row {
+  .airtime-row,
+  .contest-row {
     grid-template-columns: 42px minmax(0, 1fr);
   }
 
   .airtime-row__bar,
   .airtime-row__metric,
-  .airtime-row__rate {
+  .airtime-row__rate,
+  .contest-row__bar,
+  .contest-row__metric {
     grid-column: 2;
   }
 
@@ -1081,5 +1322,25 @@ select {
   .active-deal-tools {
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .contest-banner,
+  .contest-prize {
+    grid-template-columns: 1fr;
+  }
+
+  .contest-banner img,
+  .contest-prize img {
+    height: 140px;
+  }
+
+  .contest-scoreboard {
+    min-height: calc(100vh - 112px);
+    padding: 14px 10px;
+  }
+
+  .contest-scoreboard__top {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

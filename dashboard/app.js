@@ -82,6 +82,9 @@ const els = {
   airtimePeriodLabel: document.getElementById('airtime-period-label'),
   scoreboardSummary: document.getElementById('scoreboard-summary'),
   airtimeRows: document.getElementById('airtime-rows'),
+  contestPeriodLabel: document.getElementById('contest-period-label'),
+  contestSummary: document.getElementById('contest-summary'),
+  contestRows: document.getElementById('contest-rows'),
   exportCsv: document.getElementById('export-csv'),
   warnings: document.getElementById('warnings'),
   warningsList: document.getElementById('warnings-list'),
@@ -1526,6 +1529,92 @@ function renderAirTimePlanFact() {
   }).join('');
 }
 
+function contestData() {
+  return data.contest || { month: '', from: '', to: '', rows: [] };
+}
+
+function contestRows() {
+  return (contestData().rows || [])
+    .filter((row) => row.mopName && isScoreboardMopIncluded(row.mopName))
+    .map((row) => ({
+      ...row,
+      firstMeetingsFact: Number(row.firstMeetingsFact || 0),
+      salesFact: Number(row.salesFact || 0),
+      contestScore: Number(row.contestScore || 0),
+    }))
+    .sort((a, b) => b.salesFact - a.salesFact
+      || b.firstMeetingsFact - a.firstMeetingsFact
+      || a.mopName.localeCompare(b.mopName));
+}
+
+function renderContest() {
+  if (!els.contestRows || !els.contestSummary) return;
+  const contest = contestData();
+  const rows = contestRows();
+  const totals = rows.reduce((acc, row) => {
+    acc.firstMeetingsFact += row.firstMeetingsFact;
+    acc.salesFact += row.salesFact;
+    return acc;
+  }, { firstMeetingsFact: 0, salesFact: 0 });
+  const leader = rows.find((row) => row.firstMeetingsFact > 0 || row.salesFact > 0);
+  const periodLabel = contest.month ? formatMonthLabel(contest.month) : 'Июль 2026';
+  const rangeLabel = contest.from && contest.to
+    ? `${formatDate(contest.from)}-${formatDate(contest.to)}`
+    : periodLabel;
+
+  if (els.contestPeriodLabel) {
+    els.contestPeriodLabel.textContent = `${periodLabel} · ${rangeLabel}`;
+  }
+  els.contestSummary.innerHTML = `
+    <article>
+      <span>Первые встречи</span>
+      <strong>${formatNumber(totals.firstMeetingsFact)}</strong>
+      <small>Факт за месяц</small>
+    </article>
+    <article>
+      <span>Закрытые сделки</span>
+      <strong>${formatNumber(totals.salesFact)}</strong>
+      <small>Факт за месяц</small>
+    </article>
+    <article>
+      <span>Лидер</span>
+      <strong>${leader ? escapeHtml(leader.mopName) : '—'}</strong>
+      <small>Сделки, затем первые встречи</small>
+    </article>
+  `;
+
+  if (!rows.length) {
+    els.contestRows.innerHTML = '<div class="airtime-empty">Нет данных конкурса</div>';
+    return;
+  }
+
+  const maxScore = Math.max(...rows.map((row) => row.contestScore), 0);
+  els.contestRows.innerHTML = rows.map((row, index) => {
+    const progress = maxScore > 0 ? Math.round((row.contestScore / maxScore) * 100) : 0;
+    const rankClass = scoreboardRankClass(index, rows.length);
+    return `
+      <article class="contest-row ${rankClass}">
+        <div class="airtime-row__rank">${index === 0 ? '<span class="airtime-row__crown" aria-hidden="true"></span>' : ''}${index + 1}</div>
+        <div class="contest-row__person">
+          <strong>${escapeHtml(row.mopName)}</strong>
+          <span>${formatNumber(row.salesFact)} сделок · ${formatNumber(row.firstMeetingsFact)} первых встреч</span>
+        </div>
+        <div class="contest-row__bar" aria-label="Лидерство ${progress}%">
+          <span style="width: ${progress}%"></span>
+        </div>
+        <div class="contest-row__metric">
+          <span>Первые встречи</span>
+          <strong>${formatNumber(row.firstMeetingsFact)}</strong>
+        </div>
+        <div class="contest-row__metric">
+          <span>Закрытые сделки</span>
+          <strong>${formatNumber(row.salesFact)}</strong>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
 function ensureCharts() {
   if (!weeklyChart) {
     weeklyChart = new Chart(document.getElementById('weekly-chart'), {
@@ -1709,10 +1798,11 @@ function render() {
   renderCharts(rows);
   renderActiveDeals();
   if (state.view === 'airtime') renderAirTimePlanFact();
+  if (state.view === 'contest') renderContest();
 }
 
 function setView(view, updateHash = true) {
-  state.view = ['summary', 'deals', 'airtime'].includes(view) ? view : 'summary';
+  state.view = ['summary', 'deals', 'airtime', 'contest'].includes(view) ? view : 'summary';
   for (const panel of els.viewPanels) {
     const isActive = panel.dataset.viewPanel === state.view;
     panel.hidden = !isActive;
@@ -1725,6 +1815,7 @@ function setView(view, updateHash = true) {
     window.history.replaceState(null, '', state.view === 'summary' ? '#summary' : `#${state.view}`);
   }
   if (state.view === 'airtime') renderAirTimePlanFact();
+  if (state.view === 'contest') renderContest();
 }
 
 function bindHeaderState() {
@@ -1762,6 +1853,7 @@ function bindViewNavigation() {
 function viewFromHash() {
   if (location.hash === '#deals' || location.hash === '#active-deals') return 'deals';
   if (location.hash === '#airtime') return 'airtime';
+  if (location.hash === '#contest') return 'contest';
   return 'summary';
 }
 
