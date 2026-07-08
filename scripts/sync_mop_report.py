@@ -1504,7 +1504,24 @@ def read_target_after_meeting_sheet_entries(
     return parse_target_after_meeting_rows(values, hidden_row_indexes, settings)
 
 
-def build_target_after_meeting_entries(service: Any, settings: Settings) -> list[TargetAfterMeetingEntry]:
+def find_sheet_title_by_label(sheets: list[dict[str, Any]], requested_title: str) -> str:
+    normalized_requested = normalize_text(requested_title)
+    for sheet in sheets:
+        title = str(sheet.get("properties", {}).get("title", ""))
+        if title == requested_title:
+            return title
+    for sheet in sheets:
+        title = str(sheet.get("properties", {}).get("title", ""))
+        if normalize_text(title) == normalized_requested:
+            return title
+    return ""
+
+
+def build_target_after_meeting_entries(
+    service: Any,
+    settings: Settings,
+    warnings: list[str] | None = None,
+) -> list[TargetAfterMeetingEntry]:
     if not settings.google_target_after_meeting_sheet_id:
         return []
     if service is None:
@@ -1526,12 +1543,23 @@ def build_target_after_meeting_entries(service: Any, settings: Settings) -> list
                 fields="sheets(properties(title))",
             )
         )
-        has_archive = any(
-            sheet.get("properties", {}).get("title") == archive_title
-            for sheet in metadata.get("sheets", [])
-        )
-        if has_archive:
-            entries.extend(read_target_after_meeting_sheet_entries(service, settings, archive_title))
+        sheets = metadata.get("sheets", [])
+        resolved_archive_title = find_sheet_title_by_label(sheets, archive_title)
+        if resolved_archive_title:
+            archive_entries = read_target_after_meeting_sheet_entries(service, settings, resolved_archive_title)
+            if archive_entries:
+                entries.extend(archive_entries)
+            elif warnings is not None:
+                warnings.append(
+                    f"Эфир после встречи: лист '{resolved_archive_title}' найден, "
+                    "но в нем нет распознанных строк."
+                )
+        elif warnings is not None:
+            available = ", ".join(str(sheet.get("properties", {}).get("title", "")) for sheet in sheets)
+            warnings.append(
+                f"Эфир после встречи: лист '{archive_title}' не найден в таблице. "
+                f"Доступные листы: {available or 'нет'}."
+            )
     return entries
 
 
@@ -2333,7 +2361,8 @@ def build_target_after_meeting_facts(
         return
 
     try:
-        entries = build_target_after_meeting_entries(service, settings)
+        entry_warnings: list[str] = []
+        entries = build_target_after_meeting_entries(service, settings, entry_warnings)
     except ConfigError as exc:
         data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
         return
@@ -2346,6 +2375,8 @@ def build_target_after_meeting_facts(
                 f"Google API: {safe_error_text(exc)}; публичный CSV: {safe_error_text(public_exc)}"
             )
             return
+    for warning in entry_warnings:
+        data.warnings.append(warning)
 
     skipped_names: dict[str, int] = defaultdict(int)
     imported_count = 0
