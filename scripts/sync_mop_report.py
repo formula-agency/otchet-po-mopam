@@ -2284,6 +2284,9 @@ def build_meeting_facts(
     except ConfigError as exc:
         data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
         return
+    except Exception as exc:
+        data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
+        return
 
     deal_cache: dict[str, dict[str, Any]] = {}
     for entry in meeting_entries:
@@ -3382,10 +3385,14 @@ def main() -> int:
             data.warnings.append("Планы не загружены: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
         elif not mop_settings.plan_sheet_id:
             data.warnings.append("Планы не загружены: не задан MOP_PLAN_SHEET_ID или GOOGLE_SHEET_ID.")
-        plan_entries = apply_manual_monthly_plan_overrides(
-            load_plan_entries(service, settings, mop_settings, window),
-            window,
-        )
+        try:
+            loaded_plan_entries = load_plan_entries(service, settings, mop_settings, window)
+        except Exception as exc:
+            if mop_settings.plan_required:
+                raise
+            data.warnings.append(f"Планы не загружены: {safe_error_text(exc)}")
+            loaded_plan_entries = []
+        plan_entries = apply_manual_monthly_plan_overrides(loaded_plan_entries, window)
         apply_plan_entries(data, plan_entries, user_names)
 
         active_deals_payload = build_active_deals_payload(
