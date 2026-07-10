@@ -5,19 +5,10 @@
     "2026-06": {
       "fileName": "restored-from-pages-artifact-2026-06",
       "publishedAt": "2026-07-10T05:07:44Z",
-      "managerCount": 11,
+      "managerCount": 10,
       "hasAggregatePlan": false,
       "skippedNames": [],
       "plans": [
-        {
-          "mopName": "Войнов Данил",
-          "aggregatePlan": false,
-          "salesPlan": 1,
-          "meetingsPlan": 8,
-          "reservationsPlan": 7,
-          "approvedMortgagesPlan": 4,
-          "airTimePlanSeconds": 24000
-        },
         {
           "mopName": "Гавриленко Елена",
           "aggregatePlan": false,
