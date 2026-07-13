@@ -3105,7 +3105,6 @@ def empty_contest_row(mop_name: str) -> dict[str, Any]:
         "mopName": mop_name,
         "firstMeetingsFact": 0,
         "salesFact": 0,
-        "contestScore": 0,
     }
 
 
@@ -3214,22 +3213,15 @@ def build_contest_payload(
         row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
         row["firstMeetingsFact"] += 1
 
-    for row in rows_by_mop.values():
-        row["contestScore"] = row["salesFact"] * 100 + row["firstMeetingsFact"]
-
     rows = sorted(
         rows_by_mop.values(),
-        key=lambda row: (
-            -int(row["salesFact"]),
-            -int(row["firstMeetingsFact"]),
-            str(row["mopName"]),
-        ),
+        key=lambda row: str(row["mopName"]),
     )
     return {
         "month": f"{contest_start:%Y-%m}",
         "from": contest_start.isoformat(),
         "to": contest_end.isoformat(),
-        "rankingRule": "sales_then_first_meetings",
+        "rankingRule": "separate_first_meetings_and_sales",
         "firstMeetingField": settings.contest_first_meeting_field,
         "firstMeetingDateField": settings.contest_first_meeting_date_field,
         "rows": rows,

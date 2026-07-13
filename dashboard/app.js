@@ -1540,11 +1540,80 @@ function contestRows() {
       ...row,
       firstMeetingsFact: Number(row.firstMeetingsFact || 0),
       salesFact: Number(row.salesFact || 0),
-      contestScore: Number(row.contestScore || 0),
-    }))
-    .sort((a, b) => b.salesFact - a.salesFact
-      || b.firstMeetingsFact - a.firstMeetingsFact
-      || a.mopName.localeCompare(b.mopName));
+    }));
+}
+
+function contestRanking(rows, metric) {
+  const rankedRows = [...rows].sort((a, b) => b[metric] - a[metric]
+    || a.mopName.localeCompare(b.mopName));
+  let previousValue = null;
+  let previousPlace = 0;
+  return rankedRows.map((row, index) => {
+    const value = Number(row[metric] || 0);
+    const place = previousValue === value ? previousPlace : index + 1;
+    previousValue = value;
+    previousPlace = place;
+    return { ...row, contestPlace: place };
+  });
+}
+
+function contestLeader(ranking, metric) {
+  const topValue = Number(ranking[0]?.[metric] || 0);
+  if (topValue <= 0) return { names: 'Пока нет лидера', value: 0 };
+  const names = ranking
+    .filter((row) => Number(row[metric] || 0) === topValue)
+    .map((row) => row.mopName)
+    .join(' · ');
+  return { names, value: topValue };
+}
+
+function russianNoun(value, [one, few, many]) {
+  const absoluteValue = Math.abs(Number(value || 0));
+  const lastTwoDigits = absoluteValue % 100;
+  const lastDigit = absoluteValue % 10;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return many;
+  if (lastDigit === 1) return one;
+  if (lastDigit >= 2 && lastDigit <= 4) return few;
+  return many;
+}
+
+function renderContestNomination({ title, forms, metric, rows }) {
+  const ranking = contestRanking(rows, metric);
+  const maxValue = Math.max(...ranking.map((row) => Number(row[metric] || 0)), 0);
+  return `
+    <section class="contest-nomination" aria-label="Номинация ${escapeHtml(title)}">
+      <header class="contest-nomination__header">
+        <span>Номинация</span>
+        <strong>${escapeHtml(title)}</strong>
+      </header>
+      <div class="contest-nomination__rows" style="--contest-row-count: ${Math.max(ranking.length, 1)}">
+        ${ranking.map((row) => {
+          const value = Number(row[metric] || 0);
+          const progress = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
+          const rankClass = value > 0
+            ? scoreboardRankClass(row.contestPlace - 1, ranking.length)
+            : 'rank-empty';
+          const isLeader = row.contestPlace === 1 && value > 0;
+          const displayedPlace = value > 0 ? row.contestPlace : '—';
+          return `
+            <article class="contest-row ${rankClass}">
+              <div class="airtime-row__rank">${isLeader ? '<span class="airtime-row__crown" aria-hidden="true"></span>' : ''}${displayedPlace}</div>
+              <div class="contest-row__person">
+                <strong>${escapeHtml(row.mopName)}</strong>
+              </div>
+              <div class="contest-row__bar" aria-label="${escapeHtml(title)}: ${formatNumber(value)}">
+                <span style="width: ${progress}%"></span>
+              </div>
+              <div class="contest-row__metric">
+                <strong>${formatNumber(value)}</strong>
+                <span>${escapeHtml(russianNoun(value, forms))}</span>
+              </div>
+            </article>
+          `;
+        }).join('')}
+      </div>
+    </section>
+  `;
 }
 
 function renderContest() {
@@ -1557,7 +1626,8 @@ function renderContest() {
     acc.salesFact += row.salesFact;
     return acc;
   }, { firstMeetingsFact: 0, salesFact: 0 });
-  const leader = rows.find((row) => row.firstMeetingsFact > 0 || row.salesFact > 0);
+  const meetingsLeader = contestLeader(contestRanking(rows, 'firstMeetingsFact'), 'firstMeetingsFact');
+  const salesLeader = contestLeader(contestRanking(rows, 'salesFact'), 'salesFact');
   const periodLabel = contest.month ? formatMonthLabel(contest.month) : 'Июль 2026';
   const rangeLabel = contest.from && contest.to
     ? `${formatDate(contest.from)}-${formatDate(contest.to)}`
@@ -1568,19 +1638,14 @@ function renderContest() {
   }
   els.contestSummary.innerHTML = `
     <article>
-      <span>Первые встречи</span>
-      <strong>${formatNumber(totals.firstMeetingsFact)}</strong>
-      <small>Факт за месяц</small>
+      <span>Лидер по первым встречам</span>
+      <strong>${escapeHtml(meetingsLeader.names)}</strong>
+      <small>${formatNumber(meetingsLeader.value)} ${russianNoun(meetingsLeader.value, ['встреча', 'встречи', 'встреч'])} · всего ${formatNumber(totals.firstMeetingsFact)}</small>
     </article>
     <article>
-      <span>Закрытые сделки</span>
-      <strong>${formatNumber(totals.salesFact)}</strong>
-      <small>Факт за месяц</small>
-    </article>
-    <article>
-      <span>Лидер</span>
-      <strong>${leader ? escapeHtml(leader.mopName) : '—'}</strong>
-      <small>Сделки, затем первые встречи</small>
+      <span>Лидер по закрытым сделкам</span>
+      <strong>${escapeHtml(salesLeader.names)}</strong>
+      <small>${formatNumber(salesLeader.value)} ${russianNoun(salesLeader.value, ['сделка', 'сделки', 'сделок'])} · всего ${formatNumber(totals.salesFact)}</small>
     </article>
   `;
 
@@ -1589,31 +1654,20 @@ function renderContest() {
     return;
   }
 
-  const maxScore = Math.max(...rows.map((row) => row.contestScore), 0);
-  els.contestRows.innerHTML = rows.map((row, index) => {
-    const progress = maxScore > 0 ? Math.round((row.contestScore / maxScore) * 100) : 0;
-    const rankClass = scoreboardRankClass(index, rows.length);
-    return `
-      <article class="contest-row ${rankClass}">
-        <div class="airtime-row__rank">${index === 0 ? '<span class="airtime-row__crown" aria-hidden="true"></span>' : ''}${index + 1}</div>
-        <div class="contest-row__person">
-          <strong>${escapeHtml(row.mopName)}</strong>
-          <span>${formatNumber(row.salesFact)} сделок · ${formatNumber(row.firstMeetingsFact)} первых встреч</span>
-        </div>
-        <div class="contest-row__bar" aria-label="Лидерство ${progress}%">
-          <span style="width: ${progress}%"></span>
-        </div>
-        <div class="contest-row__metric">
-          <span>Первые встречи</span>
-          <strong>${formatNumber(row.firstMeetingsFact)}</strong>
-        </div>
-        <div class="contest-row__metric">
-          <span>Закрытые сделки</span>
-          <strong>${formatNumber(row.salesFact)}</strong>
-        </div>
-      </article>
-    `;
-  }).join('');
+  els.contestRows.innerHTML = [
+    renderContestNomination({
+      title: 'Первые встречи',
+      forms: ['встреча', 'встречи', 'встреч'],
+      metric: 'firstMeetingsFact',
+      rows,
+    }),
+    renderContestNomination({
+      title: 'Закрытые сделки',
+      forms: ['сделка', 'сделки', 'сделок'],
+      metric: 'salesFact',
+      rows,
+    }),
+  ].join('');
 }
 
 function ensureCharts() {

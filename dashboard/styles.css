@@ -928,7 +928,7 @@ select {
 
 .contest-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -950,7 +950,7 @@ select {
 .contest-summary strong {
   display: block;
   margin-top: 3px;
-  font-size: clamp(20px, 1.8vw, 30px);
+  font-size: clamp(18px, 1.5vw, 26px);
   line-height: 1;
   overflow-wrap: anywhere;
 }
@@ -965,22 +965,64 @@ select {
 
 .contest-rows {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.contest-nomination {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.contest-nomination__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-bottom: 3px solid #7c4dff;
+}
+
+.contest-nomination:last-child .contest-nomination__header {
+  border-bottom-color: var(--green);
+}
+
+.contest-nomination__header span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.contest-nomination__header strong {
+  font-size: clamp(18px, 1.5vw, 25px);
+  line-height: 1;
+}
+
+.contest-nomination__rows {
+  display: grid;
+  grid-template-rows: repeat(var(--contest-row-count, 8), minmax(0, 1fr));
   gap: 5px;
-  align-content: stretch;
   min-height: 0;
   overflow: hidden;
 }
 
 .contest-row {
   display: grid;
-  grid-template-columns: 42px minmax(200px, 1fr) minmax(140px, 0.8fr) repeat(2, minmax(110px, 0.42fr));
+  grid-template-columns: 38px minmax(130px, 0.9fr) minmax(80px, 1fr) 58px;
   gap: 8px;
   align-items: center;
   min-height: 0;
-  height: clamp(40px, calc((100vh - 225px) / var(--contest-row-count, 8)), 58px);
-  padding: 5px 12px;
+  height: auto;
+  padding: 4px 8px;
   border: 1px solid var(--line);
-  border-left: 8px solid var(--coral);
+  border-left: 6px solid var(--coral);
   border-radius: var(--radius);
   background: var(--paper);
 }
@@ -1005,6 +1047,11 @@ select {
   background: linear-gradient(90deg, rgba(214, 107, 98, 0.17), var(--paper) 34%);
 }
 
+.contest-row.rank-empty {
+  border-left-color: #c8d0d8;
+  background: var(--paper);
+}
+
 .contest-row.rank-gold .airtime-row__rank {
   position: relative;
   background: #ede7ff;
@@ -1023,9 +1070,14 @@ select {
   background: rgba(214, 107, 98, 0.18);
 }
 
+.contest-row.rank-empty .airtime-row__rank {
+  background: #edf1f5;
+  color: var(--muted);
+}
+
 .contest-row__person strong {
   display: block;
-  font-size: clamp(16px, 1.25vw, 22px);
+  font-size: clamp(14px, 1.05vw, 18px);
   line-height: 1.02;
   white-space: nowrap;
   overflow: hidden;
@@ -1069,8 +1121,7 @@ select {
 
 .contest-row__metric strong {
   display: block;
-  margin-top: 2px;
-  font-size: clamp(18px, 1.45vw, 25px);
+  font-size: clamp(17px, 1.35vw, 23px);
   line-height: 1;
 }
 
@@ -1362,6 +1413,17 @@ select {
 
   .contest-view,
   .contest-rows {
+    overflow: visible;
+  }
+
+  .contest-rows {
+    grid-template-columns: 1fr;
+  }
+
+  .contest-nomination,
+  .contest-nomination__rows {
+    display: grid;
+    grid-template-rows: none;
     overflow: visible;
   }
 
