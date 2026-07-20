@@ -126,7 +126,7 @@ let weeklyChart;
 let mopChart;
 let factChart;
 
-const SHARED_PLAN_REFRESH_INTERVAL_MS = 30 * 1000;
+const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
 const DASHBOARD_DATA_VERSION = '20260629-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
@@ -2071,18 +2071,21 @@ async function loadData() {
   }
 }
 
-function sharedPlanVersion(payload) {
-  return String(payload?.sharedPlans?.updatedAt || '');
+function dashboardDataVersion(payload) {
+  return [
+    payload?.generatedAt,
+    payload?.sharedPlans?.updatedAt,
+  ].map((value) => String(value || '')).join('|');
 }
 
-function watchSharedPlanUpdates() {
-  const currentVersion = sharedPlanVersion(data);
+function watchDashboardUpdates() {
+  const currentVersion = dashboardDataVersion(data);
   window.setInterval(async () => {
     const nextData = await loadData();
-    if (nextData && sharedPlanVersion(nextData) !== currentVersion) {
+    if (nextData && dashboardDataVersion(nextData) !== currentVersion) {
       window.location.reload();
     }
-  }, SHARED_PLAN_REFRESH_INTERVAL_MS);
+  }, DASHBOARD_REFRESH_INTERVAL_MS);
 }
 
 async function bootstrap() {
@@ -2092,7 +2095,7 @@ async function bootstrap() {
     return;
   }
   init();
-  watchSharedPlanUpdates();
+  watchDashboardUpdates();
 }
 
 bootstrap();
