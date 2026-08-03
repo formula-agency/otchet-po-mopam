@@ -1986,6 +1986,30 @@ def fetch_deal_activity_events_batch(
     return events_by_deal
 
 
+def fetch_deals_by_ids_batch(
+    session: requests.Session,
+    settings: Settings,
+    deal_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    deals_by_id: dict[str, dict[str, Any]] = {}
+    for offset in range(0, len(deal_ids), 50):
+        chunk = deal_ids[offset : offset + 50]
+        commands = {
+            f"d{index}": bitrix_command("crm.deal.get", [("id", deal_id)])
+            for index, deal_id in enumerate(chunk)
+        }
+        key_to_deal = {f"d{index}": deal_id for index, deal_id in enumerate(chunk)}
+        result, _, result_error = execute_bitrix_batch(session, settings, commands)
+        if result_error:
+            failed = ", ".join(str(key_to_deal.get(key, key)) for key in result_error)
+            raise RuntimeError(f"crm.deal.get batch failed for deals: {failed}")
+        for key, record in result.items():
+            deal_id = key_to_deal.get(key)
+            if deal_id and isinstance(record, dict):
+                deals_by_id[deal_id] = record
+    return deals_by_id
+
+
 def key_for_mop_id(mop_id: str) -> str:
     return f"id:{normalize_key(mop_id)}"
 
@@ -2274,19 +2298,19 @@ def build_meeting_facts(
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
-) -> list[MeetingLogEntry]:
+) -> None:
     if service is None:
         data.warnings.append("Встречи не посчитаны: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
-        return []
+        return
 
     try:
         meeting_entries = build_successful_meeting_entries(service, settings)
     except ConfigError as exc:
         data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
-        return []
+        return
     except Exception as exc:
         data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
-        return []
+        return
 
     deal_cache: dict[str, dict[str, Any]] = {}
     for entry in meeting_entries:
@@ -2314,7 +2338,6 @@ def build_meeting_facts(
             1,
             mop_name=entry.mop_name,
         )
-    return meeting_entries
 
 
 def build_call_facts(
@@ -3092,33 +3115,19 @@ def build_active_deals_payload(
     }
 
 
-def first_successful_meetings_in_period(
-    meeting_entries: list[MeetingLogEntry],
-    period_start: date,
-    period_end: date,
-) -> list[MeetingLogEntry]:
-    first_by_deal: dict[str, MeetingLogEntry] = {}
-    for entry in meeting_entries:
-        deal_id = str(entry.deal_id or "").strip()
-        if not deal_id:
-            continue
-        previous = first_by_deal.get(deal_id)
-        if previous is None or entry.meeting_date < previous.meeting_date:
-            first_by_deal[deal_id] = entry
-        elif (
-            entry.meeting_date == previous.meeting_date
-            and not previous.mop_name.strip()
-            and entry.mop_name.strip()
-        ):
-            first_by_deal[deal_id] = entry
-    return sorted(
-        (
-            entry
-            for entry in first_by_deal.values()
-            if period_start <= entry.meeting_date <= period_end
-        ),
-        key=lambda entry: (entry.meeting_date, entry.deal_id),
-    )
+def first_completed_meeting_dates_by_deal(
+    events_by_deal: dict[str, list[ActiveDealActivity]],
+) -> dict[str, date]:
+    first_dates: dict[str, date] = {}
+    for deal_id, events in events_by_deal.items():
+        meeting_dates = [
+            event.date
+            for event in events
+            if event.kind == "meetings" and event.completed
+        ]
+        if meeting_dates:
+            first_dates[deal_id] = min(meeting_dates)
+    return first_dates
 
 
 def empty_contest_row(mop_name: str) -> dict[str, Any]:
@@ -3131,11 +3140,11 @@ def empty_contest_row(mop_name: str) -> dict[str, Any]:
 
 def build_contest_payload(
     data: MopReportData,
+    session: requests.Session,
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
     user_names: dict[str, str],
-    meeting_entries: list[MeetingLogEntry],
 ) -> dict[str, Any]:
     contest_start, contest_end = resolve_contest_month_bounds(settings, window)
     rows_by_mop: dict[str, dict[str, Any]] = {}
@@ -3160,18 +3169,85 @@ def build_contest_payload(
             row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
             row["salesFact"] += metrics.sales
 
-    skipped_mop_names = 0
-    for entry in first_successful_meetings_in_period(meeting_entries, contest_start, contest_end):
-        mop_name = canonical_mop_label(entry.mop_name, mop_settings)
-        if not mop_name:
-            skipped_mop_names += 1
+    contest_day_start, _ = day_bounds(contest_start, window)
+    _, contest_day_end = day_bounds(contest_end, window)
+    try:
+        activity_records = fetch_paged_method(
+            session,
+            settings,
+            "crm.activity.list",
+            {
+                "OWNER_TYPE_ID": str(CRM_DEAL_OWNER_TYPE_ID),
+                "TYPE_ID": "1",
+                "COMPLETED": "Y",
+                ">=START_TIME": contest_day_start.isoformat(timespec="seconds"),
+                "<=START_TIME": contest_day_end.isoformat(timespec="seconds"),
+            },
+        )
+        candidate_deal_ids = sorted(
+            {
+                str(record.get("OWNER_ID") or "").strip()
+                for record in activity_records
+                if str(record.get("OWNER_ID") or "").strip()
+                and classify_activity(record) == "meetings"
+            },
+            key=lambda deal_id: (
+                not deal_id.isdigit(),
+                int(deal_id) if deal_id.isdigit() else deal_id,
+            ),
+        )
+        activity_events_by_deal = fetch_deal_activity_events_batch(
+            session,
+            settings,
+            candidate_deal_ids,
+            window,
+        )
+        first_meeting_dates = first_completed_meeting_dates_by_deal(activity_events_by_deal)
+        contest_deal_ids = [
+            deal_id
+            for deal_id in candidate_deal_ids
+            if contest_start <= first_meeting_dates.get(deal_id, date.min) <= contest_end
+        ]
+        contest_deals = fetch_deals_by_ids_batch(session, settings, contest_deal_ids)
+    except Exception as exc:
+        data.warnings.append(f"Конкурс: первые встречи не загружены: {safe_error_text(exc)}")
+        contest_deal_ids = []
+        contest_deals = {}
+
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    if mop_settings.active_deal_category_names and not category_ids:
+        data.warnings.append(
+            "Конкурс: не найдена основная воронка "
+            + ", ".join(mop_settings.active_deal_category_names)
+            + "; первые встречи посчитаны по всем воронкам."
+        )
+
+    contest_user_names = dict(user_names)
+    contest_user_names.update(DEFAULT_MOP_NAMES_BY_ID)
+    assigned_ids = {
+        extract_assigned_user_id(record, mop_settings)
+        for record in contest_deals.values()
+        if extract_assigned_user_id(record, mop_settings)
+    }
+    contest_user_names.update(fetch_bitrix_user_names(session, settings, assigned_ids))
+
+    for deal_id in contest_deal_ids:
+        record = contest_deals.get(deal_id)
+        if not record:
+            continue
+        category_id = str(record.get("CATEGORY_ID") or "").strip()
+        if category_ids and category_id not in category_ids:
+            continue
+        mop_id = extract_assigned_user_id(record, mop_settings)
+        mop_name = contest_user_names.get(
+            mop_id,
+            f"Пользователь {mop_id}" if mop_id else mop_settings.unknown_mop_name,
+        )
+        if not mop_is_allowed(mop_id, mop_name, mop_settings):
             continue
         row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
         row["firstMeetingsFact"] += 1
-    if skipped_mop_names:
-        data.warnings.append(
-            f"Конкурс: пропущено первых встреч без МОПа из списка: {skipped_mop_names}."
-        )
 
     rows = sorted(
         rows_by_mop.values(),
@@ -3182,8 +3258,8 @@ def build_contest_payload(
         "from": contest_start.isoformat(),
         "to": contest_end.isoformat(),
         "rankingRule": "separate_first_meetings_and_sales",
-        "firstMeetingField": "meeting_log:result=successful",
-        "firstMeetingDateField": "meeting_log:meeting_start",
+        "firstMeetingField": "crm_activity:type=meeting,completed=true",
+        "firstMeetingDateField": "crm_activity:start_time",
         "rows": rows,
     }
 
@@ -3325,7 +3401,7 @@ def main() -> int:
         data = MopReportData()
         booking_events = build_booking_reservation_events(data, session, settings, window)
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
-        meeting_entries = build_meeting_facts(data, service, session, settings, mop_settings, window)
+        build_meeting_facts(data, service, session, settings, mop_settings, window)
         build_target_after_meeting_facts(data, service, settings, mop_settings, window)
         if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
             build_call_facts(data, session, settings, mop_settings, window)
@@ -3358,11 +3434,11 @@ def main() -> int:
         )
         contest_payload = build_contest_payload(
             data,
+            session,
             settings,
             mop_settings,
             window,
             user_names,
-            meeting_entries,
         )
         built_report = build_report_rows(data, mop_settings)
         payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload, contest_payload)
