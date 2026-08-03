@@ -3130,6 +3130,16 @@ def first_completed_meeting_dates_by_deal(
     return first_dates
 
 
+def deal_created_in_period(
+    record: dict[str, Any],
+    period_start: date,
+    period_end: date,
+    timezone_name: str,
+) -> bool:
+    created_date = parse_bitrix_date(record.get("DATE_CREATE"), timezone_name)
+    return created_date is not None and period_start <= created_date <= period_end
+
+
 def empty_contest_row(mop_name: str) -> dict[str, Any]:
     return {
         "mopName": mop_name,
@@ -3238,6 +3248,13 @@ def build_contest_payload(
             continue
         category_id = str(record.get("CATEGORY_ID") or "").strip()
         if category_ids and category_id not in category_ids:
+            continue
+        if not deal_created_in_period(
+            record,
+            contest_start,
+            contest_end,
+            settings.report_timezone,
+        ):
             continue
         mop_id = extract_assigned_user_id(record, mop_settings)
         mop_name = contest_user_names.get(
