@@ -3126,40 +3126,29 @@ def build_contest_payload(
     for mop_name in configured_mop_names:
         rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
 
-    for event_date, facts_by_key in data.daily_facts.items():
-        if event_date < contest_start or event_date > contest_end:
-            continue
-        for key, metrics in facts_by_key.items():
-            if not metrics.sales:
-                continue
-            identity = data.identities.get(key, MopIdentity(mop_name=key))
-            mop_name = identity.mop_name or user_names.get(identity.mop_id, "")
-            if not mop_name or not mop_is_allowed(identity.mop_id, mop_name, mop_settings):
-                continue
-            row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
-            row["salesFact"] += metrics.sales
-
-    select_fields = unique_fields(
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    sales_select_fields = unique_fields(
         [
             "ID",
             "TITLE",
             "ASSIGNED_BY_ID",
             mop_settings.assigned_field,
             "CATEGORY_ID",
-            settings.contest_first_meeting_field,
-            settings.contest_first_meeting_date_field,
+            "CLOSEDATE",
+            "STAGE_ID",
+            "STAGE_SEMANTIC_ID",
+            settings.bitrix_stage_field,
         ]
     )
-    category_names = fetch_deal_category_names(session, settings)
-    category_ids = active_deal_category_ids(category_names, mop_settings)
-    first_meeting_records: list[dict[str, Any]] = []
-    seen_deal_ids: set[str] = set()
+    sales_records: list[dict[str, Any]] = []
+    seen_sales_deal_ids: set[str] = set()
     current_date = contest_start
     while current_date <= contest_end:
         day_start, day_end = day_bounds(current_date, window)
         base_filters: dict[str, Any] = {
-            f">={settings.contest_first_meeting_date_field}": day_start.isoformat(timespec="seconds"),
-            f"<={settings.contest_first_meeting_date_field}": day_end.isoformat(timespec="seconds"),
+            ">=CLOSEDATE": day_start.isoformat(timespec="seconds"),
+            "<=CLOSEDATE": day_end.isoformat(timespec="seconds"),
         }
         try:
             if category_ids:
@@ -3170,11 +3159,54 @@ def build_contest_payload(
                             session,
                             settings,
                             {**base_filters, "CATEGORY_ID": category_id},
-                            select_fields,
+                            sales_select_fields,
                         )
                     )
             else:
-                records = fetch_deal_list(session, settings, base_filters, select_fields)
+                records = fetch_deal_list(session, settings, base_filters, sales_select_fields)
+        except Exception as exc:
+            data.warnings.append(
+                f"Конкурс: не удалось загрузить закрытые сделки за {current_date.isoformat()}: {safe_error_text(exc)}"
+            )
+            current_date += timedelta(days=1)
+            continue
+
+        for record in records:
+            deal_id = str(record.get("ID") or "").strip()
+            if deal_id and deal_id in seen_sales_deal_ids:
+                continue
+            if not resolve_deal_closed(record, settings):
+                continue
+            event_date = parse_bitrix_date(record.get("CLOSEDATE"), settings.report_timezone)
+            if event_date is None or event_date < contest_start or event_date > contest_end:
+                continue
+            if deal_id:
+                seen_sales_deal_ids.add(deal_id)
+            sales_records.append(record)
+        current_date += timedelta(days=1)
+
+    first_meeting_select_fields = unique_fields(
+        [
+            "ID",
+            "TITLE",
+            "ASSIGNED_BY_ID",
+            mop_settings.assigned_field,
+            "CATEGORY_ID",
+            settings.contest_first_meeting_field,
+            settings.contest_first_meeting_date_field,
+        ]
+    )
+    first_meeting_records: list[dict[str, Any]] = []
+    seen_deal_ids: set[str] = set()
+    current_date = contest_start
+    while current_date <= contest_end:
+        day_start, day_end = day_bounds(current_date, window)
+        base_filters: dict[str, Any] = {
+            f">={settings.contest_first_meeting_date_field}": day_start.isoformat(timespec="seconds"),
+            f"<={settings.contest_first_meeting_date_field}": day_end.isoformat(timespec="seconds"),
+        }
+        try:
+            records = fetch_deal_list(session, settings, base_filters, first_meeting_select_fields)
         except Exception as exc:
             data.warnings.append(
                 f"Конкурс: не удалось загрузить первые встречи за {current_date.isoformat()}: {safe_error_text(exc)}"
@@ -3200,10 +3232,18 @@ def build_contest_payload(
     contest_user_names.update(DEFAULT_MOP_NAMES_BY_ID)
     assigned_ids = {
         extract_assigned_user_id(record, mop_settings)
-        for record in first_meeting_records
+        for record in [*sales_records, *first_meeting_records]
         if extract_assigned_user_id(record, mop_settings)
     }
     contest_user_names.update(fetch_bitrix_user_names(session, settings, assigned_ids))
+
+    for record in sales_records:
+        mop_id = extract_assigned_user_id(record, mop_settings)
+        mop_name = contest_user_names.get(mop_id, f"Пользователь {mop_id}" if mop_id else mop_settings.unknown_mop_name)
+        if not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
+        row["salesFact"] += 1
 
     for record in first_meeting_records:
         mop_id = extract_assigned_user_id(record, mop_settings)
