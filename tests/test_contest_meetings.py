@@ -2,38 +2,49 @@ import unittest
 from datetime import date
 
 from scripts.sync_mop_report import (
-    ActiveDealActivity,
+    MeetingLogEntry,
     deal_created_in_period,
-    first_completed_meeting_dates_by_deal,
+    first_successful_meetings_in_period,
 )
 
 
-class FirstCompletedMeetingDatesByDealTest(unittest.TestCase):
-    def test_selects_first_completed_meeting_from_full_activity_history(self) -> None:
-        events_by_deal = {
-            "100": [
-                ActiveDealActivity(date(2026, 6, 30), kind="meetings", completed=True),
-                ActiveDealActivity(date(2026, 7, 2), kind="meetings", completed=True),
-            ],
-            "200": [
-                ActiveDealActivity(date(2026, 7, 1), kind="calls", completed=True),
-                ActiveDealActivity(date(2026, 7, 3), kind="meetings", completed=False),
-                ActiveDealActivity(date(2026, 7, 4), kind="meetings", completed=True),
-                ActiveDealActivity(date(2026, 7, 9), kind="meetings", completed=True),
-            ],
-            "300": [
-                ActiveDealActivity(date(2026, 7, 5), kind="calls", completed=True),
-            ],
-        }
+class FirstSuccessfulMeetingsInPeriodTest(unittest.TestCase):
+    def test_keeps_only_first_successful_meeting_per_deal(self) -> None:
+        entries = [
+            MeetingLogEntry(date(2026, 6, 30), "100", "МОП 1"),
+            MeetingLogEntry(date(2026, 7, 2), "100", "МОП 1"),
+            MeetingLogEntry(date(2026, 7, 4), "200", "МОП 2"),
+            MeetingLogEntry(date(2026, 7, 9), "200", "МОП 2"),
+            MeetingLogEntry(date(2026, 7, 5), "", "МОП 3"),
+            MeetingLogEntry(date(2026, 8, 1), "300", "МОП 3"),
+        ]
 
-        result = first_completed_meeting_dates_by_deal(events_by_deal)
+        result = first_successful_meetings_in_period(
+            entries,
+            date(2026, 7, 1),
+            date(2026, 7, 31),
+        )
 
         self.assertEqual(
             result,
-            {
-                "100": date(2026, 6, 30),
-                "200": date(2026, 7, 4),
-            },
+            [MeetingLogEntry(date(2026, 7, 4), "200", "МОП 2")],
+        )
+
+    def test_prefers_named_mop_for_duplicate_on_same_date(self) -> None:
+        entries = [
+            MeetingLogEntry(date(2026, 7, 4), "200", ""),
+            MeetingLogEntry(date(2026, 7, 4), "200", "МОП 2"),
+        ]
+
+        result = first_successful_meetings_in_period(
+            entries,
+            date(2026, 7, 1),
+            date(2026, 7, 31),
+        )
+
+        self.assertEqual(
+            result,
+            [MeetingLogEntry(date(2026, 7, 4), "200", "МОП 2")],
         )
 
     def test_requires_deal_creation_inside_contest_period(self) -> None:
