@@ -3334,7 +3334,6 @@ def build_dashboard_payload(
     mop_settings: MopSettings,
     window: ReportWindow,
     active_deals_payload: dict[str, Any] | None = None,
-    contest_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -3416,13 +3415,6 @@ def build_dashboard_payload(
             "minDate": window.start.date().isoformat(),
             "maxDate": window.end.date().isoformat(),
         },
-        "contest": contest_payload or {
-            "month": "",
-            "from": "",
-            "to": "",
-            "rankingRule": "sales_then_first_meetings",
-            "rows": [],
-        },
         "warnings": data.warnings,
         "baseRows": rows,
         "dailyRows": build_daily_dashboard_rows(data, mop_settings, window),
@@ -3465,7 +3457,7 @@ def main() -> int:
         data = MopReportData()
         booking_events = build_booking_reservation_events(data, session, settings, window)
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
-        meeting_entries = build_meeting_facts(data, service, session, settings, mop_settings, window)
+        build_meeting_facts(data, service, session, settings, mop_settings, window)
         build_target_after_meeting_facts(data, service, settings, mop_settings, window)
         if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
             build_call_facts(data, session, settings, mop_settings, window)
@@ -3496,17 +3488,8 @@ def main() -> int:
             window,
             booking_events,
         )
-        contest_payload = build_contest_payload(
-            data,
-            session,
-            settings,
-            mop_settings,
-            window,
-            user_names,
-            meeting_entries,
-        )
         built_report = build_report_rows(data, mop_settings)
-        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload, contest_payload)
+        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload)
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
         print_summary(built_report, payload)

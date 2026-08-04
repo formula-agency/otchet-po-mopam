@@ -82,9 +82,6 @@ const els = {
   airtimePeriodLabel: document.getElementById('airtime-period-label'),
   scoreboardSummary: document.getElementById('scoreboard-summary'),
   airtimeRows: document.getElementById('airtime-rows'),
-  contestPeriodLabel: document.getElementById('contest-period-label'),
-  contestSummary: document.getElementById('contest-summary'),
-  contestRows: document.getElementById('contest-rows'),
   exportCsv: document.getElementById('export-csv'),
   warnings: document.getElementById('warnings'),
   warningsList: document.getElementById('warnings-list'),
@@ -1529,147 +1526,6 @@ function renderAirTimePlanFact() {
   }).join('');
 }
 
-function contestData() {
-  return data.contest || { month: '', from: '', to: '', rows: [] };
-}
-
-function contestRows() {
-  return (contestData().rows || [])
-    .filter((row) => row.mopName && isScoreboardMopIncluded(row.mopName))
-    .map((row) => ({
-      ...row,
-      firstMeetingsFact: Number(row.firstMeetingsFact || 0),
-      salesFact: Number(row.salesFact || 0),
-    }));
-}
-
-function contestRanking(rows, metric) {
-  const rankedRows = [...rows].sort((a, b) => b[metric] - a[metric]
-    || a.mopName.localeCompare(b.mopName));
-  let previousValue = null;
-  let previousPlace = 0;
-  return rankedRows.map((row, index) => {
-    const value = Number(row[metric] || 0);
-    const place = previousValue === value ? previousPlace : index + 1;
-    previousValue = value;
-    previousPlace = place;
-    return { ...row, contestPlace: place };
-  });
-}
-
-function contestLeader(ranking, metric) {
-  const topValue = Number(ranking[0]?.[metric] || 0);
-  if (topValue <= 0) return { names: 'Пока нет лидера', value: 0 };
-  const names = ranking
-    .filter((row) => Number(row[metric] || 0) === topValue)
-    .map((row) => row.mopName)
-    .join(' · ');
-  return { names, value: topValue };
-}
-
-function russianNoun(value, [one, few, many]) {
-  const absoluteValue = Math.abs(Number(value || 0));
-  const lastTwoDigits = absoluteValue % 100;
-  const lastDigit = absoluteValue % 10;
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return many;
-  if (lastDigit === 1) return one;
-  if (lastDigit >= 2 && lastDigit <= 4) return few;
-  return many;
-}
-
-function renderContestNomination({ title, forms, metric, rows }) {
-  const ranking = contestRanking(rows, metric);
-  const maxValue = Math.max(...ranking.map((row) => Number(row[metric] || 0)), 0);
-  return `
-    <section class="contest-nomination" aria-label="Номинация ${escapeHtml(title)}">
-      <header class="contest-nomination__header">
-        <span>Номинация</span>
-        <strong>${escapeHtml(title)}</strong>
-      </header>
-      <div class="contest-nomination__rows" style="--contest-row-count: ${Math.max(ranking.length, 1)}">
-        ${ranking.map((row) => {
-          const value = Number(row[metric] || 0);
-          const progress = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
-          const rankClass = value > 0
-            ? scoreboardRankClass(row.contestPlace - 1, ranking.length)
-            : 'rank-empty';
-          const isLeader = row.contestPlace === 1 && value > 0;
-          const displayedPlace = value > 0 ? row.contestPlace : '—';
-          return `
-            <article class="contest-row ${rankClass}">
-              <div class="airtime-row__rank">${isLeader ? '<span class="airtime-row__crown" aria-hidden="true"></span>' : ''}${displayedPlace}</div>
-              <div class="contest-row__person">
-                <strong>${escapeHtml(row.mopName)}</strong>
-              </div>
-              <div class="contest-row__bar" aria-label="${escapeHtml(title)}: ${formatNumber(value)}">
-                <span style="width: ${progress}%"></span>
-              </div>
-              <div class="contest-row__metric">
-                <strong>${formatNumber(value)}</strong>
-                <span>${escapeHtml(russianNoun(value, forms))}</span>
-              </div>
-            </article>
-          `;
-        }).join('')}
-      </div>
-    </section>
-  `;
-}
-
-function renderContest() {
-  if (!els.contestRows || !els.contestSummary) return;
-  const contest = contestData();
-  const rows = contestRows();
-  els.contestRows.style.setProperty('--contest-row-count', String(Math.max(rows.length, 1)));
-  const totals = rows.reduce((acc, row) => {
-    acc.firstMeetingsFact += row.firstMeetingsFact;
-    acc.salesFact += row.salesFact;
-    return acc;
-  }, { firstMeetingsFact: 0, salesFact: 0 });
-  const meetingsLeader = contestLeader(contestRanking(rows, 'firstMeetingsFact'), 'firstMeetingsFact');
-  const salesLeader = contestLeader(contestRanking(rows, 'salesFact'), 'salesFact');
-  const periodLabel = contest.month ? formatMonthLabel(contest.month) : 'Июль 2026';
-  const rangeLabel = contest.from && contest.to
-    ? `${formatDate(contest.from)}-${formatDate(contest.to)}`
-    : periodLabel;
-
-  if (els.contestPeriodLabel) {
-    els.contestPeriodLabel.textContent = `${periodLabel} · ${rangeLabel}`;
-  }
-  els.contestSummary.innerHTML = `
-    <article>
-      <span>Лидер по первым встречам</span>
-      <strong>${escapeHtml(meetingsLeader.names)}</strong>
-      <small>${formatNumber(meetingsLeader.value)} ${russianNoun(meetingsLeader.value, ['встреча', 'встречи', 'встреч'])} · всего ${formatNumber(totals.firstMeetingsFact)}</small>
-    </article>
-    <article>
-      <span>Лидер по закрытым сделкам</span>
-      <strong>${escapeHtml(salesLeader.names)}</strong>
-      <small>${formatNumber(salesLeader.value)} ${russianNoun(salesLeader.value, ['сделка', 'сделки', 'сделок'])} · всего ${formatNumber(totals.salesFact)}</small>
-    </article>
-  `;
-
-  if (!rows.length) {
-    els.contestRows.innerHTML = '<div class="airtime-empty">Нет данных конкурса</div>';
-    return;
-  }
-
-  els.contestRows.innerHTML = [
-    renderContestNomination({
-      title: 'Первые встречи',
-      forms: ['встреча', 'встречи', 'встреч'],
-      metric: 'firstMeetingsFact',
-      rows,
-    }),
-    renderContestNomination({
-      title: 'Закрытые сделки',
-      forms: ['сделка', 'сделки', 'сделок'],
-      metric: 'salesFact',
-      rows,
-    }),
-  ].join('');
-}
-
 function ensureCharts() {
   if (!weeklyChart) {
     weeklyChart = new Chart(document.getElementById('weekly-chart'), {
@@ -1853,11 +1709,10 @@ function render() {
   renderCharts(rows);
   renderActiveDeals();
   if (state.view === 'airtime') renderAirTimePlanFact();
-  if (state.view === 'contest') renderContest();
 }
 
 function setView(view, updateHash = true) {
-  state.view = ['summary', 'deals', 'airtime', 'contest'].includes(view) ? view : 'summary';
+  state.view = ['summary', 'deals', 'airtime'].includes(view) ? view : 'summary';
   for (const panel of els.viewPanels) {
     const isActive = panel.dataset.viewPanel === state.view;
     panel.hidden = !isActive;
@@ -1866,12 +1721,10 @@ function setView(view, updateHash = true) {
   for (const link of els.viewLinks) {
     link.classList.toggle('is-active', link.dataset.viewLink === state.view);
   }
-  els.appFrame?.classList.toggle('is-contest-view', state.view === 'contest');
   if (updateHash && window.history) {
     window.history.replaceState(null, '', state.view === 'summary' ? '#summary' : `#${state.view}`);
   }
   if (state.view === 'airtime') renderAirTimePlanFact();
-  if (state.view === 'contest') renderContest();
 }
 
 function bindHeaderState() {
@@ -1909,7 +1762,6 @@ function bindViewNavigation() {
 function viewFromHash() {
   if (location.hash === '#deals' || location.hash === '#active-deals') return 'deals';
   if (location.hash === '#airtime') return 'airtime';
-  if (location.hash === '#contest') return 'contest';
   return 'summary';
 }
 

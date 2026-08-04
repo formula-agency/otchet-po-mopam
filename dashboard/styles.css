@@ -99,10 +99,6 @@ body {
   transition: padding-left 180ms ease;
 }
 
-.app-frame.is-contest-view .app-main {
-  padding-bottom: 0;
-}
-
 .app-frame.is-sidebar-collapsed .app-main {
   padding-left: 52px;
 }
