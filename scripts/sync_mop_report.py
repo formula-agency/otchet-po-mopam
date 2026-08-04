@@ -283,6 +283,13 @@ MEETING_LOG_HEADER_ALIASES = {
         "start datetime",
         "starts at",
     },
+    "meeting_closed": {
+        "дата закрытия",
+        "закрыта",
+        "meeting closed",
+        "closed at",
+        "close date",
+    },
     "responsible": {"ответственный", "моп", "менеджер", "responsible", "manager"},
     "deal_id": {"id сделки", "deal id", "id deal"},
     "deal_link": {"ссылка на сделку", "deal link", "link"},
@@ -400,6 +407,8 @@ class MeetingLogEntry:
     deal_id: str
     mop_name: str
     meeting_number: int | None = None
+    closed_date: date | None = None
+    successful: bool = True
 
 
 @dataclass(frozen=True)
@@ -1283,10 +1292,13 @@ def find_matching_column(rows: list[list[Any]], aliases: set[str]) -> tuple[int,
 def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]]:
     column_map: dict[str, int] = {}
     matched_rows: list[int] = []
-    for canonical_name in ("status", "meeting_start"):
+    for canonical_name in ("status", "meeting_start", "meeting_closed"):
         match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
         if match is None:
-            raise ConfigError("Could not find required meeting log columns: result/status and 'Начало встречи'.")
+            raise ConfigError(
+                "Could not find required meeting log columns: result/status, "
+                "'Начало встречи' and 'Дата закрытия'."
+            )
         row_index, column_index = match
         column_map[canonical_name] = column_index
         matched_rows.append(row_index)
@@ -1303,7 +1315,7 @@ def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]
     return max(matched_rows), column_map
 
 
-def build_successful_meeting_entries(service: Any, settings: Settings) -> list[MeetingLogEntry]:
+def build_meeting_log_entries(service: Any, settings: Settings) -> list[MeetingLogEntry]:
     sheet_title = resolve_sheet_title(
         service,
         settings.google_meeting_log_sheet_id,
@@ -1329,8 +1341,7 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
             continue
         status_index = column_map["status"]
         status_value = row[status_index] if status_index < len(row) else ""
-        if normalize_text(status_value) not in SUCCESSFUL_MEETING_STATUSES:
-            continue
+        successful = normalize_text(status_value) in SUCCESSFUL_MEETING_STATUSES
 
         start_index = column_map["meeting_start"]
         meeting_datetime = parse_sheet_datetime(
@@ -1339,6 +1350,12 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         )
         if meeting_datetime is None:
             continue
+
+        closed_index = column_map["meeting_closed"]
+        closed_datetime = parse_sheet_datetime(
+            row[closed_index] if closed_index < len(row) else "",
+            settings.report_timezone,
+        )
 
         deal_id = ""
         deal_id_index = column_map.get("deal_id")
@@ -1359,7 +1376,16 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
             if parsed_meeting_number:
                 meeting_number = int(parsed_meeting_number)
         if deal_id or mop_name:
-            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id, mop_name, meeting_number))
+            entries.append(
+                MeetingLogEntry(
+                    meeting_datetime.date(),
+                    deal_id,
+                    mop_name,
+                    meeting_number,
+                    closed_datetime.date() if closed_datetime else None,
+                    successful,
+                )
+            )
     return entries
 
 
@@ -2317,7 +2343,7 @@ def build_meeting_facts(
         return []
 
     try:
-        meeting_entries = build_successful_meeting_entries(service, settings)
+        meeting_entries = build_meeting_log_entries(service, settings)
     except ConfigError as exc:
         data.warnings.append(f"Встречи не посчитаны: {safe_error_text(exc)}")
         return []
@@ -2327,6 +2353,8 @@ def build_meeting_facts(
 
     deal_cache: dict[str, dict[str, Any]] = {}
     for entry in meeting_entries:
+        if not entry.successful:
+            continue
         if entry.meeting_date < window.start.date() or entry.meeting_date > window.end.date():
             continue
         entry_mop_name = canonical_mop_label(entry.mop_name, mop_settings)
@@ -3028,8 +3056,8 @@ def build_active_deals_payload(
     meeting_events_by_deal: dict[str, list[ActiveDealActivity]] = defaultdict(list)
     if service is not None:
         try:
-            for entry in build_successful_meeting_entries(service, settings):
-                if entry.meeting_date <= window.end.date():
+            for entry in build_meeting_log_entries(service, settings):
+                if entry.successful and entry.meeting_date <= window.end.date():
                     meeting_events_by_deal[entry.deal_id].append(
                         ActiveDealActivity(date=entry.meeting_date, kind="meetings", completed=True)
                     )
@@ -3129,45 +3157,50 @@ def build_active_deals_payload(
     }
 
 
-def first_numbered_successful_meetings_in_period(
+def successful_first_meeting_cycles_closed_in_period(
     meeting_entries: list[MeetingLogEntry],
     period_start: date,
     period_end: date,
 ) -> list[MeetingLogEntry]:
-    first_by_deal: dict[str, MeetingLogEntry] = {}
+    first_attempt_deals: set[str] = set()
+    first_success_by_deal: dict[str, MeetingLogEntry] = {}
     for entry in meeting_entries:
-        if entry.meeting_number != 1:
-            continue
         deal_id = str(entry.deal_id or "").strip()
         if not deal_id:
             continue
-        previous = first_by_deal.get(deal_id)
-        if previous is None or entry.meeting_date < previous.meeting_date:
-            first_by_deal[deal_id] = entry
+
+        closed_date = entry.closed_date
+        if closed_date is None or closed_date < period_start or closed_date > period_end:
+            continue
+        if entry.meeting_number == 1:
+            first_attempt_deals.add(deal_id)
+        if not entry.successful:
+            continue
+
+        previous = first_success_by_deal.get(deal_id)
+        if previous is None or (
+            entry.closed_date,
+            entry.meeting_date,
+        ) < (
+            previous.closed_date,
+            previous.meeting_date,
+        ):
+            first_success_by_deal[deal_id] = entry
         elif (
-            entry.meeting_date == previous.meeting_date
+            entry.closed_date == previous.closed_date
+            and entry.meeting_date == previous.meeting_date
             and not previous.mop_name.strip()
             and entry.mop_name.strip()
         ):
-            first_by_deal[deal_id] = entry
+            first_success_by_deal[deal_id] = entry
     return sorted(
         (
             entry
-            for entry in first_by_deal.values()
-            if period_start <= entry.meeting_date <= period_end
+            for deal_id, entry in first_success_by_deal.items()
+            if deal_id in first_attempt_deals
         ),
-        key=lambda entry: (entry.meeting_date, entry.deal_id),
+        key=lambda entry: (entry.closed_date or date.min, entry.deal_id),
     )
-
-
-def deal_created_in_period(
-    record: dict[str, Any],
-    period_start: date,
-    period_end: date,
-    timezone_name: str,
-) -> bool:
-    created_date = parse_bitrix_date(record.get("DATE_CREATE"), timezone_name)
-    return created_date is not None and period_start <= created_date <= period_end
 
 
 def empty_contest_row(mop_name: str) -> dict[str, Any]:
@@ -3210,7 +3243,7 @@ def build_contest_payload(
             row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
             row["salesFact"] += metrics.sales
 
-    first_meeting_entries = first_numbered_successful_meetings_in_period(
+    first_meeting_entries = successful_first_meeting_cycles_closed_in_period(
         meeting_entries,
         contest_start,
         contest_end,
@@ -3252,13 +3285,6 @@ def build_contest_payload(
         category_id = str(record.get("CATEGORY_ID") or "").strip()
         if category_ids and category_id not in category_ids:
             continue
-        if not deal_created_in_period(
-            record,
-            contest_start,
-            contest_end,
-            settings.report_timezone,
-        ):
-            continue
         mop_id = extract_assigned_user_id(record, mop_settings)
         mop_name = canonical_mop_label(
             first_meeting_by_deal[deal_id].mop_name,
@@ -3283,8 +3309,8 @@ def build_contest_payload(
         "from": contest_start.isoformat(),
         "to": contest_end.isoformat(),
         "rankingRule": "separate_first_meetings_and_sales",
-        "firstMeetingField": "meeting_log:result=successful,meeting_number=1",
-        "firstMeetingDateField": "meeting_log:meeting_start",
+        "firstMeetingField": "meeting_log:first_attempt_closed+successful_result",
+        "firstMeetingDateField": "meeting_log:closed_at",
         "rows": rows,
     }
 
