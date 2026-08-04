@@ -286,6 +286,12 @@ MEETING_LOG_HEADER_ALIASES = {
     "responsible": {"ответственный", "моп", "менеджер", "responsible", "manager"},
     "deal_id": {"id сделки", "deal id", "id deal"},
     "deal_link": {"ссылка на сделку", "deal link", "link"},
+    "meeting_number": {
+        "порядковый номер",
+        "номер встречи",
+        "meeting number",
+        "sequence number",
+    },
 }
 
 TARGET_AFTER_MEETING_HEADER_ALIASES = {
@@ -393,6 +399,7 @@ class MeetingLogEntry:
     meeting_date: date
     deal_id: str
     mop_name: str
+    meeting_number: int | None = None
 
 
 @dataclass(frozen=True)
@@ -1284,7 +1291,7 @@ def find_meeting_log_columns(rows: list[list[Any]]) -> tuple[int, dict[str, int]
         column_map[canonical_name] = column_index
         matched_rows.append(row_index)
 
-    for canonical_name in ("responsible", "deal_id", "deal_link"):
+    for canonical_name in ("responsible", "deal_id", "deal_link", "meeting_number"):
         match = find_matching_column(rows, MEETING_LOG_HEADER_ALIASES[canonical_name])
         if match is not None:
             row_index, column_index = match
@@ -1345,8 +1352,14 @@ def build_successful_meeting_entries(service: Any, settings: Settings) -> list[M
         mop_name = ""
         if responsible_index is not None and responsible_index < len(row):
             mop_name = str(row[responsible_index] or "").strip()
+        meeting_number: int | None = None
+        meeting_number_index = column_map.get("meeting_number")
+        if meeting_number_index is not None and meeting_number_index < len(row):
+            parsed_meeting_number = parse_numeric_id(row[meeting_number_index])
+            if parsed_meeting_number:
+                meeting_number = int(parsed_meeting_number)
         if deal_id or mop_name:
-            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id, mop_name))
+            entries.append(MeetingLogEntry(meeting_datetime.date(), deal_id, mop_name, meeting_number))
     return entries
 
 
@@ -3116,13 +3129,15 @@ def build_active_deals_payload(
     }
 
 
-def first_successful_meetings_in_period(
+def first_numbered_successful_meetings_in_period(
     meeting_entries: list[MeetingLogEntry],
     period_start: date,
     period_end: date,
 ) -> list[MeetingLogEntry]:
     first_by_deal: dict[str, MeetingLogEntry] = {}
     for entry in meeting_entries:
+        if entry.meeting_number != 1:
+            continue
         deal_id = str(entry.deal_id or "").strip()
         if not deal_id:
             continue
@@ -3195,7 +3210,7 @@ def build_contest_payload(
             row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
             row["salesFact"] += metrics.sales
 
-    first_meeting_entries = first_successful_meetings_in_period(
+    first_meeting_entries = first_numbered_successful_meetings_in_period(
         meeting_entries,
         contest_start,
         contest_end,
@@ -3268,7 +3283,7 @@ def build_contest_payload(
         "from": contest_start.isoformat(),
         "to": contest_end.isoformat(),
         "rankingRule": "separate_first_meetings_and_sales",
-        "firstMeetingField": "meeting_log:result=successful",
+        "firstMeetingField": "meeting_log:result=successful,meeting_number=1",
         "firstMeetingDateField": "meeting_log:meeting_start",
         "rows": rows,
     }
