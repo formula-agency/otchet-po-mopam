@@ -96,6 +96,12 @@ MANUAL_FACT_ADJUSTMENTS = (
         "air_seconds": 59 * 60 + 35,
     },
 )
+MANUAL_CONTEST_FIRST_MEETING_OVERRIDES = {
+    "2026-07": {
+        "Газисова Мария": 7,
+        "Тончу Ростислав": 6,
+    },
+}
 CRM_DEAL_OWNER_TYPE_ID = 2
 ACTIVE_DEAL_BASE_FIELDS = [
     "ID",
@@ -3300,17 +3306,24 @@ def build_contest_payload(
         row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
         row["firstMeetingsFact"] += 1
 
+    contest_month = f"{contest_start:%Y-%m}"
+    first_meeting_overrides = MANUAL_CONTEST_FIRST_MEETING_OVERRIDES.get(contest_month, {})
+    for mop_name, value in first_meeting_overrides.items():
+        row = rows_by_mop.setdefault(mop_name, empty_contest_row(mop_name))
+        row["firstMeetingsFact"] = max(0, int(value))
+
     rows = sorted(
         rows_by_mop.values(),
         key=lambda row: str(row["mopName"]),
     )
     return {
-        "month": f"{contest_start:%Y-%m}",
+        "month": contest_month,
         "from": contest_start.isoformat(),
         "to": contest_end.isoformat(),
         "rankingRule": "separate_first_meetings_and_sales",
         "firstMeetingField": "meeting_log:first_attempt_closed+successful_result",
         "firstMeetingDateField": "meeting_log:closed_at",
+        "firstMeetingOverrides": first_meeting_overrides,
         "rows": rows,
     }
 
