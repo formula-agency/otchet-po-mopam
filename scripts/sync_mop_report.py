@@ -43,7 +43,6 @@ DEFAULT_BOOKING_LIST_DEAL_FIELD = "PROPERTY_118"
 SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
 DEFAULT_INCLUDED_MOPS = (
     "Черткова Ирина",
-    "Газисова Мария",
     "Попова Олеся",
     "Попова Юлия",
     "Губайдулина Заррина",

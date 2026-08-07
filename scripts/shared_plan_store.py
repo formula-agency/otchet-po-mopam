@@ -32,7 +32,6 @@ DEFAULT_DASHBOARD_DATA_PATH = Path("dashboard/data/mop-report-data.json")
 ALLOWED_AUTHOR_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
 MOP_NAMES = (
     "Черткова Ирина",
-    "Газисова Мария",
     "Попова Олеся",
     "Попова Юлия",
     "Губайдулина Заррина",
@@ -46,7 +45,6 @@ MOP_NAMES = (
 MOP_IDS_BY_NAME = {
     "Погребинский Артем": "39",
     "Черткова Ирина": "159",
-    "Газисова Мария": "160",
     "Попова Олеся": "161",
     "Губайдулина Заррина": "174",
     "Камболин Александр": "189",

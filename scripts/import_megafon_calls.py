@@ -23,7 +23,6 @@ MEGAFON_SOURCE = "megafon_vats"
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_MOP_NAMES = (
     "Черткова Ирина",
-    "Газисова Мария",
     "Попова Олеся",
     "Попова Юлия",
     "Губайдулина Заррина",
