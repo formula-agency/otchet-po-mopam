@@ -124,7 +124,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260629-1';
+const DASHBOARD_DATA_VERSION = '20260811-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -135,7 +135,7 @@ const PLAN_METRIC_FIELDS = [
   'airTimePlanSeconds',
 ];
 const SCOREBOARD_METRICS = [
-  { label: 'Звонки', fact: 'callsFact', kind: 'number', weight: 1 },
+  { label: 'Звонки', fact: 'completedCallsFact', kind: 'number', weight: 1 },
   { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Эфир после встречи', plan: 'targetMinutesAfterMeetingPlanSeconds', fact: 'targetMinutesAfterMeetingFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },

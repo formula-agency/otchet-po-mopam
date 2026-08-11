@@ -57,6 +57,7 @@ RANGE_PATTERN = re.compile(
 )
 SUM_FIELDS = {
     "callsFact",
+    "completedCallsFact",
     "targetCallsFact",
     "targetSuccessfulCallsFact",
     "airTimeFactSeconds",
@@ -72,6 +73,12 @@ SUM_FIELDS = {
     "crmTargetCallsFact",
     "crmTargetSuccessfulCallsFact",
     "crmAirTimeFactSeconds",
+}
+COMPLETED_CALL_CLASSIFICATIONS = {
+    "сервисный звонок",
+    "нецелевой звонок",
+    "целевой нерезультативный",
+    "целевой результативный",
 }
 
 
@@ -387,6 +394,10 @@ def csv_target_call_flags(classification: str) -> tuple[bool, bool]:
     return is_target, is_successful
 
 
+def csv_call_is_completed(classification: str) -> bool:
+    return normalize_text(classification) in COMPLETED_CALL_CLASSIFICATIONS
+
+
 def csv_source_priority(record: CsvCallRecord, ranges_by_path: dict[Path, SourceRange]) -> tuple[date, date, int, str]:
     source_range = ranges_by_path.get(record.path)
     end = source_range.end if source_range else record.day
@@ -434,6 +445,8 @@ def aggregate_csv_records(
         if use_calls:
             metrics["callsFact"] = metrics.get("callsFact", 0) + 1
             metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+            if csv_call_is_completed(record.classification):
+                metrics["completedCallsFact"] = metrics.get("completedCallsFact", 0) + 1
             is_target, is_successful = csv_target_call_flags(record.classification)
             if is_target:
                 metrics["targetCallsFact"] = metrics.get("targetCallsFact", 0) + 1
@@ -478,6 +491,8 @@ def aggregate_csv_daily_records(
         if use_calls:
             metrics["callsFact"] = metrics.get("callsFact", 0) + 1
             metrics["crmCallsFact"] = metrics.get("crmCallsFact", 0) + 1
+            if csv_call_is_completed(record.classification):
+                metrics["completedCallsFact"] = metrics.get("completedCallsFact", 0) + 1
             is_target, is_successful = csv_target_call_flags(record.classification)
             if is_target:
                 metrics["targetCallsFact"] = metrics.get("targetCallsFact", 0) + 1
@@ -521,6 +536,7 @@ def clear_existing_csv_call_data(rows: list[dict[str, Any]]) -> list[dict[str, A
     cleaned: list[dict[str, Any]] = []
     csv_keys = {
         "callsFactBaseBeforeCrmCalls",
+        "completedCallsFact",
         "targetCallsFactBaseBeforeCrmCalls",
         "targetSuccessfulCallsFactBaseBeforeCrmCalls",
         "airTimeFactSecondsBaseBeforeCrmCalls",
@@ -576,6 +592,7 @@ def merge_csv_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, Any]])
         row["targetSuccessfulCallsFactBaseBeforeCrmCalls"] = base_successful_target_calls
         row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
         row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["completedCallsFact"] = int(import_row.get("completedCallsFact") or 0)
         row["targetCallsFact"] = base_target_calls + int(import_row.get("targetCallsFact") or 0)
         row["targetSuccessfulCallsFact"] = (
             base_successful_target_calls + int(import_row.get("targetSuccessfulCallsFact") or 0)
@@ -628,6 +645,7 @@ def merge_csv_daily_call_rows(payload: dict[str, Any], csv_rows: list[dict[str, 
         row["targetSuccessfulCallsFactBaseBeforeCrmCalls"] = base_successful_target_calls
         row["airTimeFactSecondsBaseBeforeCrmCalls"] = base_air
         row["callsFact"] = base_calls + int(import_row.get("callsFact") or 0)
+        row["completedCallsFact"] = int(import_row.get("completedCallsFact") or 0)
         row["targetCallsFact"] = base_target_calls + int(import_row.get("targetCallsFact") or 0)
         row["targetSuccessfulCallsFact"] = (
             base_successful_target_calls + int(import_row.get("targetSuccessfulCallsFact") or 0)
