@@ -56,7 +56,7 @@ jobs:
           MOP_APPROVED_MORTGAGE_DATE_FIELD: ${{ secrets.MOP_APPROVED_MORTGAGE_DATE_FIELD }}
           MOP_ASSIGNED_FIELD: ASSIGNED_BY_ID
           MOP_UNKNOWN_USER: ${{ secrets.MOP_UNKNOWN_USER }}
-          MOP_INCLUDE_USERS: Черткова Ирина,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена,Войнов Данил
+          MOP_INCLUDE_USERS: Черткова Ирина,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена,Войнов Данил,Султанов Есен,Парфенов Владислав
           MOP_EXCLUDE_USERS: ""
           MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
           MOP_SKIP_BITRIX_CALLS: "true"
