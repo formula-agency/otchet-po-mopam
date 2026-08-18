@@ -5,7 +5,7 @@ import csv
 import json
 import re
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
@@ -355,8 +355,44 @@ def parse_csv_call_records(path: Path, source_kind: str) -> list[CsvCallRecord]:
     return sorted(records, key=lambda record: (record.day, record.employee))
 
 
+def csv_records_are_target_only(records: list[CsvCallRecord]) -> bool:
+    return bool(records) and all(
+        normalize_text(record.classification).startswith("целевой")
+        for record in records
+    )
+
+
+def csv_records_include_non_target(records: list[CsvCallRecord]) -> bool:
+    return any(
+        not normalize_text(record.classification).startswith("целевой")
+        for record in records
+    )
+
+
+def resolved_csv_source_kinds(records_by_path: dict[Path, list[CsvCallRecord]]) -> dict[Path, str]:
+    resolved = {path: csv_source_kind(path) for path in records_by_path}
+    paths_by_parent: dict[Path, list[Path]] = {}
+    for path in records_by_path:
+        paths_by_parent.setdefault(path.parent, []).append(path)
+
+    for paths in paths_by_parent.values():
+        calls_paths = [path for path in paths if resolved.get(path) == "calls"]
+        air_paths = [path for path in paths if resolved.get(path) == "air"]
+        if len(calls_paths) != 1 or len(air_paths) != 1:
+            continue
+        calls_path = calls_paths[0]
+        air_path = air_paths[0]
+        if (
+            csv_records_are_target_only(records_by_path[calls_path])
+            and csv_records_include_non_target(records_by_path[air_path])
+        ):
+            resolved[calls_path] = "air"
+            resolved[air_path] = "calls"
+    return resolved
+
+
 def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRecord], list[SourceRange]]:
-    records: list[CsvCallRecord] = []
+    records_by_path: dict[Path, list[CsvCallRecord]] = {}
     ranges: list[SourceRange] = []
     for path in paths:
         source_kind = csv_source_kind(path)
@@ -366,6 +402,14 @@ def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRec
             file_records = parse_csv_call_records(path, source_kind)
         except ImportErrorWithHint as exc:
             raise ImportErrorWithHint(f"Не удалось прочитать CSV звонков {path}: {exc}") from exc
+        records_by_path[path] = file_records
+
+    resolved_kinds = resolved_csv_source_kinds(records_by_path)
+    records: list[CsvCallRecord] = []
+    for path, file_records in records_by_path.items():
+        source_kind = resolved_kinds[path]
+        if any(record.source_kind != source_kind for record in file_records):
+            file_records = [replace(record, source_kind=source_kind) for record in file_records]
         ranges.append(source_range_for_records(path, vats_dir, (record.day for record in file_records)))
         records.extend(file_records)
     return records, ranges

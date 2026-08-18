@@ -12,12 +12,48 @@ from import_vats_data import (  # noqa: E402
     aggregate_csv_records,
     csv_call_is_completed,
     preferred_csv_sources,
+    resolved_csv_source_kinds,
     SourceRange,
 )
 from import_megafon_calls import normalize_text  # noqa: E402
 
 
 class CompletedCallsTest(unittest.TestCase):
+    def test_detects_swapped_calls_and_air_exports(self) -> None:
+        calls_path = Path("01.08-18.08/звонки.csv")
+        air_path = Path("01.08-18.08/эфир.csv")
+        records_by_path = {
+            calls_path: [
+                CsvCallRecord(calls_path, date(2026, 8, 17), "МОП 1", 60, "Целевой результативный", "calls"),
+            ],
+            air_path: [
+                CsvCallRecord(air_path, date(2026, 8, 17), "МОП 1", 0, "Несостоявшийся разговор", "air"),
+                CsvCallRecord(air_path, date(2026, 8, 17), "МОП 1", 60, "Целевой результативный", "air"),
+            ],
+        }
+
+        resolved = resolved_csv_source_kinds(records_by_path)
+
+        self.assertEqual(resolved[calls_path], "air")
+        self.assertEqual(resolved[air_path], "calls")
+
+    def test_keeps_correct_calls_and_air_exports(self) -> None:
+        calls_path = Path("01.08-18.08/звонки.csv")
+        air_path = Path("01.08-18.08/эфир.csv")
+        records_by_path = {
+            calls_path: [
+                CsvCallRecord(calls_path, date(2026, 8, 17), "МОП 1", 0, "Несостоявшийся разговор", "calls"),
+            ],
+            air_path: [
+                CsvCallRecord(air_path, date(2026, 8, 17), "МОП 1", 60, "Целевой результативный", "air"),
+            ],
+        }
+
+        resolved = resolved_csv_source_kinds(records_by_path)
+
+        self.assertEqual(resolved[calls_path], "calls")
+        self.assertEqual(resolved[air_path], "air")
+
     def test_classifies_only_connected_calls_as_completed(self) -> None:
         completed = (
             "Сервисный звонок",
