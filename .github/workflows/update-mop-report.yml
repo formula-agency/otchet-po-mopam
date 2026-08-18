@@ -75,6 +75,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes lftp
 
       - name: Deploy dashboard to Timeweb
+        timeout-minutes: 3
         env:
           TIMEWEB_FTP_HOST: ${{ secrets.TIMEWEB_FTP_HOST }}
           TIMEWEB_FTP_USER: ${{ secrets.TIMEWEB_FTP_USER }}
@@ -86,8 +87,8 @@ jobs:
           test -n "$TIMEWEB_FTP_PASSWORD"
           test -n "$TIMEWEB_FTP_DEPLOY_PATH"
 
-          lftp -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
-            -e "set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; mirror --reverse --delete --verbose dashboard $TIMEWEB_FTP_DEPLOY_PATH; quit" \
+          lftp -d -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
+            -e "set dns:order inet; set net:timeout 15; set net:max-retries 2; set net:reconnect-interval-base 5; set ftp:passive-mode true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; cls -1; mirror --reverse --delete --verbose dashboard $TIMEWEB_FTP_DEPLOY_PATH; quit" \
             "ftp://$TIMEWEB_FTP_HOST"
 
       - name: Upload dashboard artifact
