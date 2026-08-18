@@ -71,25 +71,10 @@ jobs:
       - name: Apply shared plans
         run: python scripts/shared_plan_store.py apply
 
-      - name: Install FTPS client
-        run: sudo apt-get update && sudo apt-get install --yes lftp
-
-      - name: Deploy dashboard to Timeweb
-        timeout-minutes: 3
-        env:
-          TIMEWEB_FTP_HOST: ${{ secrets.TIMEWEB_FTP_HOST }}
-          TIMEWEB_FTP_USER: ${{ secrets.TIMEWEB_FTP_USER }}
-          TIMEWEB_FTP_PASSWORD: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
-          TIMEWEB_FTP_DEPLOY_PATH: ${{ secrets.TIMEWEB_FTP_DEPLOY_PATH }}
+      - name: Build Timeweb deployment bundle
         run: |
-          test -n "$TIMEWEB_FTP_HOST"
-          test -n "$TIMEWEB_FTP_USER"
-          test -n "$TIMEWEB_FTP_PASSWORD"
-          test -n "$TIMEWEB_FTP_DEPLOY_PATH"
-
-          lftp -d -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
-            -e "set dns:order inet; set net:timeout 15; set net:max-retries 2; set net:reconnect-interval-base 5; set ftp:passive-mode true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; cls -1; mirror --reverse --delete --verbose dashboard $TIMEWEB_FTP_DEPLOY_PATH; quit" \
-            "ftp://$TIMEWEB_FTP_HOST"
+          (cd dashboard && zip -qr ../mop-report.zip .)
+          mv mop-report.zip dashboard/mop-report.zip
 
       - name: Upload dashboard artifact
         uses: actions/upload-pages-artifact@v3
