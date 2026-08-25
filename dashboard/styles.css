@@ -538,6 +538,107 @@ select {
   width: min(640px, 100%);
 }
 
+.priority-view {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.priority-summary {
+  border-top: 4px solid var(--coral);
+}
+
+.priority-controls {
+  display: grid;
+  grid-template-columns: minmax(160px, 190px) minmax(210px, 280px);
+  gap: 12px;
+  width: min(490px, 100%);
+}
+
+.priority-summary__stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.priority-summary__stats article:first-child strong,
+.priority-summary__stats article:last-child strong {
+  color: var(--coral);
+}
+
+.priority-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.priority-status-panel,
+.priority-deals-panel {
+  box-shadow: var(--shadow);
+}
+
+.priority-rule {
+  padding: 9px 11px;
+  border-left: 3px solid var(--coral);
+  background: rgba(214, 107, 98, 0.07);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priority-status-table th,
+.priority-status-table td {
+  text-align: center;
+}
+
+.priority-status-table th:first-child,
+.priority-status-table td:first-child {
+  text-align: left;
+}
+
+.priority-row--stop {
+  background: rgba(214, 107, 98, 0.06);
+}
+
+.priority-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.priority-status.is-stop {
+  border-color: rgba(214, 107, 98, 0.3);
+  background: rgba(214, 107, 98, 0.12);
+  color: #a33e37;
+}
+
+.priority-status.is-work {
+  border-color: rgba(90, 166, 143, 0.3);
+  background: rgba(90, 166, 143, 0.12);
+  color: #2e745f;
+}
+
+.table-wrap--priority {
+  max-height: 520px;
+}
+
+.priority-deals-table {
+  min-width: 1180px;
+}
+
+.priority-days {
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.priority-days--critical {
+  color: #a33e37;
+}
+
 .chart-frame {
   position: relative;
   width: 100%;
@@ -1246,6 +1347,10 @@ select {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .priority-summary__stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .filters-band {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
@@ -1381,6 +1486,12 @@ select {
   }
 
   .active-deal-tools {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .priority-controls,
+  .priority-summary__stats {
     grid-template-columns: 1fr;
     width: 100%;
   }

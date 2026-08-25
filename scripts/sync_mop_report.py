@@ -41,6 +41,22 @@ DEFAULT_BOOKING_LIST_DATE_FIELD = "PROPERTY_98"
 DEFAULT_BOOKING_LIST_MOP_FIELD = "PROPERTY_89"
 DEFAULT_BOOKING_LIST_DEAL_FIELD = "PROPERTY_118"
 SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
+DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD = "UF_DEAL_DATE_LAST_SUCCESSFUL_COMMUNICATION"
+DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL = 8
+DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD = 10
+DEFAULT_HIGH_PRIORITY_HISTORY_PATH = "manual-data/high-priority-history.json"
+DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
+    "Совершить первый контакт",
+    "Дожать на встречу",
+    "Провести встречу",
+    "0-2 звонка после показа",
+    "3-7 звонков после показа",
+    "Рассылки для подогрева",
+    "Согласовать объект",
+    "Документы на ипотеку поданы",
+    "Клиент в оформлении",
+    "Отложенный клиент",
+)
 DEFAULT_INCLUDED_MOPS = (
     "Черткова Ирина",
     "Попова Олеся",
@@ -125,6 +141,7 @@ ACTIVE_DEAL_BASE_FIELDS = [
     "CLOSED",
     "OPPORTUNITY",
     "CURRENCY_ID",
+    DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD,
 ]
 ACTIVITY_SELECT_FIELDS = [
     "ID",
@@ -3117,6 +3134,10 @@ def build_active_deals_payload(
         activity_events.extend(meeting_events_by_deal.get(deal_id, []))
         activity_events.sort(key=lambda event: event.date)
         last_activity_date = max((event.date for event in activity_events), default=None)
+        last_call_attempt_date = max(
+            (event.date for event in activity_events if event.kind == "calls"),
+            default=None,
+        )
 
         approved = resolve_boolean_field(record.get(settings.bitrix_approved_mortgage_field))
         reservation_dates = sorted(reservation_dates_by_deal.get(deal_id, []))
@@ -3127,6 +3148,22 @@ def build_active_deals_payload(
         )
         reservation_date = reservation_dates[0] if reservation_dates else None
         create_date = parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        last_successful_communication_date = parse_bitrix_date(
+            record.get(DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD),
+            settings.report_timezone,
+        )
+        communication_reference_date = last_successful_communication_date or create_date
+        attempt_reference_date = last_call_attempt_date or create_date
+        days_without_call = (
+            max(0, (window.end.date() - communication_reference_date).days)
+            if communication_reference_date
+            else None
+        )
+        days_without_attempt = (
+            max(0, (window.end.date() - attempt_reference_date).days)
+            if attempt_reference_date
+            else None
+        )
         close_date = parse_bitrix_date(record.get("CLOSEDATE"), settings.report_timezone)
         modify_date = parse_bitrix_date(record.get("DATE_MODIFY"), settings.report_timezone)
         stage_id = str(record.get("STAGE_ID") or "").strip()
@@ -3156,6 +3193,10 @@ def build_active_deals_payload(
                 "reservation": reservation,
                 "reservationDate": date_iso(reservation_date),
                 "lastActivityDate": date_iso(last_activity_date),
+                "lastCallAttemptDate": date_iso(last_call_attempt_date),
+                "lastSuccessfulCommunicationDate": date_iso(last_successful_communication_date),
+                "daysWithoutAttempt": days_without_attempt,
+                "daysWithoutCall": days_without_call,
                 "activities": [
                     {"date": event.date.isoformat(), "kind": event.kind, "completed": event.completed}
                     for event in activity_events
@@ -3174,6 +3215,313 @@ def build_active_deals_payload(
         "mopNames": sorted(mop_names | configured_mop_names),
         "minDate": window.start.date().isoformat(),
         "maxDate": window.end.date().isoformat(),
+    }
+
+
+def high_priority_history_path() -> Path:
+    raw_path = os.getenv(
+        "MOP_HIGH_PRIORITY_HISTORY_PATH",
+        DEFAULT_HIGH_PRIORITY_HISTORY_PATH,
+    ).strip()
+    return Path(raw_path or DEFAULT_HIGH_PRIORITY_HISTORY_PATH)
+
+
+def load_high_priority_history(path: Path, warnings: list[str]) -> dict[str, Any]:
+    if not path.exists():
+        return {"schemaVersion": 1, "snapshots": {}}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        warnings.append(f"История высокого приоритета не прочитана: {safe_error_text(exc)}")
+        return {"schemaVersion": 1, "snapshots": {}}
+    if not isinstance(payload, dict) or not isinstance(payload.get("snapshots"), dict):
+        warnings.append("История высокого приоритета имеет неверный формат и начата заново.")
+        return {"schemaVersion": 1, "snapshots": {}}
+    return payload
+
+
+def write_high_priority_history(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(text, encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def high_priority_row(deal: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "dealId": str(deal.get("dealId") or ""),
+        "dealUrl": str(deal.get("dealUrl") or ""),
+        "title": str(deal.get("title") or ""),
+        "mopId": str(deal.get("mopId") or ""),
+        "mopName": str(deal.get("mopName") or ""),
+        "stageId": str(deal.get("stageId") or ""),
+        "stageName": str(deal.get("stageName") or ""),
+        "dateCreate": str(deal.get("dateCreate") or ""),
+        "lastCallAttemptDate": str(deal.get("lastCallAttemptDate") or ""),
+        "lastSuccessfulCommunicationDate": str(
+            deal.get("lastSuccessfulCommunicationDate") or ""
+        ),
+        "daysWithoutAttempt": deal.get("daysWithoutAttempt"),
+        "daysWithoutCall": deal.get("daysWithoutCall"),
+    }
+
+
+def high_priority_snapshot_mops(
+    snapshots: dict[str, Any],
+    snapshot_date: str,
+    stop_threshold: int,
+    all_mop_names: tuple[str, ...] = (),
+) -> list[dict[str, Any]]:
+    current = snapshots.get(snapshot_date, {})
+    current_deals = current.get("deals", []) if isinstance(current, dict) else []
+    current_by_id = {
+        str(row.get("dealId") or ""): row
+        for row in current_deals
+        if isinstance(row, dict) and row.get("dealId")
+    }
+    previous_date = str(current.get("previousDate") or "")
+    previous = snapshots.get(previous_date, {}) if previous_date else {}
+    previous_by_id = {
+        str(row.get("dealId") or ""): row
+        for row in previous.get("deals", [])
+        if isinstance(row, dict) and row.get("dealId")
+    }
+    called_ids = {str(value) for value in current.get("calledFromPreviousDealIds", [])}
+    flowed_ids = {str(value) for value in current.get("flowedFromPreviousDealIds", [])}
+    new_ids = {str(value) for value in current.get("newOverdueDealIds", [])}
+
+    names = {
+        str(row.get("mopName") or "")
+        for row in [*current_by_id.values(), *previous_by_id.values()]
+        if str(row.get("mopName") or "")
+    }
+    names.update(name for name in all_mop_names if name)
+    stop_days: dict[str, int] = defaultdict(int)
+    for tracked_date in sorted(date_key for date_key in snapshots if date_key <= snapshot_date):
+        tracked = snapshots.get(tracked_date, {})
+        counts: dict[str, int] = defaultdict(int)
+        for row in tracked.get("deals", []):
+            mop_name = str(row.get("mopName") or "") if isinstance(row, dict) else ""
+            if mop_name:
+                counts[mop_name] += 1
+        for mop_name, count in counts.items():
+            if count > stop_threshold:
+                stop_days[mop_name] += 1
+
+    rows: list[dict[str, Any]] = []
+    for mop_name in sorted(names):
+        overdue_count = sum(
+            1 for row in current_by_id.values() if str(row.get("mopName") or "") == mop_name
+        )
+        called_count = sum(
+            1
+            for deal_id in called_ids
+            if str(previous_by_id.get(deal_id, {}).get("mopName") or "") == mop_name
+        )
+        flowed_count = sum(
+            1
+            for deal_id in flowed_ids
+            if str(current_by_id.get(deal_id, {}).get("mopName") or "") == mop_name
+        )
+        new_count = sum(
+            1
+            for deal_id in new_ids
+            if str(current_by_id.get(deal_id, {}).get("mopName") or "") == mop_name
+        )
+        rows.append(
+            {
+                "mopName": mop_name,
+                "overdueCount": overdue_count,
+                "calledFromPreviousCount": called_count,
+                "flowedFromPreviousCount": flowed_count,
+                "newOverdueCount": new_count,
+                "isStop": overdue_count > stop_threshold,
+                "stopDays": stop_days.get(mop_name, 0),
+            }
+        )
+    return rows
+
+
+def build_high_priority_payload(
+    active_deals_payload: dict[str, Any],
+    session: requests.Session,
+    settings: Settings,
+    window: ReportWindow,
+    warnings: list[str],
+) -> dict[str, Any]:
+    max_days_without_call = read_non_negative_int_env(
+        "MOP_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL",
+        DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
+    )
+    stop_threshold = read_non_negative_int_env(
+        "MOP_HIGH_PRIORITY_STOP_THRESHOLD",
+        DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD,
+    )
+    allowed_stage_names = {
+        normalize_key(value)
+        for value in read_filter_labels(
+            "MOP_HIGH_PRIORITY_STAGE_NAMES",
+            DEFAULT_HIGH_PRIORITY_STAGE_NAMES,
+        )
+    }
+    current_date = window.end.date().isoformat()
+    all_active_rows = [
+        row for row in active_deals_payload.get("rows", []) if isinstance(row, dict)
+    ]
+    current_rows = sorted(
+        (
+            high_priority_row(row)
+            for row in all_active_rows
+            if normalize_key(row.get("stageName")) in allowed_stage_names
+            and isinstance(row.get("daysWithoutCall"), int)
+            and int(row["daysWithoutCall"]) > max_days_without_call
+        ),
+        key=lambda row: (
+            -int(row.get("daysWithoutCall") or 0),
+            str(row.get("mopName") or ""),
+            int(row["dealId"]) if str(row.get("dealId") or "").isdigit() else 0,
+        ),
+    )
+
+    history_path = high_priority_history_path()
+    history = load_high_priority_history(history_path, warnings)
+    snapshots = history.setdefault("snapshots", {})
+    previous_dates = sorted(value for value in snapshots if value < current_date)
+    previous_date = previous_dates[-1] if previous_dates else ""
+    previous_snapshot = snapshots.get(previous_date, {}) if previous_date else {}
+    previous_rows = previous_snapshot.get("deals", []) if isinstance(previous_snapshot, dict) else []
+    previous_by_id = {
+        str(row.get("dealId") or ""): row
+        for row in previous_rows
+        if isinstance(row, dict) and row.get("dealId")
+    }
+    current_by_id = {row["dealId"]: row for row in current_rows}
+
+    call_dates_by_deal: dict[str, list[date]] = defaultdict(list)
+    all_active_by_id = {str(row.get("dealId") or ""): row for row in all_active_rows}
+    for deal_id in previous_by_id:
+        for activity in all_active_by_id.get(deal_id, {}).get("activities", []):
+            if activity.get("kind") != "calls":
+                continue
+            activity_date = parse_bitrix_date(activity.get("date"), settings.report_timezone)
+            if activity_date:
+                call_dates_by_deal[deal_id].append(activity_date)
+
+    missing_previous_ids = [deal_id for deal_id in previous_by_id if deal_id not in all_active_by_id]
+    if missing_previous_ids:
+        try:
+            extra_events = fetch_deal_activity_events_batch(
+                session,
+                settings,
+                missing_previous_ids,
+                window,
+            )
+            for deal_id, events in extra_events.items():
+                call_dates_by_deal[deal_id].extend(
+                    event.date for event in events if event.kind == "calls"
+                )
+        except Exception as exc:
+            warnings.append(
+                "Звонки по сделкам прошлого дня не загружены: " + safe_error_text(exc)
+            )
+
+    previous_day = date.fromisoformat(previous_date) if previous_date else None
+    current_day = date.fromisoformat(current_date)
+    called_from_previous_ids = sorted(
+        (
+            deal_id
+            for deal_id, call_dates in call_dates_by_deal.items()
+            if previous_day
+            and any(previous_day < call_date <= current_day for call_date in call_dates)
+        ),
+        key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+    )
+    flowed_ids = sorted(
+        set(previous_by_id) & set(current_by_id),
+        key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+    )
+    new_ids = sorted(
+        set(current_by_id) - set(previous_by_id),
+        key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+    )
+    snapshots[current_date] = {
+        "date": current_date,
+        "previousDate": previous_date,
+        "deals": current_rows,
+        "calledFromPreviousDealIds": called_from_previous_ids,
+        "flowedFromPreviousDealIds": flowed_ids,
+        "newOverdueDealIds": new_ids,
+    }
+    history["schemaVersion"] = 1
+    write_high_priority_history(history_path, history)
+
+    dashboard_snapshots: list[dict[str, Any]] = []
+    for snapshot_date in sorted(snapshots):
+        snapshot = snapshots[snapshot_date]
+        rows = snapshot.get("deals", []) if isinstance(snapshot, dict) else []
+        called_ids = {str(value) for value in snapshot.get("calledFromPreviousDealIds", [])}
+        flowed_snapshot_ids = {
+            str(value) for value in snapshot.get("flowedFromPreviousDealIds", [])
+        }
+        new_snapshot_ids = {str(value) for value in snapshot.get("newOverdueDealIds", [])}
+        display_rows = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            deal_id = str(row.get("dealId") or "")
+            display_rows.append(
+                {
+                    **row,
+                    "calledFromPrevious": deal_id in called_ids,
+                    "flowedFromPrevious": deal_id in flowed_snapshot_ids,
+                    "newOverdue": deal_id in new_snapshot_ids,
+                }
+            )
+        mop_rows = high_priority_snapshot_mops(
+            snapshots,
+            snapshot_date,
+            stop_threshold,
+            tuple(active_deals_payload.get("mopNames", [])),
+        )
+        dashboard_snapshots.append(
+            {
+                "date": snapshot_date,
+                "previousDate": str(snapshot.get("previousDate") or ""),
+                "overdueCount": len(display_rows),
+                "calledFromPreviousCount": len(called_ids),
+                "flowedFromPreviousCount": len(flowed_snapshot_ids),
+                "newOverdueCount": len(new_snapshot_ids),
+                "stopMopCount": sum(1 for row in mop_rows if row["isStop"]),
+                "mops": mop_rows,
+                "rows": display_rows,
+            }
+        )
+
+    available_dates = [snapshot["date"] for snapshot in dashboard_snapshots]
+    return {
+        "rules": {
+            "maxDaysWithoutCall": max_days_without_call,
+            "stopLeadThreshold": stop_threshold,
+            "stageNames": list(read_filter_labels(
+                "MOP_HIGH_PRIORITY_STAGE_NAMES",
+                DEFAULT_HIGH_PRIORITY_STAGE_NAMES,
+            )),
+        },
+        "currentDate": current_date,
+        "minDate": min(available_dates) if available_dates else current_date,
+        "maxDate": max(available_dates) if available_dates else current_date,
+        "mopNames": sorted(
+            {
+                str(row.get("mopName") or "")
+                for snapshot in dashboard_snapshots
+                for row in snapshot.get("mops", [])
+                if str(row.get("mopName") or "")
+            }
+        ),
+        "snapshots": dashboard_snapshots,
     }
 
 
@@ -3348,6 +3696,7 @@ def build_dashboard_payload(
     mop_settings: MopSettings,
     window: ReportWindow,
     active_deals_payload: dict[str, Any] | None = None,
+    high_priority_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -3429,6 +3778,18 @@ def build_dashboard_payload(
             "minDate": window.start.date().isoformat(),
             "maxDate": window.end.date().isoformat(),
         },
+        "highPriority": high_priority_payload or {
+            "rules": {
+                "maxDaysWithoutCall": DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
+                "stopLeadThreshold": DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD,
+                "stageNames": list(DEFAULT_HIGH_PRIORITY_STAGE_NAMES),
+            },
+            "currentDate": window.end.date().isoformat(),
+            "minDate": window.end.date().isoformat(),
+            "maxDate": window.end.date().isoformat(),
+            "mopNames": [],
+            "snapshots": [],
+        },
         "warnings": data.warnings,
         "baseRows": rows,
         "dailyRows": build_daily_dashboard_rows(data, mop_settings, window),
@@ -3502,8 +3863,22 @@ def main() -> int:
             window,
             booking_events,
         )
+        high_priority_payload = build_high_priority_payload(
+            active_deals_payload,
+            session,
+            settings,
+            window,
+            data.warnings,
+        )
         built_report = build_report_rows(data, mop_settings)
-        payload = build_dashboard_payload(data, settings, mop_settings, window, active_deals_payload)
+        payload = build_dashboard_payload(
+            data,
+            settings,
+            mop_settings,
+            window,
+            active_deals_payload,
+            high_priority_payload,
+        )
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
         print_summary(built_report, payload)

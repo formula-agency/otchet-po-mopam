@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260804-1">
+  <link rel="stylesheet" href="./styles.css?v=20260825-1">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260811-1"></script>
-  <script defer src="./app.js?v=20260811-1"></script>
+  <script defer src="./app.js?v=20260825-1"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -16,6 +16,7 @@
       <nav class="side-nav">
         <button class="side-nav__item is-active" type="button" data-view-link="summary">План-факт</button>
         <button class="side-nav__item" type="button" data-view-link="deals">Сделки</button>
+        <button class="side-nav__item" type="button" data-view-link="priority">Высокий приоритет</button>
         <button class="side-nav__item" type="button" data-view-link="airtime">Табло</button>
       </nav>
     </aside>
@@ -204,6 +205,88 @@
                   </tr>
                 </thead>
                 <tbody id="active-deal-body"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="view priority-view" data-view-panel="priority" hidden>
+        <section class="summary-band section-anchor priority-summary" aria-labelledby="priority-title">
+          <div class="summary-band__head">
+            <div>
+              <p class="eyebrow">Контроль коммуникаций</p>
+              <h1 id="priority-title">Высокий приоритет</h1>
+            </div>
+            <div class="priority-controls">
+              <label class="field">
+                <span>Дата</span>
+                <input id="priority-date" type="date">
+              </label>
+              <label class="field">
+                <span>МОП</span>
+                <select id="priority-mop"></select>
+              </label>
+            </div>
+          </div>
+          <div class="summary-band__stats priority-summary__stats" aria-label="Сводка высокого приоритета">
+            <article><span>Просрочено</span><strong id="priority-overdue-count">0</strong></article>
+            <article><span>Прозвонили из прошлых</span><strong id="priority-called-count">0</strong></article>
+            <article><span>Перетекло из прошлых</span><strong id="priority-flowed-count">0</strong></article>
+            <article><span>Новые просрочки</span><strong id="priority-new-count">0</strong></article>
+            <article><span>МОПов в СТОПе</span><strong id="priority-stop-count">0</strong></article>
+          </div>
+        </section>
+
+        <div class="page-shell priority-shell">
+          <section class="panel panel-wide priority-status-panel">
+            <div class="panel-head panel-head-inline">
+              <div>
+                <h2>Статус МОПов</h2>
+                <p id="priority-caption">Нет снимков</p>
+              </div>
+              <div class="priority-rule" id="priority-rule"></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table priority-status-table">
+                <thead>
+                  <tr>
+                    <th>МОП</th>
+                    <th>Просрочено</th>
+                    <th>Прозвонили</th>
+                    <th>Перетекло</th>
+                    <th>Новые</th>
+                    <th>Статус</th>
+                    <th>Дней в СТОПе</th>
+                  </tr>
+                </thead>
+                <tbody id="priority-status-body"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel panel-wide priority-deals-panel">
+            <div class="panel-head panel-head-inline">
+              <div>
+                <h2>Сделки без успешного звонка</h2>
+                <p id="priority-deals-caption">0 сделок</p>
+              </div>
+            </div>
+            <div class="table-wrap table-wrap--priority">
+              <table class="data-table priority-deals-table">
+                <thead>
+                  <tr>
+                    <th>Сделка</th>
+                    <th>МОП</th>
+                    <th>Стадия</th>
+                    <th>Дней без попытки</th>
+                    <th>Дней без звонка</th>
+                    <th>Последняя попытка</th>
+                    <th>Последний успешный звонок</th>
+                    <th>Движение</th>
+                  </tr>
+                </thead>
+                <tbody id="priority-deals-body"></tbody>
               </table>
             </div>
           </section>
