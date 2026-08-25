@@ -1,0 +1,54 @@
+name: Inspect Timeweb hosting
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect hosting over SSH
+        env:
+          TIMEWEB_HOST: ${{ secrets.TIMEWEB_HOST }}
+          TIMEWEB_PORT: ${{ secrets.TIMEWEB_PORT }}
+          TIMEWEB_USER: ${{ secrets.TIMEWEB_USER }}
+          TIMEWEB_SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
+          TIMEWEB_KNOWN_HOSTS: ${{ secrets.TIMEWEB_KNOWN_HOSTS }}
+          TIMEWEB_DEPLOY_PATH: ${{ secrets.TIMEWEB_DEPLOY_PATH }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$TIMEWEB_HOST"
+          test -n "$TIMEWEB_USER"
+          test -n "$TIMEWEB_SSH_PRIVATE_KEY"
+          test -n "$TIMEWEB_KNOWN_HOSTS"
+          umask 077
+          printf '%s\n' "$TIMEWEB_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/timeweb_key"
+          printf '%s\n' "$TIMEWEB_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
+          ssh \
+            -i "$RUNNER_TEMP/timeweb_key" \
+            -p "${TIMEWEB_PORT:-22}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" \
+            "$TIMEWEB_USER@$TIMEWEB_HOST" \
+            sh -s -- "$TIMEWEB_DEPLOY_PATH" <<'REMOTE'
+          set -eu
+          deploy_path="$1"
+          echo "SSH_CONNECTION_OK"
+          printf 'SYSTEM='; uname -srm
+          printf 'HOME='; printf '%s\n' "$HOME"
+          printf 'PWD='; pwd
+          printf 'PYTHON='; (python3 --version 2>&1 || true)
+          printf 'PHP='; (php -r 'echo PHP_VERSION, PHP_EOL;' 2>/dev/null || true)
+          printf 'CHROMIUM='; (command -v chromium || command -v chromium-browser || command -v google-chrome || true)
+          printf 'DEPLOY_PATH_EXISTS='; if [ -n "$deploy_path" ] && [ -d "$deploy_path" ]; then echo yes; else echo no; fi
+          printf 'DEPLOY_PATH_REAL='; if [ -n "$deploy_path" ]; then readlink -f "$deploy_path" 2>/dev/null || true; else echo unset; fi
+          echo 'WEB_ROOT_CANDIDATES_BEGIN'
+          find "$HOME" -maxdepth 4 -type d \( -name public_html -o -name htdocs -o -name 'projects.formula-agency.ru' \) -print 2>/dev/null | head -30
+          echo 'WEB_ROOT_CANDIDATES_END'
+          REMOTE
