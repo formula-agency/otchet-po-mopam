@@ -12,7 +12,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Install password SSH client
-        run: sudo apt-get update -qq && sudo apt-get install --yes sshpass
+        run: sudo apt-get update -qq && sudo apt-get install --yes sshpass lftp
 
       - name: Inspect hosting over SSH
         env:
@@ -75,4 +75,12 @@ jobs:
           if sshpass -e ssh "${password_base[@]}" "$TIMEWEB_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"; then
             exit 0
           fi
-          sshpass -e ssh "${password_base[@]}" "$TIMEWEB_FTP_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"
+          if sshpass -e ssh "${password_base[@]}" "$TIMEWEB_FTP_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"; then
+            exit 0
+          fi
+
+          echo "SSH unavailable; checking FTPS"
+          lftp -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
+            -e "set dns:order inet; set net:timeout 15; set net:max-retries 1; set ftp:passive-mode true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; cls -1; quit" \
+            "ftp://$TIMEWEB_FTP_HOST"
+          echo "FTPS_CONNECTION_OK"
