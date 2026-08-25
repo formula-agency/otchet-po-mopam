@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260825-1">
+  <link rel="stylesheet" href="./styles.css?v=20260825-2">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260811-1"></script>
-  <script defer src="./app.js?v=20260825-1"></script>
+  <script defer src="./app.js?v=20260825-2"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -221,7 +221,7 @@
             <div class="priority-controls">
               <label class="field">
                 <span>Дата</span>
-                <input id="priority-date" type="date">
+                <select id="priority-date"></select>
               </label>
               <label class="field">
                 <span>МОП</span>
@@ -233,7 +233,6 @@
             <article><span>Просрочено</span><strong id="priority-overdue-count">0</strong></article>
             <article><span>Прозвонили из прошлых</span><strong id="priority-called-count">0</strong></article>
             <article><span>Перетекло из прошлых</span><strong id="priority-flowed-count">0</strong></article>
-            <article><span>Новые просрочки</span><strong id="priority-new-count">0</strong></article>
             <article><span>МОПов в СТОПе</span><strong id="priority-stop-count">0</strong></article>
           </div>
         </section>
@@ -242,7 +241,7 @@
           <section class="panel panel-wide priority-status-panel">
             <div class="panel-head panel-head-inline">
               <div>
-                <h2>Статус МОПов</h2>
+                <h2>Итог по МОПам</h2>
                 <p id="priority-caption">Нет снимков</p>
               </div>
               <div class="priority-rule" id="priority-rule"></div>
@@ -252,10 +251,9 @@
                 <thead>
                   <tr>
                     <th>МОП</th>
-                    <th>Просрочено</th>
-                    <th>Прозвонили</th>
-                    <th>Перетекло</th>
-                    <th>Новые</th>
+                    <th>Лидов с просрочкой</th>
+                    <th>Прозвонили из прошлых дней</th>
+                    <th>Перетекло из прошлых дней</th>
                     <th>Статус</th>
                     <th>Дней в СТОПе</th>
                   </tr>
@@ -268,7 +266,7 @@
           <section class="panel panel-wide priority-deals-panel">
             <div class="panel-head panel-head-inline">
               <div>
-                <h2>Сделки без успешного звонка</h2>
+                <h2>Сделки с просрочкой</h2>
                 <p id="priority-deals-caption">0 сделок</p>
               </div>
             </div>
@@ -281,8 +279,6 @@
                     <th>Стадия</th>
                     <th>Дней без попытки</th>
                     <th>Дней без звонка</th>
-                    <th>Последняя попытка</th>
-                    <th>Последний успешный звонок</th>
                     <th>Движение</th>
                   </tr>
                 </thead>

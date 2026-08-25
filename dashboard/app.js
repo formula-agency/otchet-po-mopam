@@ -83,7 +83,6 @@ const els = {
   priorityOverdueCount: document.getElementById('priority-overdue-count'),
   priorityCalledCount: document.getElementById('priority-called-count'),
   priorityFlowedCount: document.getElementById('priority-flowed-count'),
-  priorityNewCount: document.getElementById('priority-new-count'),
   priorityStopCount: document.getElementById('priority-stop-count'),
   priorityStatusBody: document.getElementById('priority-status-body'),
   priorityDealsCaption: document.getElementById('priority-deals-caption'),
@@ -138,7 +137,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260825-1';
+const DASHBOARD_DATA_VERSION = '20260825-2';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -1367,9 +1366,8 @@ function prioritySnapshotForDate(value) {
 function prioritySourceLabel(row) {
   const labels = [];
   if (row.calledFromPrevious) labels.push('Прозвонили');
-  if (row.flowedFromPrevious) labels.push('Из прошлых');
-  if (row.newOverdue) labels.push('Новая');
-  return labels.join(' · ') || '—';
+  if (row.flowedFromPrevious) labels.push('Перетекла');
+  return labels.join(' · ') || 'Добавлена сегодня';
 }
 
 function renderHighPriority() {
@@ -1386,11 +1384,10 @@ function renderHighPriority() {
       els.priorityOverdueCount,
       els.priorityCalledCount,
       els.priorityFlowedCount,
-      els.priorityNewCount,
       els.priorityStopCount,
     ]) element.textContent = '0';
-    els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="7">Нет данных</td></tr>';
-    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
+    els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
+    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
     return;
   }
 
@@ -1414,15 +1411,13 @@ function renderHighPriority() {
     acc.overdue += Number(row.overdueCount || 0);
     acc.called += Number(row.calledFromPreviousCount || 0);
     acc.flowed += Number(row.flowedFromPreviousCount || 0);
-    acc.newOverdue += Number(row.newOverdueCount || 0);
     acc.stop += row.isStop ? 1 : 0;
     return acc;
-  }, { overdue: 0, called: 0, flowed: 0, newOverdue: 0, stop: 0 });
+  }, { overdue: 0, called: 0, flowed: 0, stop: 0 });
 
   els.priorityOverdueCount.textContent = formatNumber(totals.overdue);
   els.priorityCalledCount.textContent = formatNumber(totals.called);
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
-  els.priorityNewCount.textContent = formatNumber(totals.newOverdue);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
   const previousLabel = snapshot.previousDate ? formatDate(snapshot.previousDate) : 'нет';
   els.priorityCaption.textContent = `Снимок: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
@@ -1435,12 +1430,11 @@ function renderHighPriority() {
         <td>${formatNumber(row.overdueCount)}</td>
         <td>${formatNumber(row.calledFromPreviousCount)}</td>
         <td>${formatNumber(row.flowedFromPreviousCount)}</td>
-        <td>${formatNumber(row.newOverdueCount)}</td>
         <td><span class="priority-status ${row.isStop ? 'is-stop' : 'is-work'}">${row.isStop ? 'СТОП' : 'В работе'}</span></td>
         <td>${formatNumber(row.stopDays)}</td>
       </tr>
     `).join('')
-    : '<tr class="empty-row"><td colspan="7">Нет данных по выбранному МОПу</td></tr>';
+    : '<tr class="empty-row"><td colspan="6">Нет данных по выбранному МОПу</td></tr>';
 
   els.priorityDealsBody.innerHTML = dealRows.length
     ? dealRows.map((row) => {
@@ -1452,13 +1446,11 @@ function renderHighPriority() {
           <td>${escapeHtml(row.stageName || row.stageId || '—')}</td>
           <td class="priority-days">${formatOptionalNumber(row.daysWithoutAttempt)}</td>
           <td class="priority-days priority-days--critical">${formatOptionalNumber(row.daysWithoutCall)}</td>
-          <td>${formatDate(row.lastCallAttemptDate)}</td>
-          <td>${formatDate(row.lastSuccessfulCommunicationDate || row.dateCreate)}</td>
           <td>${escapeHtml(prioritySourceLabel(row))}</td>
         </tr>
       `;
     }).join('')
-    : '<tr class="empty-row"><td colspan="8">Нет просроченных сделок</td></tr>';
+    : '<tr class="empty-row"><td colspan="6">Нет просроченных сделок</td></tr>';
 }
 
 function emptyScoreboardRow(mopName) {
@@ -2051,10 +2043,16 @@ function init() {
   const priorityData = highPriorityData();
   state.priorityDate = priorityData.currentDate || priorityData.maxDate || '';
   state.priorityMopName = 'all';
+  populateSelect(
+    els.priorityDate,
+    (priorityData.snapshots || [])
+      .map((snapshot) => ({ value: snapshot.date, label: formatDate(snapshot.date) }))
+      .sort((a, b) => b.value.localeCompare(a.value)),
+    '',
+    false,
+  );
   populateSelect(els.priorityMop, priorityData.mopNames || [], 'Все МОПы');
   els.priorityMop.value = state.priorityMopName;
-  els.priorityDate.min = priorityData.minDate || '';
-  els.priorityDate.max = priorityData.maxDate || '';
   els.priorityDate.value = state.priorityDate;
   bindControls();
   bindViewNavigation();
