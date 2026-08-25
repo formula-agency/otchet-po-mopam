@@ -84,3 +84,38 @@ jobs:
             -e "set dns:order inet; set net:timeout 15; set net:max-retries 1; set ftp:passive-mode true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; cls -1; quit" \
             "ftp://$TIMEWEB_FTP_HOST"
           echo "FTPS_CONNECTION_OK"
+
+  inspect-ftps-macos:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect FTPS from macOS runner
+        env:
+          TIMEWEB_FTP_HOST: ${{ secrets.TIMEWEB_FTP_HOST }}
+          TIMEWEB_FTP_USER: ${{ secrets.TIMEWEB_FTP_USER }}
+          TIMEWEB_FTP_PASSWORD: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
+          TIMEWEB_FTP_DEPLOY_PATH: ${{ secrets.TIMEWEB_FTP_DEPLOY_PATH }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import ftplib
+          import os
+          import ssl
+
+          host = os.environ["TIMEWEB_FTP_HOST"]
+          user = os.environ["TIMEWEB_FTP_USER"]
+          password = os.environ["TIMEWEB_FTP_PASSWORD"]
+          deploy_path = os.environ.get("TIMEWEB_FTP_DEPLOY_PATH", "")
+          ftp = ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=20)
+          ftp.connect(host, 21)
+          ftp.login(user, password)
+          ftp.prot_p()
+          print("FTPS_CONNECTION_OK")
+          print("FTP_PWD=" + ftp.pwd())
+          if deploy_path:
+              ftp.cwd(deploy_path)
+              print("FTP_DEPLOY_PATH_OK")
+          print("FTP_ITEMS=" + ",".join(ftp.nlst()[:30]))
+          ftp.quit()
+          PY
