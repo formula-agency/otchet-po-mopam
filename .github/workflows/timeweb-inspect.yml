@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Install password SSH client
+        run: sudo apt-get update -qq && sudo apt-get install --yes sshpass
+
       - name: Inspect hosting over SSH
         env:
           TIMEWEB_HOST: ${{ secrets.TIMEWEB_HOST }}
@@ -19,6 +22,9 @@ jobs:
           TIMEWEB_SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
           TIMEWEB_KNOWN_HOSTS: ${{ secrets.TIMEWEB_KNOWN_HOSTS }}
           TIMEWEB_DEPLOY_PATH: ${{ secrets.TIMEWEB_DEPLOY_PATH }}
+          TIMEWEB_FTP_HOST: ${{ secrets.TIMEWEB_FTP_HOST }}
+          TIMEWEB_FTP_USER: ${{ secrets.TIMEWEB_FTP_USER }}
+          TIMEWEB_FTP_PASSWORD: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
@@ -29,14 +35,8 @@ jobs:
           umask 077
           printf '%s\n' "$TIMEWEB_SSH_PRIVATE_KEY" > "$RUNNER_TEMP/timeweb_key"
           printf '%s\n' "$TIMEWEB_KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
-          ssh \
-            -i "$RUNNER_TEMP/timeweb_key" \
-            -p "${TIMEWEB_PORT:-22}" \
-            -o BatchMode=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" \
-            "$TIMEWEB_USER@$TIMEWEB_HOST" \
-            sh -s -- "$TIMEWEB_DEPLOY_PATH" <<'REMOTE'
+          remote_script="$RUNNER_TEMP/inspect.sh"
+          cat > "$remote_script" <<'REMOTE'
           set -eu
           deploy_path="$1"
           echo "SSH_CONNECTION_OK"
@@ -52,3 +52,27 @@ jobs:
           find "$HOME" -maxdepth 4 -type d \( -name public_html -o -name htdocs -o -name 'projects.formula-agency.ru' \) -print 2>/dev/null | head -30
           echo 'WEB_ROOT_CANDIDATES_END'
           REMOTE
+
+          ssh_base=(
+            -i "$RUNNER_TEMP/timeweb_key" \
+            -p "${TIMEWEB_PORT:-22}" \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts"
+          )
+          if ssh "${ssh_base[@]}" "$TIMEWEB_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"; then
+            exit 0
+          fi
+
+          export SSHPASS="$TIMEWEB_FTP_PASSWORD"
+          password_base=(
+            -p "${TIMEWEB_PORT:-22}"
+            -o PreferredAuthentications=password,keyboard-interactive
+            -o PubkeyAuthentication=no
+            -o StrictHostKeyChecking=yes
+            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts"
+          )
+          if sshpass -e ssh "${password_base[@]}" "$TIMEWEB_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"; then
+            exit 0
+          fi
+          sshpass -e ssh "${password_base[@]}" "$TIMEWEB_FTP_USER@$TIMEWEB_HOST" sh -s -- "$TIMEWEB_DEPLOY_PATH" < "$remote_script"
