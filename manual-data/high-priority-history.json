@@ -3828,20 +3828,6 @@
           "title": "Константин для сына давно смотри/только 5 зарек"
         },
         {
-          "dateCreate": "2026-07-15",
-          "daysWithoutAttempt": 13,
-          "daysWithoutCall": 13,
-          "dealId": "5657",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5657/",
-          "lastCallAttemptDate": "2026-08-12",
-          "lastSuccessfulCommunicationDate": "2026-08-12",
-          "mopId": "208",
-          "mopName": "Васильев Владимир",
-          "stageId": "C1:3",
-          "stageName": "Отложенный клиент",
-          "title": "н.о Майя"
-        },
-        {
           "dateCreate": "2026-08-12",
           "daysWithoutAttempt": 13,
           "daysWithoutCall": 13,
@@ -4566,7 +4552,6 @@
         "5600",
         "5615",
         "5637",
-        "5657",
         "5660",
         "5669",
         "5697",
