@@ -2988,20 +2988,6 @@
           "title": "Роман отложил на полгода"
         },
         {
-          "dateCreate": "2026-03-23",
-          "daysWithoutAttempt": 25,
-          "daysWithoutCall": 89,
-          "dealId": "4401",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4401/",
-          "lastCallAttemptDate": "2026-07-31",
-          "lastSuccessfulCommunicationDate": "2026-05-28",
-          "mopId": "205",
-          "mopName": "Парфенов Владислав",
-          "stageId": "C1:3",
-          "stageName": "Отложенный клиент",
-          "title": "Михаил продает свою хмао"
-        },
-        {
           "dateCreate": "2026-06-02",
           "daysWithoutAttempt": 84,
           "daysWithoutCall": 84,
@@ -4531,7 +4517,6 @@
         "4238",
         "4357",
         "4394",
-        "4401",
         "4442",
         "4462",
         "4500",
