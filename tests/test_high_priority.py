@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.sync_mop_report import high_priority_snapshot_mops
+from scripts.sync_mop_report import deal_is_high_priority, high_priority_snapshot_mops
 
 
 def deal(deal_id: int, mop_name: str) -> dict[str, str]:
@@ -8,6 +8,29 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
+    def test_overdue_starts_on_day_eight_and_excludes_fired_mops(self) -> None:
+        allowed_stages = {"отложенный клиент"}
+        excluded_mops = {"уволенный моп"}
+
+        self.assertTrue(deal_is_high_priority(
+            {"stageName": "Отложенный клиент", "mopName": "МОП", "daysWithoutCall": 8},
+            8,
+            allowed_stages,
+            excluded_mops,
+        ))
+        self.assertFalse(deal_is_high_priority(
+            {"stageName": "Отложенный клиент", "mopName": "МОП", "daysWithoutCall": 7},
+            8,
+            allowed_stages,
+            excluded_mops,
+        ))
+        self.assertFalse(deal_is_high_priority(
+            {"stageName": "Отложенный клиент", "mopName": "Уволенный МОП", "daysWithoutCall": 20},
+            8,
+            allowed_stages,
+            excluded_mops,
+        ))
+
     def test_counts_stop_days_and_daily_flow_by_manager(self) -> None:
         first_day = [deal(index, "МОП 1") for index in range(1, 12)]
         first_day.extend(deal(index, "МОП 2") for index in range(100, 105))

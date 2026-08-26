@@ -137,7 +137,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260825-2';
+const DASHBOARD_DATA_VERSION = '20260826-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
@@ -1346,7 +1346,7 @@ function renderActiveDeals() {
 
 function highPriorityData() {
   return data.highPriority || {
-    rules: { maxDaysWithoutCall: 8, stopLeadThreshold: 10 },
+    rules: { overdueFromDays: 8, stopLeadThreshold: 10 },
     currentDate: '',
     minDate: '',
     maxDate: '',
@@ -1373,9 +1373,13 @@ function prioritySourceLabel(row) {
 function renderHighPriority() {
   const priorityData = highPriorityData();
   const snapshot = prioritySnapshotForDate(state.priorityDate);
-  const maxDays = Number(priorityData.rules?.maxDaysWithoutCall ?? 8);
+  const overdueFromDays = Number(
+    priorityData.rules?.overdueFromDays
+    ?? priorityData.rules?.maxDaysWithoutCall
+    ?? 8
+  );
   const stopThreshold = Number(priorityData.rules?.stopLeadThreshold ?? 10);
-  els.priorityRule.textContent = `Просрочка: больше ${formatNumber(maxDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
+  els.priorityRule.textContent = `Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
 
   if (!snapshot) {
     els.priorityCaption.textContent = 'Нет снимков';

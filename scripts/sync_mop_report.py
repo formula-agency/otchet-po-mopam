@@ -57,6 +57,11 @@ DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
     "Клиент в оформлении",
     "Отложенный клиент",
 )
+DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS = (
+    "Губайдулина Заррина",
+    "Камболин Александр",
+    "Попова Юлия",
+)
 DEFAULT_INCLUDED_MOPS = (
     "Черткова Ирина",
     "Попова Олеся",
@@ -3269,6 +3274,21 @@ def high_priority_row(deal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def deal_is_high_priority(
+    deal: dict[str, Any],
+    overdue_from_days: int,
+    allowed_stage_names: set[str],
+    excluded_mop_names: set[str],
+) -> bool:
+    days_without_call = deal.get("daysWithoutCall")
+    return (
+        normalize_key(deal.get("stageName")) in allowed_stage_names
+        and normalize_key(deal.get("mopName")) not in excluded_mop_names
+        and isinstance(days_without_call, int)
+        and days_without_call >= overdue_from_days
+    )
+
+
 def high_priority_snapshot_mops(
     snapshots: dict[str, Any],
     snapshot_date: str,
@@ -3352,8 +3372,8 @@ def build_high_priority_payload(
     window: ReportWindow,
     warnings: list[str],
 ) -> dict[str, Any]:
-    max_days_without_call = read_non_negative_int_env(
-        "MOP_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL",
+    overdue_from_days = read_non_negative_int_env(
+        "MOP_HIGH_PRIORITY_OVERDUE_FROM_DAYS",
         DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
     )
     stop_threshold = read_non_negative_int_env(
@@ -3367,6 +3387,13 @@ def build_high_priority_payload(
             DEFAULT_HIGH_PRIORITY_STAGE_NAMES,
         )
     }
+    excluded_mop_names = {
+        normalize_key(value)
+        for value in read_filter_labels(
+            "MOP_HIGH_PRIORITY_EXCLUDE_MOPS",
+            DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
+        )
+    }
     current_date = window.end.date().isoformat()
     all_active_rows = [
         row for row in active_deals_payload.get("rows", []) if isinstance(row, dict)
@@ -3375,9 +3402,12 @@ def build_high_priority_payload(
         (
             high_priority_row(row)
             for row in all_active_rows
-            if normalize_key(row.get("stageName")) in allowed_stage_names
-            and isinstance(row.get("daysWithoutCall"), int)
-            and int(row["daysWithoutCall"]) > max_days_without_call
+            if deal_is_high_priority(
+                row,
+                overdue_from_days,
+                allowed_stage_names,
+                excluded_mop_names,
+            )
         ),
         key=lambda row: (
             -int(row.get("daysWithoutCall") or 0),
@@ -3392,7 +3422,16 @@ def build_high_priority_payload(
     previous_dates = sorted(value for value in snapshots if value < current_date)
     previous_date = previous_dates[-1] if previous_dates else ""
     previous_snapshot = snapshots.get(previous_date, {}) if previous_date else {}
-    previous_rows = previous_snapshot.get("deals", []) if isinstance(previous_snapshot, dict) else []
+    previous_rows = [
+        row
+        for row in (
+            previous_snapshot.get("deals", [])
+            if isinstance(previous_snapshot, dict)
+            else []
+        )
+        if isinstance(row, dict)
+        and normalize_key(row.get("mopName")) not in excluded_mop_names
+    ]
     previous_by_id = {
         str(row.get("dealId") or ""): row
         for row in previous_rows
@@ -3458,9 +3497,52 @@ def build_high_priority_payload(
     history["schemaVersion"] = 1
     write_high_priority_history(history_path, history)
 
-    dashboard_snapshots: list[dict[str, Any]] = []
+    visible_snapshots: dict[str, Any] = {}
     for snapshot_date in sorted(snapshots):
-        snapshot = snapshots[snapshot_date]
+        source_snapshot = snapshots[snapshot_date]
+        previous_snapshot_date = str(source_snapshot.get("previousDate") or "")
+        visible_previous_ids = {
+            str(row.get("dealId") or "")
+            for row in visible_snapshots.get(previous_snapshot_date, {}).get("deals", [])
+            if isinstance(row, dict) and row.get("dealId")
+        }
+        visible_deals = [
+            row
+            for row in source_snapshot.get("deals", [])
+            if isinstance(row, dict)
+            and normalize_key(row.get("mopName")) not in excluded_mop_names
+        ]
+        visible_current_ids = {
+            str(row.get("dealId") or "") for row in visible_deals if row.get("dealId")
+        }
+        visible_snapshots[snapshot_date] = {
+            **source_snapshot,
+            "deals": visible_deals,
+            "calledFromPreviousDealIds": [
+                str(value)
+                for value in source_snapshot.get("calledFromPreviousDealIds", [])
+                if str(value) in visible_previous_ids
+            ],
+            "flowedFromPreviousDealIds": [
+                str(value)
+                for value in source_snapshot.get("flowedFromPreviousDealIds", [])
+                if str(value) in visible_previous_ids and str(value) in visible_current_ids
+            ],
+            "newOverdueDealIds": [
+                str(value)
+                for value in source_snapshot.get("newOverdueDealIds", [])
+                if str(value) in visible_current_ids
+            ],
+        }
+
+    visible_mop_names = tuple(
+        name
+        for name in active_deals_payload.get("mopNames", [])
+        if normalize_key(name) not in excluded_mop_names
+    )
+    dashboard_snapshots: list[dict[str, Any]] = []
+    for snapshot_date in sorted(visible_snapshots):
+        snapshot = visible_snapshots[snapshot_date]
         rows = snapshot.get("deals", []) if isinstance(snapshot, dict) else []
         called_ids = {str(value) for value in snapshot.get("calledFromPreviousDealIds", [])}
         flowed_snapshot_ids = {
@@ -3481,10 +3563,10 @@ def build_high_priority_payload(
                 }
             )
         mop_rows = high_priority_snapshot_mops(
-            snapshots,
+            visible_snapshots,
             snapshot_date,
             stop_threshold,
-            tuple(active_deals_payload.get("mopNames", [])),
+            visible_mop_names,
         )
         dashboard_snapshots.append(
             {
@@ -3503,11 +3585,15 @@ def build_high_priority_payload(
     available_dates = [snapshot["date"] for snapshot in dashboard_snapshots]
     return {
         "rules": {
-            "maxDaysWithoutCall": max_days_without_call,
+            "overdueFromDays": overdue_from_days,
             "stopLeadThreshold": stop_threshold,
             "stageNames": list(read_filter_labels(
                 "MOP_HIGH_PRIORITY_STAGE_NAMES",
                 DEFAULT_HIGH_PRIORITY_STAGE_NAMES,
+            )),
+            "excludedMopNames": list(read_filter_labels(
+                "MOP_HIGH_PRIORITY_EXCLUDE_MOPS",
+                DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
             )),
         },
         "currentDate": current_date,
@@ -3780,9 +3866,10 @@ def build_dashboard_payload(
         },
         "highPriority": high_priority_payload or {
             "rules": {
-                "maxDaysWithoutCall": DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
+                "overdueFromDays": DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
                 "stopLeadThreshold": DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD,
                 "stageNames": list(DEFAULT_HIGH_PRIORITY_STAGE_NAMES),
+                "excludedMopNames": list(DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS),
             },
             "currentDate": window.end.date().isoformat(),
             "minDate": window.end.date().isoformat(),
