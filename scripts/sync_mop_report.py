@@ -3289,6 +3289,44 @@ def deal_is_high_priority(
     )
 
 
+def high_priority_called_deal_ids(
+    previous_deal_ids: set[str],
+    observed_deals: dict[str, dict[str, Any]],
+    call_dates_by_deal: dict[str, list[date]],
+    previous_date: str,
+    snapshot_date: str,
+) -> list[str]:
+    if not previous_date:
+        return []
+    interval_start = date.fromisoformat(previous_date)
+    interval_end = date.fromisoformat(snapshot_date)
+    called_ids: set[str] = set()
+    for deal_id in previous_deal_ids:
+        call_dates = call_dates_by_deal.get(deal_id, [])
+        if any(interval_start < call_date <= interval_end for call_date in call_dates):
+            called_ids.add(deal_id)
+            continue
+        observed = observed_deals.get(deal_id, {})
+        for field_name in (
+            "lastCallAttemptDate",
+            "lastSuccessfulCommunicationDate",
+        ):
+            raw_value = str(observed.get(field_name) or "")[:10]
+            if not raw_value:
+                continue
+            try:
+                communication_date = date.fromisoformat(raw_value)
+            except ValueError:
+                continue
+            if interval_start < communication_date <= interval_end:
+                called_ids.add(deal_id)
+                break
+    return sorted(
+        called_ids,
+        key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+    )
+
+
 def high_priority_snapshot_mops(
     snapshots: dict[str, Any],
     snapshot_date: str,
@@ -3419,6 +3457,9 @@ def build_high_priority_payload(
     history_path = high_priority_history_path()
     history = load_high_priority_history(history_path, warnings)
     snapshots = history.setdefault("snapshots", {})
+    existing_current_called_ids = list(
+        snapshots.get(current_date, {}).get("calledFromPreviousDealIds", [])
+    )
     previous_dates = sorted(value for value in snapshots if value < current_date)
     previous_date = previous_dates[-1] if previous_dates else ""
     previous_snapshot = snapshots.get(previous_date, {}) if previous_date else {}
@@ -3439,9 +3480,31 @@ def build_high_priority_payload(
     }
     current_by_id = {row["dealId"]: row for row in current_rows}
 
-    call_dates_by_deal: dict[str, list[date]] = defaultdict(list)
     all_active_by_id = {str(row.get("dealId") or ""): row for row in all_active_rows}
-    for deal_id in previous_by_id:
+    recent_snapshot_dates = set(sorted(snapshots)[-7:])
+    snapshots_to_evaluate = {
+        snapshot_date
+        for snapshot_date, snapshot in snapshots.items()
+        if snapshot_date == current_date
+        or snapshot_date in recent_snapshot_dates
+        or not bool(snapshot.get("calledFromPreviousEvaluated"))
+    }
+    tracked_previous_ids: set[str] = set()
+    for snapshot_date in snapshots_to_evaluate:
+        source_snapshot = snapshots.get(snapshot_date, {})
+        source_previous_date = str(source_snapshot.get("previousDate") or "")
+        if not source_previous_date:
+            continue
+        tracked_previous_ids.update(
+            str(row.get("dealId") or "")
+            for row in snapshots.get(source_previous_date, {}).get("deals", [])
+            if isinstance(row, dict) and row.get("dealId")
+        )
+    snapshots_to_evaluate.add(current_date)
+    tracked_previous_ids.update(previous_by_id)
+
+    call_dates_by_deal: dict[str, list[date]] = defaultdict(list)
+    for deal_id in tracked_previous_ids:
         for activity in all_active_by_id.get(deal_id, {}).get("activities", []):
             if activity.get("kind") != "calls":
                 continue
@@ -3449,7 +3512,7 @@ def build_high_priority_payload(
             if activity_date:
                 call_dates_by_deal[deal_id].append(activity_date)
 
-    missing_previous_ids = [deal_id for deal_id in previous_by_id if deal_id not in all_active_by_id]
+    missing_previous_ids = sorted(tracked_previous_ids - set(all_active_by_id))
     if missing_previous_ids:
         try:
             extra_events = fetch_deal_activity_events_batch(
@@ -3462,22 +3525,23 @@ def build_high_priority_payload(
                 call_dates_by_deal[deal_id].extend(
                     event.date for event in events if event.kind == "calls"
                 )
+            extra_deals = fetch_deals_by_ids_batch(
+                session,
+                settings,
+                missing_previous_ids,
+            )
+            for deal_id, record in extra_deals.items():
+                all_active_by_id[deal_id] = {
+                    "lastSuccessfulCommunicationDate": date_iso(parse_bitrix_date(
+                        record.get(DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD),
+                        settings.report_timezone,
+                    )),
+                }
         except Exception as exc:
             warnings.append(
                 "Звонки по сделкам прошлого дня не загружены: " + safe_error_text(exc)
             )
 
-    previous_day = date.fromisoformat(previous_date) if previous_date else None
-    current_day = date.fromisoformat(current_date)
-    called_from_previous_ids = sorted(
-        (
-            deal_id
-            for deal_id, call_dates in call_dates_by_deal.items()
-            if previous_day
-            and any(previous_day < call_date <= current_day for call_date in call_dates)
-        ),
-        key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
-    )
     flowed_ids = sorted(
         set(previous_by_id) & set(current_by_id),
         key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
@@ -3490,11 +3554,35 @@ def build_high_priority_payload(
         "date": current_date,
         "previousDate": previous_date,
         "deals": current_rows,
-        "calledFromPreviousDealIds": called_from_previous_ids,
+        "calledFromPreviousDealIds": existing_current_called_ids,
         "flowedFromPreviousDealIds": flowed_ids,
         "newOverdueDealIds": new_ids,
     }
-    history["schemaVersion"] = 1
+    for snapshot_date in snapshots_to_evaluate:
+        source_snapshot = snapshots.get(snapshot_date, {})
+        source_previous_date = str(source_snapshot.get("previousDate") or "")
+        source_previous_ids = {
+            str(row.get("dealId") or "")
+            for row in snapshots.get(source_previous_date, {}).get("deals", [])
+            if isinstance(row, dict) and row.get("dealId")
+        }
+        detected_called_ids = high_priority_called_deal_ids(
+            source_previous_ids,
+            all_active_by_id,
+            call_dates_by_deal,
+            source_previous_date,
+            snapshot_date,
+        )
+        source_snapshot["calledFromPreviousDealIds"] = sorted(
+            {
+                str(value)
+                for value in source_snapshot.get("calledFromPreviousDealIds", [])
+            }
+            | set(detected_called_ids),
+            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+        )
+        source_snapshot["calledFromPreviousEvaluated"] = True
+    history["schemaVersion"] = 2
     write_high_priority_history(history_path, history)
 
     visible_snapshots: dict[str, Any] = {}

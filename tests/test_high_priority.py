@@ -1,6 +1,12 @@
 import unittest
 
-from scripts.sync_mop_report import deal_is_high_priority, high_priority_snapshot_mops
+from datetime import date
+
+from scripts.sync_mop_report import (
+    deal_is_high_priority,
+    high_priority_called_deal_ids,
+    high_priority_snapshot_mops,
+)
 
 
 def deal(deal_id: int, mop_name: str) -> dict[str, str]:
@@ -8,6 +14,25 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
+    def test_called_from_previous_uses_activities_and_deal_dates(self) -> None:
+        called_ids = high_priority_called_deal_ids(
+            {"1", "2", "3", "4", "5"},
+            {
+                "2": {"lastCallAttemptDate": "2026-08-26"},
+                "3": {"lastSuccessfulCommunicationDate": "2026-08-26"},
+                "4": {"lastSuccessfulCommunicationDate": "2026-08-25"},
+                "5": {"lastCallAttemptDate": "not-a-date"},
+            },
+            {
+                "1": [date(2026, 8, 26)],
+                "4": [date(2026, 8, 25)],
+            },
+            "2026-08-25",
+            "2026-08-26",
+        )
+
+        self.assertEqual(called_ids, ["1", "2", "3"])
+
     def test_overdue_starts_on_day_eight_and_excludes_fired_mops(self) -> None:
         allowed_stages = {"отложенный клиент"}
         excluded_mops = {"уволенный моп"}

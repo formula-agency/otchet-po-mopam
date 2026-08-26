@@ -1,8 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "snapshots": {
     "2026-08-19": {
       "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-19",
       "deals": [
         {
@@ -865,7 +866,17 @@
       "previousDate": ""
     },
     "2026-08-20": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "3935",
+        "4550",
+        "5373",
+        "5533",
+        "5792",
+        "5829",
+        "5847",
+        "5881"
+      ],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-20",
       "deals": [
         {
@@ -1745,7 +1756,17 @@
       "previousDate": "2026-08-19"
     },
     "2026-08-21": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4600",
+        "5127",
+        "5480",
+        "5593",
+        "5690",
+        "5718",
+        "5724",
+        "5804"
+      ],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-21",
       "deals": [
         {
@@ -2296,7 +2317,18 @@
       "previousDate": "2026-08-20"
     },
     "2026-08-24": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5127",
+        "5515",
+        "5593",
+        "5612",
+        "5670",
+        "5798",
+        "5856",
+        "5866",
+        "5869"
+      ],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-24",
       "deals": [
         {
@@ -2943,6 +2975,7 @@
         "5821",
         "5871"
       ],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-25",
       "deals": [
         {
@@ -4471,6 +4504,7 @@
       "calledFromPreviousDealIds": [
         "5669"
       ],
+      "calledFromPreviousEvaluated": true,
       "date": "2026-08-26",
       "deals": [
         {
@@ -4724,20 +4758,6 @@
           "stageId": "C1:26",
           "stageName": "Клиент в оформлении",
           "title": "Ольга_Светлана_2е-2к_ до 8млн (нал6)"
-        },
-        {
-          "dateCreate": "2026-07-16",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 34,
-          "dealId": "5669",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5669/",
-          "lastCallAttemptDate": "2026-08-26",
-          "lastSuccessfulCommunicationDate": "2026-07-23",
-          "mopId": "190",
-          "mopName": "Тончу Ростислав",
-          "stageId": "C1:3",
-          "stageName": "Отложенный клиент",
-          "title": "н.о  н.о"
         },
         {
           "dateCreate": "2026-07-20",
@@ -6042,20 +6062,6 @@
           "title": "Новый лид [ЛА]"
         },
         {
-          "dateCreate": "2026-07-13",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 9,
-          "dealId": "5640",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5640/",
-          "lastCallAttemptDate": "2026-08-26",
-          "lastSuccessfulCommunicationDate": "2026-08-17",
-          "mopId": "190",
-          "mopName": "Тончу Ростислав",
-          "stageId": "C1:4",
-          "stageName": "Дожать на встречу",
-          "title": "Иван_ЧПВ_МСК_Чистые Пруды"
-        },
-        {
           "dateCreate": "2026-08-17",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 9,
@@ -6370,7 +6376,6 @@
         "5627",
         "5641",
         "5660",
-        "5669",
         "5694",
         "5697",
         "5702",
@@ -6428,7 +6433,6 @@
         "5344",
         "5389",
         "5524",
-        "5640",
         "5645",
         "5792",
         "5796",
