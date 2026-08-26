@@ -7,8 +7,8 @@
 - проведенные встречи по строкам таблицы встреч Google Sheets, только результат `Прошла успешно`, дата определяется по `Дате создания`; обычные фильтры листа не меняют отчет, вручную скрытые строки не учитываются
 - созданные брони из раздела `[CRM] Брони`
 - одобренные ипотеки по полю сделки Bitrix
-- фактическое количество звонков из `voximplant.statistic.get`
-- фактическое эфирное время как сумма `CALL_DURATION`
+- фактическое количество звонков из MongoDB tenant `formula` (`mongo_calls`)
+- фактическое эфирное время как сумма `call_duration` из MongoDB
 - планы по неделям из отдельного листа Google Sheets
 - итоги по каждому спринту и общий итог за период
 
@@ -106,7 +106,44 @@ python scripts/sync_mop_report.py --env-file bitrix.env
 
 Dashboard открывается через `dashboard/index.html`.
 
-## Загрузка звонков и эфира из ВАТС
+## Звонки и эфир из MongoDB Formula
+
+При наличии `MONGO_CALLS_CONFIG_URI` отчет по умолчанию читает центральную базу
+`mongo_calls.customers`, выбирает только активный `tenant_tag=formula`, затем агрегирует
+коллекцию, указанную в `data_sources.calls_collection` (сейчас `mongo_calls`).
+
+```env
+MOP_CALL_SOURCE=mongodb
+MONGO_CALLS_CONFIG_URI=mongodb://readonly:password@host:27017/mongo_calls?authSource=mongo_calls
+MONGO_CALLS_CONFIG_DATABASE=mongo_calls
+MONGO_CALLS_CONFIG_COLLECTION=customers
+MONGO_CALLS_REQUIRED=true
+MONGO_CALLS_FALLBACK_TO_BITRIX=false
+MONGO_CALLS_AGGREGATION_TIMEOUT_MS=120000
+```
+
+Звонки группируются по местной дате `REPORT_TIMEZONE` и ФИО из `user_name`, эфир считается
+по `call_duration` в секундах. Повторяющиеся записи исключаются по `call_uid`. Учитываются
+все попытки звонков, как и в прежнем источнике Bitrix; `MOP_CALL_MIN_DURATION_SECONDS`
+применяется до подсчета.
+
+Текущая tenant-строка подключения имеет серверную роль `admin:root`. Так как отдельный
+read-only пользователь не создавался, для отчета требуется явное разрешение клиентского
+read-only режима:
+
+```env
+MONGO_CALLS_REQUIRE_SERVER_READ_ONLY=false
+```
+
+При этом код предоставляет только операции чтения, а aggregation pipeline запрещает
+`$out` и `$merge`. Для строгого серверного ограничения нужен отдельный пользователь с ролью
+`read`; тогда настройку следует вернуть в `true`.
+
+Для GitHub Actions нужно создать secret `MONGO_CALLS_CONFIG_URI` и разрешить сетевой доступ
+runner к обоим MongoDB endpoint. При MongoDB-источнике шаг импорта файлов ВАТС пропускается,
+чтобы звонки и эфир не задваивались.
+
+## Резервная загрузка звонков и эфира из ВАТС
 
 Новые выгрузки МегаФона и Билайна нужно складывать в `vats data` по папкам с диапазоном дат:
 
@@ -120,7 +157,7 @@ vats data/
     beeline.xls
 ```
 
-После добавления файлов запустите:
+Этот импорт используется только при `MOP_CALL_SOURCE=none` или `bitrix`. После добавления файлов запустите:
 
 ```powershell
 python scripts/import_vats_data.py
@@ -148,6 +185,7 @@ python scripts/import_vats_data.py
 - `MOP_APPROVED_MORTGAGE_DATE_FIELD` - поле даты для ипотек, если отличается
 - факты по броням считаются из списка `[CRM] Брони` через `lists.element.get`; МОП берется из поля `МОП постановщик`
 - `MOP_ASSIGNED_FIELD` - поле ответственного, по умолчанию `ASSIGNED_BY_ID`
+- `MOP_CALL_SOURCE` - источник звонков: `mongodb`, `bitrix` или `none`; при наличии Mongo-конфига по умолчанию `mongodb`
 - `MOP_CALL_MIN_DURATION_SECONDS` - минимальная длительность звонка для учета, по умолчанию `0`
 - `MOP_ACTIVE_DEAL_CATEGORY_NAMES` - воронки для учета сделок и отчета по активным сделкам, по умолчанию `Льготная ипотека`
 - `MOP_INCLUDE_USERS` / `MOP_EXCLUDE_USERS` - фильтр по ID или ФИО через запятую
@@ -161,3 +199,27 @@ python scripts/import_vats_data.py
 Если в Bitrix ФИО хранится с отчеством, фильтр по `Фамилия Имя` все равно подойдет.
 
 Если у webhook нет доступа к телефонии, отчет все равно построится, но в dashboard появится предупреждение, а звонки и эфир будут нулевыми.
+
+## Read-only доступ к MongoDB tenant Formula
+
+Центральное подключение задается только локально в `.env`:
+
+```env
+MONGO_CALLS_CONFIG_URI=mongodb://readonly:password@host:27017/mongo_calls?authSource=mongo_calls
+MONGO_CALLS_CONFIG_DATABASE=mongo_calls
+MONGO_CALLS_CONFIG_COLLECTION=customers
+```
+
+Проверка подключения:
+
+```powershell
+python scripts/mongo_formula_readonly.py --env-file .env
+```
+
+Коннектор всегда ищет активную запись `tenant_tag=formula` в `mongo_calls.customers`;
+выбор другого tenant через переменную окружения или аргумент командной строки не поддерживается.
+Из tenant-конфига строка подключения не выводится и не сохраняется отдельно. Перед выдачей
+коллекций коннектор проверяет серверные роли и отклоняет подключение, если у учетной записи
+есть права записи. API коллекции предоставляет только чтение; `$out` и `$merge` запрещены.
+Сам отчет может явно разрешить привилегированную учетную запись через
+`MONGO_CALLS_REQUIRE_SERVER_READ_ONLY=false`, сохраняя клиентский read-only API.

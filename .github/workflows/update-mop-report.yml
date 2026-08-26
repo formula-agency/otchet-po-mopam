@@ -20,6 +20,8 @@ concurrency:
 jobs:
   sync-report:
     runs-on: ubuntu-latest
+    env:
+      MOP_CALL_SOURCE: mongodb
 
     steps:
       - name: Checkout repository
@@ -59,13 +61,20 @@ jobs:
           MOP_INCLUDE_USERS: Черткова Ирина,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена,Войнов Данил,Султанов Есен,Парфенов Владислав,Ядрышникова Кристина,Васильев Владимир,Марина Данчук
           MOP_EXCLUDE_USERS: ""
           MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
-          MOP_SKIP_BITRIX_CALLS: "true"
+          MONGO_CALLS_CONFIG_URI: ${{ secrets.MONGO_CALLS_CONFIG_URI }}
+          MONGO_CALLS_CONFIG_DATABASE: mongo_calls
+          MONGO_CALLS_CONFIG_COLLECTION: customers
+          MONGO_CALLS_REQUIRE_SERVER_READ_ONLY: "false"
+          MONGO_CALLS_REQUIRED: "true"
+          MONGO_CALLS_FALLBACK_TO_BITRIX: "false"
+          MONGO_CALL_SCHEMA_DIAGNOSTICS: "true"
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
         run: python scripts/sync_mop_report.py
 
       - name: Import VATS calls
+        if: ${{ env.MOP_CALL_SOURCE != 'mongodb' }}
         run: python scripts/import_vats_data.py
 
       - name: Apply shared plans

@@ -21,6 +21,11 @@ from dotenv import load_dotenv
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+try:
+    from scripts.mongo_formula_readonly import FormulaMongoError, FormulaMongoReader
+except ModuleNotFoundError:  # Direct execution: python scripts/sync_mop_report.py
+    from mongo_formula_readonly import FormulaMongoError, FormulaMongoReader
+
 
 GOOGLE_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 DEFAULT_MEETING_LOG_SHEET_ID = "1CNT1xTe5uBHo4W4ZLUh3qZLmgWy7wxe7nSsCtDXwwIo"
@@ -33,6 +38,7 @@ DEFAULT_CONTEST_FIRST_MEETING_FIELD = "UF_DEAL_SHOW"
 DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD = "UF_DEAL_DATE_FIRST_SUCCESSFUL_COMMUNICATION"
 DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES = ("4559", "1", "да", "yes", "y", "true")
 POST_MEETING_AIR_PLAN_RATIO = 0.35
+DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS = 120_000
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
 DEFAULT_BOOKING_LIST_ID = "38"
@@ -533,6 +539,8 @@ class MopReportData:
     identities: dict[str, MopIdentity] = field(default_factory=dict)
     user_ids: set[str] = field(default_factory=set)
     warnings: list[str] = field(default_factory=list)
+    call_source: str = "not_loaded"
+    call_source_server_read_only: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -2133,7 +2141,12 @@ def add_plan(data: MopReportData, week_start: date, key: str, mop_id: str, mop_n
     data.plans[week_start][key].add(metrics)
 
 
-def apply_manual_fact_adjustments(data: MopReportData, window: ReportWindow) -> None:
+def apply_manual_fact_adjustments(
+    data: MopReportData,
+    window: ReportWindow,
+    *,
+    include_call_metrics: bool = True,
+) -> None:
     for item in MANUAL_FACT_ADJUSTMENTS:
         event_date = item.get("event_date")
         if not isinstance(event_date, date):
@@ -2152,6 +2165,8 @@ def apply_manual_fact_adjustments(data: MopReportData, window: ReportWindow) -> 
             "target_minutes_after_meeting_seconds": int(item.get("target_minutes_after_meeting_seconds") or 0),
         }
         for metric_name, value in metrics.items():
+            if not include_call_metrics and metric_name in {"calls", "air_seconds"}:
+                continue
             if value:
                 add_fact(data, event_date, mop_id, metric_name, value, mop_name=mop_name)
 
@@ -2424,13 +2439,189 @@ def build_meeting_facts(
     return meeting_entries
 
 
+def resolve_call_source() -> str:
+    configured = os.getenv("MOP_CALL_SOURCE", "").strip().lower()
+    if configured:
+        if configured not in {"bitrix", "mongodb", "none"}:
+            raise ConfigError("MOP_CALL_SOURCE must be bitrix, mongodb, or none.")
+        return configured
+    if os.getenv("MONGO_CALLS_CONFIG_URI", "").strip():
+        return "mongodb"
+    if read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
+        return "none"
+    return "bitrix"
+
+
+def build_mongo_call_aggregation_pipeline(
+    window: ReportWindow,
+    timezone_name: str,
+    min_duration_seconds: int,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "$match": {
+                "call_date": {"$gte": window.start, "$lte": window.end},
+            }
+        },
+        {
+            "$project": {
+                "dedupeKey": {
+                    "$cond": [
+                        {
+                            "$and": [
+                                {"$eq": [{"$type": "$call_uid"}, "string"]},
+                                {"$ne": ["$call_uid", ""]},
+                            ]
+                        },
+                        "$call_uid",
+                        "$_id",
+                    ]
+                },
+                "day": {
+                    "$dateToString": {
+                        "date": "$call_date",
+                        "format": "%Y-%m-%d",
+                        "timezone": timezone_name,
+                    }
+                },
+                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
+                "duration": {
+                    "$convert": {
+                        "input": "$call_duration",
+                        "to": "int",
+                        "onError": 0,
+                        "onNull": 0,
+                    }
+                },
+            }
+        },
+        {
+            "$match": {
+                "mopName": {"$ne": ""},
+                "duration": {"$gte": max(0, min_duration_seconds)},
+            }
+        },
+        {
+            "$group": {
+                "_id": "$dedupeKey",
+                "day": {"$first": "$day"},
+                "mopName": {"$first": "$mopName"},
+                "duration": {"$max": "$duration"},
+            }
+        },
+        {
+            "$group": {
+                "_id": {"day": "$day", "mopName": "$mopName"},
+                "calls": {"$sum": 1},
+                "airSeconds": {"$sum": "$duration"},
+            }
+        },
+        {"$sort": {"_id.day": 1, "_id.mopName": 1}},
+    ]
+
+
+def mongo_mop_identity(raw_name: Any, mop_settings: MopSettings) -> tuple[str, str]:
+    mop_name = canonical_mop_label(str(raw_name or "").strip(), mop_settings)
+    normalized_name = normalize_key(mop_name)
+    for mop_id, configured_name in DEFAULT_MOP_NAMES_BY_ID.items():
+        if normalized_name == normalize_key(configured_name):
+            return mop_id, configured_name
+    return "", mop_name
+
+
+def apply_mongo_call_aggregates(
+    data: MopReportData,
+    rows: list[dict[str, Any]],
+    mop_settings: MopSettings,
+) -> tuple[int, int, int]:
+    total_calls = 0
+    total_air_seconds = 0
+    manager_keys: set[str] = set()
+    for row in rows:
+        group = row.get("_id")
+        if not isinstance(group, dict):
+            continue
+        try:
+            event_date = date.fromisoformat(str(group.get("day") or ""))
+        except ValueError:
+            continue
+        mop_id, mop_name = mongo_mop_identity(group.get("mopName"), mop_settings)
+        if not mop_name or not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        calls = max(0, parse_number(row.get("calls")))
+        air_seconds = max(0, parse_number(row.get("airSeconds")))
+        if calls:
+            add_fact(data, event_date, mop_id, "calls", calls, mop_name=mop_name)
+        if air_seconds:
+            add_fact(data, event_date, mop_id, "air_seconds", air_seconds, mop_name=mop_name)
+        if calls or air_seconds:
+            manager_keys.add(mop_id or normalize_key(mop_name))
+        total_calls += calls
+        total_air_seconds += air_seconds
+    return total_calls, total_air_seconds, len(manager_keys)
+
+
+def build_mongo_call_facts(
+    data: MopReportData,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> bool:
+    require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
+    timeout_ms = read_positive_int_env(
+        "MONGO_CALLS_AGGREGATION_TIMEOUT_MS",
+        DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS,
+    )
+    try:
+        with FormulaMongoReader.from_env(
+            None,
+            require_server_read_only=require_server_read_only,
+        ) as reader:
+            collection_name = reader.data_sources.get("calls_collection", "mongo_calls")
+            collection = reader.collection(collection_name)
+            if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
+                sample = collection.find_one({}, {"_id": 0}) or {}
+                print("MongoDB call fields: " + ", ".join(sorted(sample)))
+            pipeline = build_mongo_call_aggregation_pipeline(
+                window,
+                settings.report_timezone,
+                mop_settings.call_min_duration_seconds,
+            )
+            rows = list(
+                collection.aggregate(
+                    pipeline,
+                    allowDiskUse=False,
+                    maxTimeMS=timeout_ms,
+                )
+            )
+            total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
+                data,
+                rows,
+                mop_settings,
+            )
+            data.call_source = f"mongodb:formula/{collection_name}"
+            data.call_source_server_read_only = reader.server_read_only
+            print(
+                "MongoDB calls loaded: "
+                f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs"
+            )
+            return True
+    except (FormulaMongoError, ConfigError) as exc:
+        data.warnings.append(f"Звонки из MongoDB не посчитаны: {safe_error_text(exc)}")
+    except Exception as exc:
+        data.warnings.append(
+            f"Звонки из MongoDB не посчитаны: {type(exc).__name__}: {safe_error_text(exc)}"
+        )
+    return False
+
+
 def build_call_facts(
     data: MopReportData,
     session: requests.Session,
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
-) -> None:
+) -> bool:
     for current_date in iterate_report_dates(window):
         day_start, day_end = day_bounds(current_date, window)
         filters = {
@@ -2441,7 +2632,7 @@ def build_call_facts(
             records = fetch_paged_method(session, settings, "voximplant.statistic.get", filters)
         except Exception as exc:
             data.warnings.append(f"Звонки не посчитаны: {safe_error_text(exc)}")
-            return
+            return False
         for record in records:
             mop_id = str(record.get("PORTAL_USER_ID") or record.get("USER_ID") or "").strip()
             if not mop_id:
@@ -2453,6 +2644,9 @@ def build_call_facts(
             call_date = call_datetime.date() if call_datetime else current_date
             add_fact(data, call_date, mop_id, "calls", 1)
             add_fact(data, call_date, mop_id, "air_seconds", duration)
+    data.call_source = "bitrix:voximplant.statistic.get"
+    data.call_source_server_read_only = None
+    return True
 
 
 def build_target_after_meeting_facts(
@@ -3925,6 +4119,8 @@ def build_dashboard_payload(
             "to": window.end.date().isoformat(),
             "timezone": settings.report_timezone,
             "planSheetName": mop_settings.plan_sheet_name,
+            "callSource": data.call_source,
+            "callSourceServerReadOnly": data.call_source_server_read_only,
         },
         "generatedAt": generated_at,
         "filters": {
@@ -4009,9 +4205,23 @@ def main() -> int:
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
         build_meeting_facts(data, service, session, settings, mop_settings, window)
         build_target_after_meeting_facts(data, service, settings, mop_settings, window)
-        if not read_bool_env("MOP_SKIP_BITRIX_CALLS", False):
+        call_source = resolve_call_source()
+        mongo_calls_loaded = False
+        if call_source == "mongodb":
+            mongo_calls_loaded = build_mongo_call_facts(data, settings, mop_settings, window)
+            if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
+                build_call_facts(data, session, settings, mop_settings, window)
+            elif not mongo_calls_loaded and read_bool_env("MONGO_CALLS_REQUIRED", False):
+                raise ConfigError("MongoDB calls are required, but tenant formula could not be loaded.")
+        elif call_source == "bitrix":
             build_call_facts(data, session, settings, mop_settings, window)
-        apply_manual_fact_adjustments(data, window)
+        else:
+            data.call_source = "none"
+        apply_manual_fact_adjustments(
+            data,
+            window,
+            include_call_metrics=not mongo_calls_loaded,
+        )
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
         hydrate_fact_identities(data, user_names)
