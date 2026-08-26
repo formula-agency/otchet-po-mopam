@@ -4212,7 +4212,18 @@ def main() -> int:
             if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
                 build_call_facts(data, session, settings, mop_settings, window)
             elif not mongo_calls_loaded and read_bool_env("MONGO_CALLS_REQUIRED", False):
-                raise ConfigError("MongoDB calls are required, but tenant formula could not be loaded.")
+                mongo_warning = next(
+                    (
+                        warning
+                        for warning in reversed(data.warnings)
+                        if warning.startswith("Звонки из MongoDB не посчитаны:")
+                    ),
+                    "причина не определена",
+                )
+                raise ConfigError(
+                    "MongoDB calls are required, but tenant formula could not be loaded. "
+                    + mongo_warning
+                )
         elif call_source == "bitrix":
             build_call_facts(data, session, settings, mop_settings, window)
         else:
