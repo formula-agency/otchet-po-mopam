@@ -1439,8 +1439,8 @@ function renderHighPriority() {
         <td>${formatNumber(row.overdueCount)}</td>
         <td>${snapshot.calledFromPreviousAvailable ? formatNumber(row.calledFromPreviousCount) : '—'}</td>
         <td>${formatNumber(row.flowedFromPreviousCount)}</td>
-        <td class="priority-days priority-days--critical">${formatOptionalNumber(row.maxDaysWithoutCall)}</td>
-        <td class="priority-days">${formatOptionalNumber(row.maxDaysWithoutAttempt)}</td>
+        <td class="priority-days priority-days--critical">${formatNumber(row.withoutCallCount)}</td>
+        <td class="priority-days">${formatNumber(row.withoutAttemptCount)}</td>
         <td><span class="priority-status ${row.isStop ? 'is-stop' : 'is-work'}">${row.isStop ? 'СТОП' : 'В работе'}</span></td>
         <td>${formatNumber(row.stopDays)}</td>
       </tr>

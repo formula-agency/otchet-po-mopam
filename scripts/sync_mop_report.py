@@ -3701,6 +3701,7 @@ def high_priority_snapshot_mops(
     snapshot_date: str,
     stop_threshold: int,
     all_mop_names: tuple[str, ...] = (),
+    overdue_from_days: int = DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
 ) -> list[dict[str, Any]]:
     current = snapshots.get(snapshot_date, {})
     current_deals = current.get("deals", []) if isinstance(current, dict) else []
@@ -3748,16 +3749,20 @@ def high_priority_snapshot_mops(
         overdue_count = sum(
             1 for row in mop_current_deals
         )
-        days_without_call = [
-            int(row["daysWithoutCall"])
+        without_call_count = sum(
+            1
             for row in mop_current_deals
-            if isinstance(row.get("daysWithoutCall"), int)
-        ]
-        days_without_attempt = [
-            int(row["daysWithoutAttempt"])
+            if isinstance(row.get("daysWithoutCall"), (int, float))
+            and not isinstance(row.get("daysWithoutCall"), bool)
+            and row["daysWithoutCall"] >= overdue_from_days
+        )
+        without_attempt_count = sum(
+            1
             for row in mop_current_deals
-            if isinstance(row.get("daysWithoutAttempt"), int)
-        ]
+            if isinstance(row.get("daysWithoutAttempt"), (int, float))
+            and not isinstance(row.get("daysWithoutAttempt"), bool)
+            and row["daysWithoutAttempt"] >= overdue_from_days
+        )
         called_count = sum(
             1
             for deal_id in called_ids
@@ -3780,8 +3785,8 @@ def high_priority_snapshot_mops(
                 "calledFromPreviousCount": called_count,
                 "flowedFromPreviousCount": flowed_count,
                 "newOverdueCount": new_count,
-                "maxDaysWithoutCall": max(days_without_call, default=None),
-                "maxDaysWithoutAttempt": max(days_without_attempt, default=None),
+                "withoutCallCount": without_call_count,
+                "withoutAttemptCount": without_attempt_count,
                 "isStop": overdue_count > stop_threshold,
                 "stopDays": stop_days.get(mop_name, 0),
             }
@@ -4006,6 +4011,7 @@ def build_high_priority_payload(
             snapshot_date,
             stop_threshold,
             visible_mop_names,
+            overdue_from_days,
         )
         dashboard_snapshots.append(
             {

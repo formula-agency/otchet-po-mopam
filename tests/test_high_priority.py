@@ -71,6 +71,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
         self.assertEqual(latest["calledFromPreviousCount"], 1)
         self.assertEqual(latest["flowedFromPreviousCount"], 1)
         self.assertEqual({row["mopName"] for row in latest["rows"]}, {"МОП"})
+        self.assertEqual(latest["mops"][0]["withoutCallCount"], 2)
+        self.assertEqual(latest["mops"][0]["withoutAttemptCount"], 0)
 
     def test_called_from_previous_uses_only_supplied_call_source(self) -> None:
         called_ids = high_priority_called_deal_ids(
@@ -144,8 +146,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
                     "calledFromPreviousCount": 1,
                     "flowedFromPreviousCount": 2,
                     "newOverdueCount": 1,
-                    "maxDaysWithoutCall": 12,
-                    "maxDaysWithoutAttempt": 11,
+                    "withoutCallCount": 5,
+                    "withoutAttemptCount": 4,
                     "isStop": True,
                     "stopDays": 2,
                 },
@@ -155,8 +157,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
                     "calledFromPreviousCount": 1,
                     "flowedFromPreviousCount": 1,
                     "newOverdueCount": 1,
-                    "maxDaysWithoutCall": None,
-                    "maxDaysWithoutAttempt": None,
+                    "withoutCallCount": 0,
+                    "withoutAttemptCount": 0,
                     "isStop": True,
                     "stopDays": 1,
                 },
