@@ -8,8 +8,11 @@ permissions:
 
 jobs:
   probe:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
+      - name: Install FTP client
+        run: sudo apt-get update && sudo apt-get install --yes lftp
+
       - name: Probe MongoDB connectivity from Timeweb
         env:
           TIMEWEB_FTP_HOST: ${{ secrets.TIMEWEB_FTP_HOST }}
@@ -69,40 +72,16 @@ jobs:
           PY
 
           cleanup() {
-            python3 - <<'PY' >/dev/null 2>&1 || true
-          import ftplib
-          import os
-          import ssl
-
-          ftp = ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=20)
-          ftp.connect(os.environ['TIMEWEB_FTP_HOST'], 21)
-          ftp.login(os.environ['TIMEWEB_FTP_USER'], os.environ['TIMEWEB_FTP_PASSWORD'])
-          ftp.prot_p()
-          ftp.cwd(os.environ['TIMEWEB_FTP_DEPLOY_PATH'])
-          try:
-              ftp.delete(os.environ['PROBE_FILE'])
-          except ftplib.error_perm:
-              pass
-          ftp.quit()
-          PY
+            lftp -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
+              -e "set ftp:ssl-allow false; set ftp:passive-mode true; cd $TIMEWEB_FTP_DEPLOY_PATH; rm -f $PROBE_FILE; quit" \
+              "ftp://$TIMEWEB_FTP_HOST" >/dev/null 2>&1 || true
             rm -f "$PROBE_FILE"
           }
           trap cleanup EXIT
 
-          python3 - <<'PY'
-          import ftplib
-          import os
-          import ssl
-
-          ftp = ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=20)
-          ftp.connect(os.environ['TIMEWEB_FTP_HOST'], 21)
-          ftp.login(os.environ['TIMEWEB_FTP_USER'], os.environ['TIMEWEB_FTP_PASSWORD'])
-          ftp.prot_p()
-          ftp.cwd(os.environ['TIMEWEB_FTP_DEPLOY_PATH'])
-          with open(os.environ['PROBE_FILE'], 'rb') as source:
-              ftp.storbinary('STOR ' + os.environ['PROBE_FILE'], source)
-          ftp.quit()
-          PY
+          lftp -u "$TIMEWEB_FTP_USER,$TIMEWEB_FTP_PASSWORD" \
+            -e "set ftp:ssl-allow false; set ftp:passive-mode true; cd $TIMEWEB_FTP_DEPLOY_PATH; put $PROBE_FILE; quit" \
+            "ftp://$TIMEWEB_FTP_HOST"
 
           curl --fail --silent --show-error \
             "http://projects.formula-agency.ru/mop-report/$PROBE_FILE?token=$PROBE_TOKEN"
