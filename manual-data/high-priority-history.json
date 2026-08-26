@@ -1,9 +1,10 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "snapshots": {
     "2026-08-19": {
       "calledFromPreviousDealIds": [],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-19",
       "deals": [
         {
@@ -866,17 +867,9 @@
       "previousDate": ""
     },
     "2026-08-20": {
-      "calledFromPreviousDealIds": [
-        "3935",
-        "4550",
-        "5373",
-        "5533",
-        "5792",
-        "5829",
-        "5847",
-        "5881"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-20",
       "deals": [
         {
@@ -1756,17 +1749,9 @@
       "previousDate": "2026-08-19"
     },
     "2026-08-21": {
-      "calledFromPreviousDealIds": [
-        "4600",
-        "5127",
-        "5480",
-        "5593",
-        "5690",
-        "5718",
-        "5724",
-        "5804"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-21",
       "deals": [
         {
@@ -2317,18 +2302,9 @@
       "previousDate": "2026-08-20"
     },
     "2026-08-24": {
-      "calledFromPreviousDealIds": [
-        "5127",
-        "5515",
-        "5593",
-        "5612",
-        "5670",
-        "5798",
-        "5856",
-        "5866",
-        "5869"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-24",
       "deals": [
         {
@@ -2968,14 +2944,9 @@
       "previousDate": "2026-08-21"
     },
     "2026-08-25": {
-      "calledFromPreviousDealIds": [
-        "4536",
-        "5380",
-        "5566",
-        "5821",
-        "5871"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-25",
       "deals": [
         {
@@ -4501,10 +4472,9 @@
       "previousDate": "2026-08-24"
     },
     "2026-08-26": {
-      "calledFromPreviousDealIds": [
-        "5669"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
+      "calledFromPreviousSource": "unavailable",
       "date": "2026-08-26",
       "deals": [
         {
@@ -4534,20 +4504,6 @@
           "stageId": "C1:3",
           "stageName": "Отложенный клиент",
           "title": "Оксана_Новостройка 2к 60кв_до 8млн"
-        },
-        {
-          "dateCreate": "2026-04-28",
-          "daysWithoutAttempt": 40,
-          "daysWithoutCall": 77,
-          "dealId": "4933",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4933/",
-          "lastCallAttemptDate": "2026-07-17",
-          "lastSuccessfulCommunicationDate": "2026-06-10",
-          "mopId": "190",
-          "mopName": "Тончу Ростислав",
-          "stageId": "C1:3",
-          "stageName": "Отложенный клиент",
-          "title": "Марина_2+ТДСК_ ПВ 1.1_ Стандартная ипотека."
         },
         {
           "dateCreate": "2026-06-15",
@@ -6337,7 +6293,6 @@
         "4902",
         "4912",
         "4919",
-        "4933",
         "4940",
         "4963",
         "4964",
