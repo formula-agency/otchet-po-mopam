@@ -1379,7 +1379,8 @@ function renderHighPriority() {
     ?? 8
   );
   const stopThreshold = Number(priorityData.rules?.stopLeadThreshold ?? 10);
-  els.priorityRule.textContent = `Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
+  const prioritySource = priorityData.source === 'templab-history' ? 'TempLab' : 'не определен';
+  els.priorityRule.textContent = `Источник: ${prioritySource} · Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
 
   if (!snapshot) {
     els.priorityCaption.textContent = 'Нет снимков';
@@ -1426,7 +1427,7 @@ function renderHighPriority() {
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
   const previousLabel = snapshot.previousDate ? formatDate(snapshot.previousDate) : 'нет';
-  els.priorityCaption.textContent = `Снимок: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
+  els.priorityCaption.textContent = `Снимок TempLab: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
   els.priorityDealsCaption.textContent = `${formatNumber(dealRows.length)} сделок`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
@@ -2053,7 +2054,8 @@ function init() {
     .map((snapshot) => String(snapshot.date || ''))
     .filter((snapshotDate) => snapshotDate && snapshotDate < String(priorityData.currentDate || ''))
     .sort();
-  state.priorityDate = completedPriorityDates.at(-1)
+  state.priorityDate = (priorityData.source === 'templab-history' ? priorityData.currentDate : '')
+    || completedPriorityDates.at(-1)
     || priorityData.currentDate
     || priorityData.maxDate
     || '';

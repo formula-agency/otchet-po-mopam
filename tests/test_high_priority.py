@@ -1,8 +1,16 @@
 import unittest
+import json
+import os
 
-from datetime import date
+from datetime import date, datetime
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
 
 from scripts.sync_mop_report import (
+    ReportWindow,
+    build_high_priority_payload,
     deal_is_high_priority,
     high_priority_called_deal_ids,
     high_priority_snapshot_mops,
@@ -14,6 +22,56 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
+    def test_history_source_uses_daily_templab_diff_instead_of_bitrix(self) -> None:
+        tz = ZoneInfo("Asia/Yekaterinburg")
+        history = {
+            "schemaVersion": 4,
+            "snapshots": {
+                "2026-08-24": {
+                    "date": "2026-08-24",
+                    "previousDate": "",
+                    "deals": [deal(1, "МОП"), deal(2, "МОП")],
+                },
+                "2026-08-25": {
+                    "date": "2026-08-25",
+                    "previousDate": "2026-08-24",
+                    "deals": [
+                        {**deal(2, "МОП"), "daysWithoutCall": 12, "daysWithoutAttempt": 3},
+                        {**deal(3, "МОП"), "daysWithoutCall": 9, "daysWithoutAttempt": 2},
+                    ],
+                },
+            },
+        }
+        with TemporaryDirectory() as temporary_directory:
+            history_path = Path(temporary_directory) / "history.json"
+            history_path.write_text(json.dumps(history), encoding="utf-8")
+            with patch.dict(
+                os.environ,
+                {
+                    "MOP_HIGH_PRIORITY_SOURCE": "templab-history",
+                    "MOP_HIGH_PRIORITY_HISTORY_PATH": str(history_path),
+                },
+                clear=False,
+            ):
+                payload = build_high_priority_payload(
+                    {"rows": [deal(999, "Битрикс МОП")], "mopNames": ["Битрикс МОП"]},
+                    {},
+                    False,
+                    ReportWindow(
+                        datetime(2026, 3, 1, tzinfo=tz),
+                        datetime(2026, 8, 26, tzinfo=tz),
+                    ),
+                    [],
+                )
+
+        self.assertEqual(payload["source"], "templab-history")
+        self.assertEqual(payload["currentDate"], "2026-08-25")
+        latest = payload["snapshots"][-1]
+        self.assertEqual(latest["overdueCount"], 2)
+        self.assertEqual(latest["calledFromPreviousCount"], 1)
+        self.assertEqual(latest["flowedFromPreviousCount"], 1)
+        self.assertEqual({row["mopName"] for row in latest["rows"]}, {"МОП"})
+
     def test_called_from_previous_uses_only_supplied_call_source(self) -> None:
         called_ids = high_priority_called_deal_ids(
             {"1", "2", "3", "4", "5"},

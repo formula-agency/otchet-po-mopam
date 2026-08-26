@@ -3818,31 +3818,44 @@ def build_high_priority_payload(
             DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
         )
     }
-    current_date = window.end.date().isoformat()
-    all_active_rows = [
-        row for row in active_deals_payload.get("rows", []) if isinstance(row, dict)
-    ]
-    current_rows = sorted(
-        (
-            high_priority_row(row)
-            for row in all_active_rows
-            if deal_is_high_priority(
-                row,
-                overdue_from_days,
-                allowed_stage_names,
-                excluded_mop_names,
-            )
-        ),
-        key=lambda row: (
-            -int(row.get("daysWithoutCall") or 0),
-            str(row.get("mopName") or ""),
-            int(row["dealId"]) if str(row.get("dealId") or "").isdigit() else 0,
-        ),
-    )
-
+    source_mode = os.getenv("MOP_HIGH_PRIORITY_SOURCE", "templab-history").strip().lower()
     history_path = high_priority_history_path()
     history = load_high_priority_history(history_path, warnings)
     snapshots = history.setdefault("snapshots", {})
+    history_only = source_mode == "templab-history" and bool(snapshots)
+    current_date = (
+        max(snapshots)
+        if history_only
+        else window.end.date().isoformat()
+    )
+    all_active_rows = [
+        row for row in active_deals_payload.get("rows", []) if isinstance(row, dict)
+    ]
+    current_rows = (
+        [
+            row
+            for row in snapshots.get(current_date, {}).get("deals", [])
+            if isinstance(row, dict)
+        ]
+        if history_only
+        else sorted(
+            (
+                high_priority_row(row)
+                for row in all_active_rows
+                if deal_is_high_priority(
+                    row,
+                    overdue_from_days,
+                    allowed_stage_names,
+                    excluded_mop_names,
+                )
+            ),
+            key=lambda row: (
+                -int(row.get("daysWithoutCall") or 0),
+                str(row.get("mopName") or ""),
+                int(row["dealId"]) if str(row.get("dealId") or "").isdigit() else 0,
+            ),
+        )
+    )
     existing_current_called_ids = list(
         snapshots.get(current_date, {}).get("calledFromPreviousDealIds", [])
     )
@@ -3900,22 +3913,27 @@ def build_high_priority_payload(
             for row in snapshots.get(source_previous_date, {}).get("deals", [])
             if isinstance(row, dict) and row.get("dealId")
         }
-        detected_called_ids = (
-            high_priority_called_deal_ids(
-                source_previous_ids,
-                call_dates_by_deal,
-                source_previous_date,
-                snapshot_date,
-            )
-            if call_data_available
-            else []
+        source_current_ids = {
+            str(row.get("dealId") or "")
+            for row in source_snapshot.get("deals", [])
+            if isinstance(row, dict) and row.get("dealId")
+        }
+        detected_called_ids = sorted(
+            source_previous_ids - source_current_ids,
+            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
         )
         source_snapshot["calledFromPreviousDealIds"] = detected_called_ids
-        source_snapshot["calledFromPreviousEvaluated"] = call_data_available
-        source_snapshot["calledFromPreviousSource"] = (
-            "templab-mongodb" if call_data_available else "unavailable"
+        source_snapshot["flowedFromPreviousDealIds"] = sorted(
+            source_previous_ids & source_current_ids,
+            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
         )
-    history["schemaVersion"] = 3
+        source_snapshot["newOverdueDealIds"] = sorted(
+            source_current_ids - source_previous_ids,
+            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+        )
+        source_snapshot["calledFromPreviousEvaluated"] = bool(source_previous_date)
+        source_snapshot["calledFromPreviousSource"] = "templab-daily-diff"
+    history["schemaVersion"] = 4
     write_high_priority_history(history_path, history)
 
     visible_snapshots: dict[str, Any] = {}
@@ -3956,7 +3974,7 @@ def build_high_priority_payload(
             ],
         }
 
-    visible_mop_names = tuple(
+    visible_mop_names = () if history_only else tuple(
         name
         for name in active_deals_payload.get("mopNames", [])
         if normalize_key(name) not in excluded_mop_names
@@ -4020,6 +4038,7 @@ def build_high_priority_payload(
                 DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
             )),
         },
+        "source": "templab-history" if history_only else "bitrix-fallback",
         "currentDate": current_date,
         "minDate": min(available_dates) if available_dates else current_date,
         "maxDate": max(available_dates) if available_dates else current_date,
@@ -4370,7 +4389,12 @@ def main() -> int:
             build_call_facts(data, session, settings, mop_settings, window)
         else:
             data.call_source = "none"
-        if call_source != "mongodb" and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip():
+        if (
+            call_source != "mongodb"
+            and os.getenv("MOP_HIGH_PRIORITY_SOURCE", "templab-history").strip().lower()
+            == "mongodb"
+            and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
+        ):
             build_mongo_deal_call_facts(data, settings, window)
         apply_manual_fact_adjustments(
             data,
