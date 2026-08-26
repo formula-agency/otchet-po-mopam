@@ -75,6 +75,16 @@ jobs:
           fi
           echo "endpoint=127.0.0.1:27018" >> "$GITHUB_OUTPUT"
 
+      - name: Inspect TempLab schema safely
+        env:
+          MONGO_CALLS_CONFIG_URI: ${{ secrets.MONGO_CALLS_CONFIG_URI }}
+          MONGO_CALLS_CONFIG_DATABASE: mongo_calls
+          MONGO_CALLS_CONFIG_COLLECTION: customers
+          MONGO_CALLS_REQUIRE_SERVER_READ_ONLY: "false"
+          MONGO_CALLS_CONNECT_TIMEOUT_MS: "5000"
+          MONGO_CALLS_ENDPOINT_OVERRIDE: ${{ steps.mongo-tunnel.outputs.endpoint }}
+        run: python scripts/inspect_formula_schema.py
+
       - name: Sync MOP report
         env:
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
