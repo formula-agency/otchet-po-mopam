@@ -44,11 +44,14 @@ jobs:
           TIMEWEB_USER: ${{ secrets.TIMEWEB_USER }}
           TIMEWEB_SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
           TIMEWEB_KNOWN_HOSTS: ${{ secrets.TIMEWEB_KNOWN_HOSTS }}
+          TIMEWEB_FTP_USER: ${{ secrets.TIMEWEB_FTP_USER }}
+          TIMEWEB_FTP_PASSWORD: ${{ secrets.TIMEWEB_FTP_PASSWORD }}
         run: |
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$TIMEWEB_SSH_PRIVATE_KEY" > "$HOME/.ssh/timeweb_mop_report"
           chmod 600 "$HOME/.ssh/timeweb_mop_report"
           printf '%s\n' "$TIMEWEB_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          set +e
           ssh -f -N \
             -i "$HOME/.ssh/timeweb_mop_report" \
             -p "${TIMEWEB_PORT:-22}" \
@@ -57,6 +60,19 @@ jobs:
             -o ServerAliveInterval=30 \
             -L 127.0.0.1:27018:94.198.221.153:27017 \
             "$TIMEWEB_USER@$TIMEWEB_HOST"
+          tunnel_status=$?
+          set -e
+          if [ "$tunnel_status" -ne 0 ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq sshpass
+            SSHPASS="$TIMEWEB_FTP_PASSWORD" sshpass -e ssh -f -N \
+              -p "${TIMEWEB_PORT:-22}" \
+              -o StrictHostKeyChecking=yes \
+              -o ExitOnForwardFailure=yes \
+              -o ServerAliveInterval=30 \
+              -L 127.0.0.1:27018:94.198.221.153:27017 \
+              "${TIMEWEB_FTP_USER:-$TIMEWEB_USER}@$TIMEWEB_HOST"
+          fi
           echo "endpoint=127.0.0.1:27018" >> "$GITHUB_OUTPUT"
 
       - name: Sync MOP report
