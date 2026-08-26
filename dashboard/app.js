@@ -1379,7 +1379,9 @@ function renderHighPriority() {
     ?? 8
   );
   const stopThreshold = Number(priorityData.rules?.stopLeadThreshold ?? 10);
-  const prioritySource = priorityData.source === 'templab-history' ? 'TempLab' : 'не определен';
+  const prioritySource = priorityData.source === 'templab-history'
+    ? 'ручной Excel-архив (не live TempLab)'
+    : 'не определен';
   els.priorityRule.textContent = `Источник: ${prioritySource} · Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
 
   if (!snapshot) {
@@ -1427,7 +1429,7 @@ function renderHighPriority() {
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
   const previousLabel = snapshot.previousDate ? formatDate(snapshot.previousDate) : 'нет';
-  els.priorityCaption.textContent = `Снимок TempLab: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
+  els.priorityCaption.textContent = `Архивный снимок: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
   els.priorityDealsCaption.textContent = `${formatNumber(dealRows.length)} сделок`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
