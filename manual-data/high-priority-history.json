@@ -4468,7 +4468,9 @@
       "previousDate": "2026-08-24"
     },
     "2026-08-26": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5669"
+      ],
       "date": "2026-08-26",
       "deals": [
         {
@@ -4725,11 +4727,11 @@
         },
         {
           "dateCreate": "2026-07-16",
-          "daysWithoutAttempt": 23,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 34,
           "dealId": "5669",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5669/",
-          "lastCallAttemptDate": "2026-08-03",
+          "lastCallAttemptDate": "2026-08-26",
           "lastSuccessfulCommunicationDate": "2026-07-23",
           "mopId": "190",
           "mopName": "Тончу Ростислав",
