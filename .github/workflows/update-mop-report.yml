@@ -21,7 +21,7 @@ jobs:
   sync-report:
     runs-on: ubuntu-latest
     env:
-      MOP_CALL_SOURCE: mongodb
+      MOP_CALL_SOURCE: none
 
     steps:
       - name: Checkout repository
@@ -34,6 +34,30 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Open TempLab MongoDB tunnel through Timeweb
+        id: mongo-tunnel
+        continue-on-error: true
+        env:
+          TIMEWEB_HOST: ${{ secrets.TIMEWEB_HOST }}
+          TIMEWEB_PORT: ${{ secrets.TIMEWEB_PORT }}
+          TIMEWEB_USER: ${{ secrets.TIMEWEB_USER }}
+          TIMEWEB_SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
+          TIMEWEB_KNOWN_HOSTS: ${{ secrets.TIMEWEB_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$TIMEWEB_SSH_PRIVATE_KEY" > "$HOME/.ssh/timeweb_mop_report"
+          chmod 600 "$HOME/.ssh/timeweb_mop_report"
+          printf '%s\n' "$TIMEWEB_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          ssh -f -N \
+            -i "$HOME/.ssh/timeweb_mop_report" \
+            -p "${TIMEWEB_PORT:-22}" \
+            -o BatchMode=yes \
+            -o ExitOnForwardFailure=yes \
+            -o ServerAliveInterval=30 \
+            -L 127.0.0.1:27018:94.198.221.153:27017 \
+            "$TIMEWEB_USER@$TIMEWEB_HOST"
+          echo "endpoint=127.0.0.1:27018" >> "$GITHUB_OUTPUT"
 
       - name: Sync MOP report
         env:
@@ -65,8 +89,10 @@ jobs:
           MONGO_CALLS_CONFIG_DATABASE: mongo_calls
           MONGO_CALLS_CONFIG_COLLECTION: customers
           MONGO_CALLS_REQUIRE_SERVER_READ_ONLY: "false"
-          MONGO_CALLS_REQUIRED: "true"
+          MONGO_CALLS_REQUIRED: "false"
           MONGO_CALLS_FALLBACK_TO_BITRIX: "false"
+          MONGO_CALLS_CONNECT_TIMEOUT_MS: "5000"
+          MONGO_CALLS_ENDPOINT_OVERRIDE: ${{ steps.mongo-tunnel.outputs.endpoint }}
           MONGO_CALL_SCHEMA_DIAGNOSTICS: "true"
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}

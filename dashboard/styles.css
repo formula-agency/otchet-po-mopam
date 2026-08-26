@@ -1292,9 +1292,17 @@ select {
 
 .data-table.priority-status-table th:first-child,
 .data-table.priority-status-table td:first-child {
-  width: 22%;
+  width: 18%;
   text-align: left;
 }
+
+.data-table.priority-status-table th:nth-child(2) { width: 10%; }
+.data-table.priority-status-table th:nth-child(3),
+.data-table.priority-status-table th:nth-child(4) { width: 14%; }
+.data-table.priority-status-table th:nth-child(5),
+.data-table.priority-status-table th:nth-child(6) { width: 11%; }
+.data-table.priority-status-table th:nth-child(7) { width: 12%; }
+.data-table.priority-status-table th:nth-child(8) { width: 10%; }
 
 .data-table.priority-status-table th:nth-child(n+2),
 .data-table.priority-status-table td:nth-child(n+2) {

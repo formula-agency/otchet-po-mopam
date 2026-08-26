@@ -14,15 +14,9 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
-    def test_called_from_previous_uses_activities_and_deal_dates(self) -> None:
+    def test_called_from_previous_uses_only_supplied_call_source(self) -> None:
         called_ids = high_priority_called_deal_ids(
             {"1", "2", "3", "4", "5"},
-            {
-                "2": {"lastCallAttemptDate": "2026-08-26"},
-                "3": {"lastSuccessfulCommunicationDate": "2026-08-26"},
-                "4": {"lastSuccessfulCommunicationDate": "2026-08-25"},
-                "5": {"lastCallAttemptDate": "not-a-date"},
-            },
             {
                 "1": [date(2026, 8, 26)],
                 "4": [date(2026, 8, 25)],
@@ -31,7 +25,7 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
             "2026-08-26",
         )
 
-        self.assertEqual(called_ids, ["1", "2", "3"])
+        self.assertEqual(called_ids, ["1"])
 
     def test_overdue_starts_on_day_eight_and_excludes_fired_mops(self) -> None:
         allowed_stages = {"отложенный клиент"}
@@ -59,7 +53,10 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
     def test_counts_stop_days_and_daily_flow_by_manager(self) -> None:
         first_day = [deal(index, "МОП 1") for index in range(1, 12)]
         first_day.extend(deal(index, "МОП 2") for index in range(100, 105))
-        second_day = [deal(index, "МОП 1") for index in range(1, 13)]
+        second_day = [
+            {**deal(index, "МОП 1"), "daysWithoutCall": index, "daysWithoutAttempt": index - 1}
+            for index in range(1, 13)
+        ]
         second_day.extend(deal(index, "МОП 2") for index in range(100, 111))
         snapshots = {
             "2026-08-24": {
@@ -89,6 +86,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
                     "calledFromPreviousCount": 1,
                     "flowedFromPreviousCount": 2,
                     "newOverdueCount": 1,
+                    "maxDaysWithoutCall": 12,
+                    "maxDaysWithoutAttempt": 11,
                     "isStop": True,
                     "stopDays": 2,
                 },
@@ -98,6 +97,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
                     "calledFromPreviousCount": 1,
                     "flowedFromPreviousCount": 1,
                     "newOverdueCount": 1,
+                    "maxDaysWithoutCall": None,
+                    "maxDaysWithoutAttempt": None,
                     "isStop": True,
                     "stopDays": 1,
                 },

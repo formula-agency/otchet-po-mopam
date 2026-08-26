@@ -9,8 +9,26 @@ from scripts.mongo_formula_readonly import (
     ReadOnlyCollection,
     _role_scope_violations,
     _write_capabilities,
+    override_mongo_endpoint,
     resolve_formula_tenant,
 )
+
+
+class EndpointOverrideTests(unittest.TestCase):
+    def test_replaces_only_host_and_keeps_credentials_and_options(self) -> None:
+        uri = "mongodb://reader:secret@mongo.internal:27017/mongo_calls?authSource=admin"
+
+        rewritten = override_mongo_endpoint(uri, "127.0.0.1:27018")
+
+        self.assertEqual(
+            rewritten,
+            "mongodb://reader:secret@127.0.0.1:27018/mongo_calls?authSource=admin",
+        )
+
+    def test_leaves_uri_unchanged_without_override(self) -> None:
+        uri = "mongodb://mongo.internal:27017/mongo_calls"
+
+        self.assertEqual(override_mongo_endpoint(uri, ""), uri)
 
 
 class FakeCustomers:

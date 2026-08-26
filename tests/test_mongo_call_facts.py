@@ -13,8 +13,10 @@ from scripts.sync_mop_report import (
     ReportWindow,
     apply_manual_fact_adjustments,
     apply_mongo_call_aggregates,
+    apply_mongo_deal_call_dates,
     build_mongo_call_facts,
     build_mongo_call_aggregation_pipeline,
+    build_mongo_deal_call_pipeline,
     key_for_mop_id,
     week_start_for_date,
 )
@@ -64,8 +66,40 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertEqual(pipeline[3]["$group"]["_id"], "$dedupeKey")
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
+    def test_deal_pipeline_supports_direct_and_crm_entity_ids(self) -> None:
+        timezone_name = "Asia/Yekaterinburg"
+        tz = ZoneInfo(timezone_name)
+        window = ReportWindow(
+            datetime(2026, 8, 1, tzinfo=tz),
+            datetime(2026, 8, 26, 10, 0, tzinfo=tz),
+        )
+
+        pipeline = build_mongo_deal_call_pipeline(window, timezone_name)
+
+        serialized = str(pipeline)
+        self.assertIn("deal_id", serialized)
+        self.assertIn("bitrix_deal_id", serialized)
+        self.assertIn("CRM_ENTITY_ID", serialized)
+        self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
+
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_loads_distinct_call_dates_by_deal(self) -> None:
+        data = MopReportData()
+
+        linked_days = apply_mongo_deal_call_dates(
+            data,
+            [
+                {"_id": "501", "dates": ["2026-08-24", "2026-08-25", "2026-08-25"]},
+                {"_id": "", "dates": ["2026-08-25"]},
+            ],
+        )
+
+        self.assertEqual(linked_days, 2)
+        self.assertEqual(
+            data.call_dates_by_deal["501"],
+            [date(2026, 8, 24), date(2026, 8, 25)],
+        )
     def test_maps_formula_manager_name_to_existing_bitrix_identity(self) -> None:
         data = MopReportData()
         rows = [

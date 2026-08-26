@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -76,6 +77,24 @@ def _formula_query() -> dict[str, Any]:
     # This value is deliberately not configurable: the connector must never
     # select another customer from the shared configuration database.
     return {"tenant_tag": FORMULA_TENANT_TAG, "is_active": True}
+
+
+def override_mongo_endpoint(uri: str, endpoint: str) -> str:
+    endpoint = endpoint.strip()
+    if not endpoint:
+        return uri
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+:\d{1,5}", endpoint):
+        raise FormulaMongoError(
+            "MONGO_CALLS_ENDPOINT_OVERRIDE должен иметь формат host:port."
+        )
+    match = re.match(r"^(mongodb://)([^/]+)(/.*)?$", uri)
+    if not match:
+        raise FormulaMongoError(
+            "MONGO_CALLS_ENDPOINT_OVERRIDE поддерживает только mongodb:// URI."
+        )
+    authority = match.group(2)
+    credentials = authority.rsplit("@", 1)[0] + "@" if "@" in authority else ""
+    return f"{match.group(1)}{credentials}{endpoint}{match.group(3) or ''}"
 
 
 def resolve_formula_tenant(customers: Collection[Mapping[str, Any]]) -> FormulaTenantConfig:
@@ -221,12 +240,21 @@ class FormulaMongoReader:
         config_collection = os.getenv("MONGO_CALLS_CONFIG_COLLECTION", DEFAULT_CONFIG_COLLECTION).strip()
         if not config_database or not config_collection:
             raise FormulaMongoError("Не заданы база или коллекция центральной конфигурации MongoDB.")
+        endpoint_override = os.getenv("MONGO_CALLS_ENDPOINT_OVERRIDE", "").strip()
+        config_uri = override_mongo_endpoint(config_uri, endpoint_override)
+        try:
+            timeout_ms = max(
+                1_000,
+                int(os.getenv("MONGO_CALLS_CONNECT_TIMEOUT_MS", str(DEFAULT_TIMEOUT_MS))),
+            )
+        except ValueError as exc:
+            raise FormulaMongoError("MONGO_CALLS_CONNECT_TIMEOUT_MS должен быть целым числом.") from exc
 
         config_client: MongoClient[Any] = MongoClient(
             config_uri,
-            serverSelectionTimeoutMS=DEFAULT_TIMEOUT_MS,
-            connectTimeoutMS=DEFAULT_TIMEOUT_MS,
-            socketTimeoutMS=DEFAULT_TIMEOUT_MS * 2,
+            serverSelectionTimeoutMS=timeout_ms,
+            connectTimeoutMS=timeout_ms,
+            socketTimeoutMS=timeout_ms * 2,
             read_preference=SecondaryPreferred(),
             appname="formula-report-config-reader",
         )
@@ -242,11 +270,12 @@ class FormulaMongoReader:
         finally:
             config_client.close()
 
+        tenant_uri = override_mongo_endpoint(tenant.connection_string, endpoint_override)
         tenant_client: MongoClient[Any] = MongoClient(
-            tenant.connection_string,
-            serverSelectionTimeoutMS=DEFAULT_TIMEOUT_MS,
-            connectTimeoutMS=DEFAULT_TIMEOUT_MS,
-            socketTimeoutMS=DEFAULT_TIMEOUT_MS * 2,
+            tenant_uri,
+            serverSelectionTimeoutMS=timeout_ms,
+            connectTimeoutMS=timeout_ms,
+            socketTimeoutMS=timeout_ms * 2,
             read_preference=SecondaryPreferred(),
             appname="formula-report-readonly",
         )

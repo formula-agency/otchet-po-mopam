@@ -1390,7 +1390,7 @@ function renderHighPriority() {
       els.priorityFlowedCount,
       els.priorityStopCount,
     ]) element.textContent = '0';
-    els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
+    els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
     els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
     return;
   }
@@ -1420,7 +1420,9 @@ function renderHighPriority() {
   }, { overdue: 0, called: 0, flowed: 0, stop: 0 });
 
   els.priorityOverdueCount.textContent = formatNumber(totals.overdue);
-  els.priorityCalledCount.textContent = formatNumber(totals.called);
+  els.priorityCalledCount.textContent = snapshot.calledFromPreviousAvailable
+    ? formatNumber(totals.called)
+    : '—';
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
   const previousLabel = snapshot.previousDate ? formatDate(snapshot.previousDate) : 'нет';
@@ -1432,13 +1434,15 @@ function renderHighPriority() {
       <tr class="${row.isStop ? 'priority-row--stop' : 'priority-row--work'}">
         <td><strong>${escapeHtml(row.mopName)}</strong></td>
         <td>${formatNumber(row.overdueCount)}</td>
-        <td>${formatNumber(row.calledFromPreviousCount)}</td>
+        <td>${snapshot.calledFromPreviousAvailable ? formatNumber(row.calledFromPreviousCount) : '—'}</td>
         <td>${formatNumber(row.flowedFromPreviousCount)}</td>
+        <td class="priority-days priority-days--critical">${formatOptionalNumber(row.maxDaysWithoutCall)}</td>
+        <td class="priority-days">${formatOptionalNumber(row.maxDaysWithoutAttempt)}</td>
         <td><span class="priority-status ${row.isStop ? 'is-stop' : 'is-work'}">${row.isStop ? 'СТОП' : 'В работе'}</span></td>
         <td>${formatNumber(row.stopDays)}</td>
       </tr>
     `).join('')
-    : '<tr class="empty-row"><td colspan="6">Нет данных по выбранному МОПу</td></tr>';
+    : '<tr class="empty-row"><td colspan="8">Нет данных по выбранному МОПу</td></tr>';
 
   els.priorityDealsBody.innerHTML = dealRows.length
     ? dealRows.map((row) => {
@@ -2045,7 +2049,14 @@ function init() {
   els.activeDealDateFrom.value = state.activeDateFrom;
   els.activeDealDateTo.value = state.activeDateTo;
   const priorityData = highPriorityData();
-  state.priorityDate = priorityData.currentDate || priorityData.maxDate || '';
+  const completedPriorityDates = (priorityData.snapshots || [])
+    .map((snapshot) => String(snapshot.date || ''))
+    .filter((snapshotDate) => snapshotDate && snapshotDate < String(priorityData.currentDate || ''))
+    .sort();
+  state.priorityDate = completedPriorityDates.at(-1)
+    || priorityData.currentDate
+    || priorityData.maxDate
+    || '';
   state.priorityMopName = 'all';
   populateSelect(
     els.priorityDate,

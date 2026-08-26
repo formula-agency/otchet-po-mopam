@@ -7,8 +7,8 @@
 - проведенные встречи по строкам таблицы встреч Google Sheets, только результат `Прошла успешно`, дата определяется по `Дате создания`; обычные фильтры листа не меняют отчет, вручную скрытые строки не учитываются
 - созданные брони из раздела `[CRM] Брони`
 - одобренные ипотеки по полю сделки Bitrix
-- фактическое количество звонков из MongoDB tenant `formula` (`mongo_calls`)
-- фактическое эфирное время как сумма `call_duration` из MongoDB
+- фактическое количество звонков и эфирное время из файлов выгрузки ВАТС
+- прозвон просроченных сделок из MongoDB TempLab tenant `formula`
 - планы по неделям из отдельного листа Google Sheets
 - итоги по каждому спринту и общий итог за период
 
@@ -106,26 +106,27 @@ python scripts/sync_mop_report.py --env-file bitrix.env
 
 Dashboard открывается через `dashboard/index.html`.
 
-## Звонки и эфир из MongoDB Formula
+## Прозвон просроченных сделок из MongoDB TempLab
 
 При наличии `MONGO_CALLS_CONFIG_URI` отчет по умолчанию читает центральную базу
 `mongo_calls.customers`, выбирает только активный `tenant_tag=formula`, затем агрегирует
-коллекцию, указанную в `data_sources.calls_collection` (сейчас `mongo_calls`).
+коллекцию, указанную в `data_sources.calls_collection` (сейчас `mongo_calls`). Основные
+факты звонков и эфира при этом продолжают загружаться из файлов ВАТС.
 
 ```env
-MOP_CALL_SOURCE=mongodb
+MOP_CALL_SOURCE=none
 MONGO_CALLS_CONFIG_URI=mongodb://readonly:password@host:27017/mongo_calls?authSource=mongo_calls
 MONGO_CALLS_CONFIG_DATABASE=mongo_calls
 MONGO_CALLS_CONFIG_COLLECTION=customers
-MONGO_CALLS_REQUIRED=true
+MONGO_CALLS_REQUIRED=false
 MONGO_CALLS_FALLBACK_TO_BITRIX=false
 MONGO_CALLS_AGGREGATION_TIMEOUT_MS=120000
 ```
 
-Звонки группируются по местной дате `REPORT_TIMEZONE` и ФИО из `user_name`, эфир считается
-по `call_duration` в секундах. Повторяющиеся записи исключаются по `call_uid`. Учитываются
-все попытки звонков, как и в прежнем источнике Bitrix; `MOP_CALL_MIN_DURATION_SECONDS`
-применяется до подсчета.
+Для высокого приоритета звонок связывается с ID сделки из полей `deal_id`, `dealId`,
+`bitrix_deal_id`, `crm_deal_id` или из CRM entity типа `DEAL`. Повторяющиеся записи
+исключаются по `call_uid`. Если TempLab недоступен или не возвращает связь со сделкой,
+dashboard показывает `—`, а не подставляет активности Bitrix.
 
 Текущая tenant-строка подключения имеет серверную роль `admin:root`. Так как отдельный
 read-only пользователь не создавался, для отчета требуется явное разрешение клиентского
@@ -140,10 +141,9 @@ MONGO_CALLS_REQUIRE_SERVER_READ_ONLY=false
 `read`; тогда настройку следует вернуть в `true`.
 
 Для GitHub Actions нужно создать secret `MONGO_CALLS_CONFIG_URI` и разрешить сетевой доступ
-runner к обоим MongoDB endpoint. При MongoDB-источнике шаг импорта файлов ВАТС пропускается,
-чтобы звонки и эфир не задваивались.
+runner к обоим MongoDB endpoint.
 
-## Резервная загрузка звонков и эфира из ВАТС
+## Загрузка звонков и эфира из ВАТС
 
 Новые выгрузки МегаФона и Билайна нужно складывать в `vats data` по папкам с диапазоном дат:
 

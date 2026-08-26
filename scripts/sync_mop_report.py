@@ -541,6 +541,10 @@ class MopReportData:
     warnings: list[str] = field(default_factory=list)
     call_source: str = "not_loaded"
     call_source_server_read_only: bool | None = None
+    call_deal_link_available: bool = False
+    call_dates_by_deal: dict[str, list[date]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
 
 @dataclass(frozen=True)
@@ -2520,6 +2524,184 @@ def build_mongo_call_aggregation_pipeline(
     ]
 
 
+def mongo_first_nonempty_string(field_paths: tuple[str, ...]) -> dict[str, Any]:
+    candidates = [
+        {
+            "$convert": {
+                "input": f"${field_path}",
+                "to": "string",
+                "onError": "",
+                "onNull": "",
+            }
+        }
+        for field_path in field_paths
+    ]
+    return {
+        "$arrayElemAt": [
+            {
+                "$filter": {
+                    "input": candidates,
+                    "as": "candidate",
+                    "cond": {"$ne": ["$$candidate", ""]},
+                }
+            },
+            0,
+        ]
+    }
+
+
+def build_mongo_deal_call_pipeline(
+    window: ReportWindow,
+    timezone_name: str,
+) -> list[dict[str, Any]]:
+    direct_deal_id = mongo_first_nonempty_string((
+        "deal_id",
+        "dealId",
+        "bitrix_deal_id",
+        "crm_deal_id",
+        "deal.id",
+        "crm.deal_id",
+    ))
+    crm_entity_id = mongo_first_nonempty_string(("CRM_ENTITY_ID", "crm_entity_id"))
+    crm_entity_type = {
+        "$toUpper": mongo_first_nonempty_string((
+            "CRM_ENTITY_TYPE",
+            "crm_entity_type",
+        ))
+    }
+    return [
+        {"$match": {"call_date": {"$gte": window.start, "$lte": window.end}}},
+        {
+            "$project": {
+                "dedupeKey": {
+                    "$cond": [
+                        {
+                            "$and": [
+                                {"$eq": [{"$type": "$call_uid"}, "string"]},
+                                {"$ne": ["$call_uid", ""]},
+                            ]
+                        },
+                        "$call_uid",
+                        "$_id",
+                    ]
+                },
+                "day": {
+                    "$dateToString": {
+                        "date": "$call_date",
+                        "format": "%Y-%m-%d",
+                        "timezone": timezone_name,
+                    }
+                },
+                "directDealId": direct_deal_id,
+                "crmEntityId": crm_entity_id,
+                "crmEntityType": crm_entity_type,
+            }
+        },
+        {
+            "$project": {
+                "dedupeKey": 1,
+                "day": 1,
+                "dealId": {
+                    "$cond": [
+                        {"$ne": ["$directDealId", ""]},
+                        "$directDealId",
+                        {
+                            "$cond": [
+                                {"$in": ["$crmEntityType", ["DEAL", "CRM_DEAL", "2"]]},
+                                "$crmEntityId",
+                                "",
+                            ]
+                        },
+                    ]
+                },
+            }
+        },
+        {"$match": {"dealId": {"$ne": ""}}},
+        {
+            "$group": {
+                "_id": "$dedupeKey",
+                "day": {"$first": "$day"},
+                "dealId": {"$first": "$dealId"},
+            }
+        },
+        {
+            "$group": {
+                "_id": "$dealId",
+                "dates": {"$addToSet": "$day"},
+            }
+        },
+    ]
+
+
+def apply_mongo_deal_call_dates(
+    data: MopReportData,
+    rows: list[dict[str, Any]],
+) -> int:
+    linked_calls = 0
+    for row in rows:
+        deal_id = str(row.get("_id") or "").strip()
+        if not deal_id:
+            continue
+        parsed_dates: set[date] = set()
+        for raw_date in row.get("dates", []):
+            try:
+                parsed_dates.add(date.fromisoformat(str(raw_date)))
+            except ValueError:
+                continue
+        data.call_dates_by_deal[deal_id] = sorted(parsed_dates)
+        linked_calls += len(parsed_dates)
+    return linked_calls
+
+
+def build_mongo_deal_call_facts(
+    data: MopReportData,
+    settings: Settings,
+    window: ReportWindow,
+) -> bool:
+    require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
+    timeout_ms = read_positive_int_env(
+        "MONGO_CALLS_AGGREGATION_TIMEOUT_MS",
+        DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS,
+    )
+    try:
+        with FormulaMongoReader.from_env(
+            None,
+            require_server_read_only=require_server_read_only,
+        ) as reader:
+            collection_name = reader.data_sources.get("calls_collection", "mongo_calls")
+            collection = reader.collection(collection_name)
+            if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
+                sample = collection.find_one({}, {"_id": 0}) or {}
+                print("MongoDB call fields: " + ", ".join(sorted(sample)))
+            rows = list(
+                collection.aggregate(
+                    build_mongo_deal_call_pipeline(window, settings.report_timezone),
+                    allowDiskUse=False,
+                    maxTimeMS=timeout_ms,
+                )
+            )
+            linked_deal_days = apply_mongo_deal_call_dates(data, rows)
+            data.call_deal_link_available = linked_deal_days > 0
+            print(f"MongoDB deal calls loaded: {linked_deal_days} linked deal-days")
+            if not data.call_deal_link_available:
+                data.warnings.append(
+                    "TempLab не вернул связь звонков со сделками; "
+                    "показатель прозвона скрыт до уточнения поля ID сделки."
+                )
+            return data.call_deal_link_available
+    except (FormulaMongoError, ConfigError) as exc:
+        data.warnings.append(
+            "Звонки TempLab по просроченным сделкам не посчитаны: "
+            + safe_error_text(exc)
+        )
+    except Exception as exc:
+        data.warnings.append(
+            "Звонки TempLab по просроченным сделкам не посчитаны: "
+            + safe_error_text(exc)
+        )
+    return False
+
+
 def mongo_mop_identity(raw_name: Any, mop_settings: MopSettings) -> tuple[str, str]:
     mop_name = canonical_mop_label(str(raw_name or "").strip(), mop_settings)
     normalized_name = normalize_key(mop_name)
@@ -2594,6 +2776,15 @@ def build_mongo_call_facts(
                     maxTimeMS=timeout_ms,
                 )
             )
+            deal_call_rows = list(
+                collection.aggregate(
+                    build_mongo_deal_call_pipeline(window, settings.report_timezone),
+                    allowDiskUse=False,
+                    maxTimeMS=timeout_ms,
+                )
+            )
+            linked_deal_days = apply_mongo_deal_call_dates(data, deal_call_rows)
+            data.call_deal_link_available = True
             total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
                 data,
                 rows,
@@ -2603,7 +2794,8 @@ def build_mongo_call_facts(
             data.call_source_server_read_only = reader.server_read_only
             print(
                 "MongoDB calls loaded: "
-                f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs"
+                f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs, "
+                f"{linked_deal_days} linked deal-days"
             )
             return True
     except (FormulaMongoError, ConfigError) as exc:
@@ -3485,7 +3677,6 @@ def deal_is_high_priority(
 
 def high_priority_called_deal_ids(
     previous_deal_ids: set[str],
-    observed_deals: dict[str, dict[str, Any]],
     call_dates_by_deal: dict[str, list[date]],
     previous_date: str,
     snapshot_date: str,
@@ -3499,22 +3690,6 @@ def high_priority_called_deal_ids(
         call_dates = call_dates_by_deal.get(deal_id, [])
         if any(interval_start < call_date <= interval_end for call_date in call_dates):
             called_ids.add(deal_id)
-            continue
-        observed = observed_deals.get(deal_id, {})
-        for field_name in (
-            "lastCallAttemptDate",
-            "lastSuccessfulCommunicationDate",
-        ):
-            raw_value = str(observed.get(field_name) or "")[:10]
-            if not raw_value:
-                continue
-            try:
-                communication_date = date.fromisoformat(raw_value)
-            except ValueError:
-                continue
-            if interval_start < communication_date <= interval_end:
-                called_ids.add(deal_id)
-                break
     return sorted(
         called_ids,
         key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
@@ -3565,9 +3740,24 @@ def high_priority_snapshot_mops(
 
     rows: list[dict[str, Any]] = []
     for mop_name in sorted(names):
+        mop_current_deals = [
+            row
+            for row in current_by_id.values()
+            if str(row.get("mopName") or "") == mop_name
+        ]
         overdue_count = sum(
-            1 for row in current_by_id.values() if str(row.get("mopName") or "") == mop_name
+            1 for row in mop_current_deals
         )
+        days_without_call = [
+            int(row["daysWithoutCall"])
+            for row in mop_current_deals
+            if isinstance(row.get("daysWithoutCall"), int)
+        ]
+        days_without_attempt = [
+            int(row["daysWithoutAttempt"])
+            for row in mop_current_deals
+            if isinstance(row.get("daysWithoutAttempt"), int)
+        ]
         called_count = sum(
             1
             for deal_id in called_ids
@@ -3590,6 +3780,8 @@ def high_priority_snapshot_mops(
                 "calledFromPreviousCount": called_count,
                 "flowedFromPreviousCount": flowed_count,
                 "newOverdueCount": new_count,
+                "maxDaysWithoutCall": max(days_without_call, default=None),
+                "maxDaysWithoutAttempt": max(days_without_attempt, default=None),
                 "isStop": overdue_count > stop_threshold,
                 "stopDays": stop_days.get(mop_name, 0),
             }
@@ -3599,8 +3791,8 @@ def high_priority_snapshot_mops(
 
 def build_high_priority_payload(
     active_deals_payload: dict[str, Any],
-    session: requests.Session,
-    settings: Settings,
+    call_dates_by_deal: dict[str, list[date]],
+    call_data_available: bool,
     window: ReportWindow,
     warnings: list[str],
 ) -> dict[str, Any]:
@@ -3674,7 +3866,6 @@ def build_high_priority_payload(
     }
     current_by_id = {row["dealId"]: row for row in current_rows}
 
-    all_active_by_id = {str(row.get("dealId") or ""): row for row in all_active_rows}
     recent_snapshot_dates = set(sorted(snapshots)[-7:])
     snapshots_to_evaluate = {
         snapshot_date
@@ -3683,58 +3874,7 @@ def build_high_priority_payload(
         or snapshot_date in recent_snapshot_dates
         or not bool(snapshot.get("calledFromPreviousEvaluated"))
     }
-    tracked_previous_ids: set[str] = set()
-    for snapshot_date in snapshots_to_evaluate:
-        source_snapshot = snapshots.get(snapshot_date, {})
-        source_previous_date = str(source_snapshot.get("previousDate") or "")
-        if not source_previous_date:
-            continue
-        tracked_previous_ids.update(
-            str(row.get("dealId") or "")
-            for row in snapshots.get(source_previous_date, {}).get("deals", [])
-            if isinstance(row, dict) and row.get("dealId")
-        )
     snapshots_to_evaluate.add(current_date)
-    tracked_previous_ids.update(previous_by_id)
-
-    call_dates_by_deal: dict[str, list[date]] = defaultdict(list)
-    for deal_id in tracked_previous_ids:
-        for activity in all_active_by_id.get(deal_id, {}).get("activities", []):
-            if activity.get("kind") != "calls":
-                continue
-            activity_date = parse_bitrix_date(activity.get("date"), settings.report_timezone)
-            if activity_date:
-                call_dates_by_deal[deal_id].append(activity_date)
-
-    missing_previous_ids = sorted(tracked_previous_ids - set(all_active_by_id))
-    if missing_previous_ids:
-        try:
-            extra_events = fetch_deal_activity_events_batch(
-                session,
-                settings,
-                missing_previous_ids,
-                window,
-            )
-            for deal_id, events in extra_events.items():
-                call_dates_by_deal[deal_id].extend(
-                    event.date for event in events if event.kind == "calls"
-                )
-            extra_deals = fetch_deals_by_ids_batch(
-                session,
-                settings,
-                missing_previous_ids,
-            )
-            for deal_id, record in extra_deals.items():
-                all_active_by_id[deal_id] = {
-                    "lastSuccessfulCommunicationDate": date_iso(parse_bitrix_date(
-                        record.get(DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD),
-                        settings.report_timezone,
-                    )),
-                }
-        except Exception as exc:
-            warnings.append(
-                "Звонки по сделкам прошлого дня не загружены: " + safe_error_text(exc)
-            )
 
     flowed_ids = sorted(
         set(previous_by_id) & set(current_by_id),
@@ -3760,23 +3900,22 @@ def build_high_priority_payload(
             for row in snapshots.get(source_previous_date, {}).get("deals", [])
             if isinstance(row, dict) and row.get("dealId")
         }
-        detected_called_ids = high_priority_called_deal_ids(
-            source_previous_ids,
-            all_active_by_id,
-            call_dates_by_deal,
-            source_previous_date,
-            snapshot_date,
+        detected_called_ids = (
+            high_priority_called_deal_ids(
+                source_previous_ids,
+                call_dates_by_deal,
+                source_previous_date,
+                snapshot_date,
+            )
+            if call_data_available
+            else []
         )
-        source_snapshot["calledFromPreviousDealIds"] = sorted(
-            {
-                str(value)
-                for value in source_snapshot.get("calledFromPreviousDealIds", [])
-            }
-            | set(detected_called_ids),
-            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+        source_snapshot["calledFromPreviousDealIds"] = detected_called_ids
+        source_snapshot["calledFromPreviousEvaluated"] = call_data_available
+        source_snapshot["calledFromPreviousSource"] = (
+            "templab-mongodb" if call_data_available else "unavailable"
         )
-        source_snapshot["calledFromPreviousEvaluated"] = True
-    history["schemaVersion"] = 2
+    history["schemaVersion"] = 3
     write_high_priority_history(history_path, history)
 
     visible_snapshots: dict[str, Any] = {}
@@ -3856,6 +3995,9 @@ def build_high_priority_payload(
                 "previousDate": str(snapshot.get("previousDate") or ""),
                 "overdueCount": len(display_rows),
                 "calledFromPreviousCount": len(called_ids),
+                "calledFromPreviousAvailable": bool(
+                    snapshot.get("calledFromPreviousEvaluated")
+                ),
                 "flowedFromPreviousCount": len(flowed_snapshot_ids),
                 "newOverdueCount": len(new_snapshot_ids),
                 "stopMopCount": sum(1 for row in mop_rows if row["isStop"]),
@@ -4228,6 +4370,8 @@ def main() -> int:
             build_call_facts(data, session, settings, mop_settings, window)
         else:
             data.call_source = "none"
+        if call_source != "mongodb" and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip():
+            build_mongo_deal_call_facts(data, settings, window)
         apply_manual_fact_adjustments(
             data,
             window,
@@ -4261,8 +4405,8 @@ def main() -> int:
         )
         high_priority_payload = build_high_priority_payload(
             active_deals_payload,
-            session,
-            settings,
+            data.call_dates_by_deal,
+            data.call_deal_link_available,
             window,
             data.warnings,
         )
