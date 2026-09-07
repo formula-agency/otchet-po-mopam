@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-08-07T05:00:00Z",
+  "updatedAt": "2026-09-07T00:00:00Z",
   "months": {
     "2026-06": {
       "fileName": "restored-from-pages-artifact-2026-06",
@@ -161,6 +161,123 @@
           "reservationsPlan": 10,
           "approvedMortgagesPlan": 7,
           "airTimePlanSeconds": 30000
+        }
+      ]
+    },
+    "2026-09": {
+      "fileName": "План на сентябрь 2026 (скриншот)",
+      "publishedAt": "2026-09-07T00:00:00Z",
+      "managerCount": 12,
+      "hasAggregatePlan": false,
+      "skippedNames": [],
+      "plans": [
+        {
+          "mopName": "Черткова Ирина",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Попова Олеся",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Тончу Ростислав",
+          "aggregatePlan": false,
+          "salesPlan": 4,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Погребинский Артем",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Жуков Лев",
+          "aggregatePlan": false,
+          "salesPlan": 3,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Гавриленко Елена",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Войнов Данил",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Султанов Есен",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 3,
+          "airTimePlanSeconds": 9000
+        },
+        {
+          "mopName": "Парфенов Владислав",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 3,
+          "airTimePlanSeconds": 9000
+        },
+        {
+          "mopName": "Ядрышникова Кристина",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 3,
+          "airTimePlanSeconds": 9000
+        },
+        {
+          "mopName": "Васильев Владимир",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 3,
+          "airTimePlanSeconds": 9000
+        },
+        {
+          "mopName": "Марина Данчук",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
         }
       ]
     },
