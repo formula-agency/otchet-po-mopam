@@ -1,4 +1,5 @@
 import sys
+import tempfile
 import unittest
 from datetime import date
 from pathlib import Path
@@ -11,14 +12,51 @@ from import_vats_data import (  # noqa: E402
     CsvCallRecord,
     aggregate_csv_records,
     csv_call_is_completed,
+    parse_csv_call_records,
     preferred_csv_sources,
     resolved_csv_source_kinds,
     SourceRange,
 )
-from import_megafon_calls import normalize_text  # noqa: E402
+from import_megafon_calls import canonical_mop_names, normalize_text  # noqa: E402
 
 
 class CompletedCallsTest(unittest.TestCase):
+    def test_matches_two_part_names_in_reverse_order(self) -> None:
+        name_map = canonical_mop_names({"filters": {"mopNames": ["Марина Данчук"]}})
+
+        self.assertEqual(name_map[normalize_text("Данчук Марина")], "Марина Данчук")
+
+    def test_reads_manager_summary_exports(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            vats_dir = Path(temp_dir) / "vats data"
+            range_dir = vats_dir / "01.09-08.09"
+            range_dir.mkdir(parents=True)
+            calls_path = range_dir / "звонки.csv"
+            air_path = range_dir / "эфир.csv"
+            calls_path.write_text(
+                "Менеджер;Звонки;Целевые;Результативные;Минуты\n"
+                "Итого;10;4;2;30\n"
+                "МОП 1;7;4;2;20\n",
+                encoding="utf-8",
+            )
+            air_path.write_text(
+                "Менеджер;Звонки;Целевые;Результативные;Минуты\n"
+                "Итого;4;4;2;20\n"
+                "МОП 1;4;4;2;20\n",
+                encoding="utf-8",
+            )
+
+            call_records = parse_csv_call_records(calls_path, "calls", vats_dir)
+            air_records = parse_csv_call_records(air_path, "air", vats_dir)
+
+            self.assertEqual(len(call_records), 7)
+            self.assertTrue(all(record.day == date(2026, 9, 8) for record in call_records))
+            self.assertEqual(sum(csv_call_is_completed(record.classification) for record in call_records), 7)
+            self.assertEqual(sum(record.classification.startswith("Целевой") for record in call_records), 4)
+            self.assertEqual(sum(record.classification == "Целевой результативный" for record in call_records), 2)
+            self.assertEqual(len(air_records), 1)
+            self.assertEqual(air_records[0].duration_seconds, 20 * 60)
+
     def test_detects_swapped_calls_and_air_exports(self) -> None:
         calls_path = Path("01.08-18.08/звонки.csv")
         air_path = Path("01.08-18.08/эфир.csv")

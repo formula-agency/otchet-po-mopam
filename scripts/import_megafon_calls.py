@@ -411,7 +411,12 @@ def canonical_mop_names(payload: dict[str, Any]) -> dict[str, str]:
         if row.get("mopName") and not row.get("manualAggregate")
     )
     names.discard(MEGAFON_MOP_NAME)
-    return {normalize_text(name): name for name in names if normalize_text(name)}
+    result = {normalize_text(name): name for name in names if normalize_text(name)}
+    for name in names:
+        parts = name.split()
+        if len(parts) == 2:
+            result.setdefault(normalize_text(" ".join(reversed(parts))), name)
+    return result
 
 
 def filter_records_by_window(records: list[Any], report_from: date | None, report_to: date | None) -> list[Any]:

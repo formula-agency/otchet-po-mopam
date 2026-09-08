@@ -315,7 +315,69 @@ def parse_csv_duration_seconds(value: Any) -> int:
     return parse_duration_seconds(text)
 
 
-def parse_csv_call_records(path: Path, source_kind: str) -> list[CsvCallRecord]:
+def parse_csv_summary_number(value: Any) -> int:
+    text = str(value or "").strip().replace("\u00a0", "").replace(" ", "").replace(",", ".")
+    if not text:
+        return 0
+    try:
+        return max(0, int(round(float(text))))
+    except ValueError:
+        return 0
+
+
+def parse_csv_summary_records(
+    path: Path,
+    source_kind: str,
+    fieldnames: list[str],
+    rows: list[dict[str, Any]],
+    vats_dir: Path,
+) -> list[CsvCallRecord]:
+    header_by_key = {normalize_text(header): header for header in fieldnames}
+    employee_header = header_by_key.get("менеджер")
+    calls_header = header_by_key.get("звонки")
+    minutes_header = header_by_key.get("минуты")
+    target_header = header_by_key.get("целевые")
+    successful_header = header_by_key.get("результативные")
+    if not employee_header:
+        return []
+    if source_kind == "calls" and not calls_header:
+        return []
+    if source_kind == "air" and not minutes_header:
+        return []
+
+    declared_range = find_declared_range(path, vats_dir, date.today())
+    if not declared_range:
+        raise ImportErrorWithHint(
+            f"Для сводного CSV нужна папка с диапазоном дат, например 01.09-08.09: {path}",
+        )
+    record_day = declared_range[1]
+    records: list[CsvCallRecord] = []
+    for row in rows:
+        employee = str(row.get(employee_header) or "").strip()
+        if not employee or normalize_text(employee) == "итого":
+            continue
+        if source_kind == "air":
+            duration_seconds = parse_csv_summary_number(row.get(minutes_header)) * 60
+            if duration_seconds:
+                records.append(CsvCallRecord(path, record_day, employee, duration_seconds, "", source_kind))
+            continue
+
+        calls = parse_csv_summary_number(row.get(calls_header))
+        target = min(calls, parse_csv_summary_number(row.get(target_header))) if target_header else 0
+        successful = min(target, parse_csv_summary_number(row.get(successful_header))) if successful_header else 0
+        classifications = (
+            ["Целевой результативный"] * successful
+            + ["Целевой нерезультативный"] * (target - successful)
+            + ["Сервисный звонок"] * (calls - target)
+        )
+        records.extend(
+            CsvCallRecord(path, record_day, employee, 0, classification, source_kind)
+            for classification in classifications
+        )
+    return records
+
+
+def parse_csv_call_records(path: Path, source_kind: str, vats_dir: Path) -> list[CsvCallRecord]:
     with path.open("r", encoding="utf-8-sig", newline="") as file:
         reader = csv.DictReader(file, delimiter=";")
         if not reader.fieldnames:
@@ -325,13 +387,18 @@ def parse_csv_call_records(path: Path, source_kind: str) -> list[CsvCallRecord]:
         duration_header = header_by_key.get("длительность звонка")
         employee_header = header_by_key.get("менеджер")
         classification_header = header_by_key.get("классификация звонка")
-        if not date_header or not employee_header or (source_kind != "calls" and not duration_header):
-            if source_kind == "calls":
-                required_columns = "'Дата звонка' и 'Менеджер'"
-            else:
-                required_columns = "'Дата звонка', 'Длительность звонка' и 'Менеджер'"
+        if not date_header or not employee_header:
+            summary_records = parse_csv_summary_records(
+                path,
+                source_kind,
+                list(reader.fieldnames),
+                list(reader),
+                vats_dir,
+            )
+            if summary_records:
+                return sorted(summary_records, key=lambda record: (record.day, record.employee))
             raise ImportErrorWithHint(
-                f"В CSV нужны колонки {required_columns}."
+                "В CSV нужны колонки 'Дата звонка' и 'Менеджер'."
             )
 
         records: list[CsvCallRecord] = []
@@ -399,7 +466,7 @@ def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRec
         if not source_kind:
             continue
         try:
-            file_records = parse_csv_call_records(path, source_kind)
+            file_records = parse_csv_call_records(path, source_kind, vats_dir)
         except ImportErrorWithHint as exc:
             raise ImportErrorWithHint(f"Не удалось прочитать CSV звонков {path}: {exc}") from exc
         records_by_path[path] = file_records
