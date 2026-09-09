@@ -5503,20 +5503,6 @@
           "title": "Ф_2+_Ислам_ЧПВ_Встреча"
         },
         {
-          "dateCreate": "2026-07-28",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 8,
-          "dealId": "5792",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5792/",
-          "lastCallAttemptDate": "2026-09-01",
-          "lastSuccessfulCommunicationDate": "2026-09-01",
-          "mopId": "190",
-          "mopName": "Тончу Ростислав",
-          "stageId": "C1:3",
-          "stageName": "Отложенный клиент",
-          "title": "н.о ? 15.09"
-        },
-        {
           "dateCreate": "2026-08-17",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -5623,7 +5609,6 @@
         "5660",
         "5695",
         "5718",
-        "5792",
         "5797",
         "5812",
         "5825",
