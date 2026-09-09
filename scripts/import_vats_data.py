@@ -458,10 +458,42 @@ def resolved_csv_source_kinds(records_by_path: dict[Path, list[CsvCallRecord]]) 
     return resolved
 
 
+def csv_file_is_summary(path: Path) -> bool:
+    with path.open("r", encoding="utf-8-sig", newline="") as file:
+        reader = csv.reader(file, delimiter=";")
+        headers = next(reader, [])
+    normalized_headers = {normalize_text(header) for header in headers}
+    return "менеджер" in normalized_headers and "дата звонка" not in normalized_headers
+
+
+def latest_csv_summary_paths(paths: list[Path], vats_dir: Path, anchor: date) -> set[Path]:
+    selected = set(paths)
+    latest_by_month_metric: dict[tuple[int, int, str], tuple[date, Path]] = {}
+    for path in paths:
+        if not csv_file_is_summary(path):
+            continue
+        declared_range = find_declared_range(path, vats_dir, anchor)
+        if not declared_range:
+            continue
+        start, end = declared_range
+        key = (start.year, start.month, csv_source_kind(path))
+        current = latest_by_month_metric.get(key)
+        if current is None or (end, path.as_posix()) > (current[0], current[1].as_posix()):
+            if current:
+                selected.discard(current[1])
+            latest_by_month_metric[key] = (end, path)
+        else:
+            selected.discard(path)
+    return selected
+
+
 def load_csv_sources(paths: list[Path], vats_dir: Path) -> tuple[list[CsvCallRecord], list[SourceRange]]:
     records_by_path: dict[Path, list[CsvCallRecord]] = {}
     ranges: list[SourceRange] = []
+    selected_paths = latest_csv_summary_paths(paths, vats_dir, date.today())
     for path in paths:
+        if path not in selected_paths:
+            continue
         source_kind = csv_source_kind(path)
         if not source_kind:
             continue

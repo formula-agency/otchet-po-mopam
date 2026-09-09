@@ -12,15 +12,28 @@ from import_vats_data import (  # noqa: E402
     CsvCallRecord,
     aggregate_csv_records,
     csv_call_is_completed,
+    load_csv_sources,
     parse_csv_call_records,
     preferred_csv_sources,
     resolved_csv_source_kinds,
     SourceRange,
 )
-from import_megafon_calls import canonical_mop_names, normalize_text  # noqa: E402
+from import_megafon_calls import (  # noqa: E402
+    canonical_mop_names,
+    clear_existing_megafon_data,
+    normalize_text,
+)
 
 
 class CompletedCallsTest(unittest.TestCase):
+    def test_megafon_cleanup_preserves_other_source_markers(self) -> None:
+        rows = [{"callsSource": "crm_calls_export", "airTimeSource": "crm_calls_export"}]
+
+        cleaned = clear_existing_megafon_data(rows)
+
+        self.assertEqual(cleaned[0]["callsSource"], "crm_calls_export")
+        self.assertEqual(cleaned[0]["airTimeSource"], "crm_calls_export")
+
     def test_matches_two_part_names_in_reverse_order(self) -> None:
         name_map = canonical_mop_names({"filters": {"mopNames": ["Марина Данчук"]}})
 
@@ -56,6 +69,25 @@ class CompletedCallsTest(unittest.TestCase):
             self.assertEqual(sum(record.classification == "Целевой результативный" for record in call_records), 2)
             self.assertEqual(len(air_records), 1)
             self.assertEqual(air_records[0].duration_seconds, 20 * 60)
+
+    def test_uses_only_latest_cumulative_summary_in_month(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            vats_dir = Path(temp_dir) / "vats data"
+            old_dir = vats_dir / "01.09-08.09"
+            latest_dir = vats_dir / "01.09-09.09"
+            old_dir.mkdir(parents=True)
+            latest_dir.mkdir(parents=True)
+            old_path = old_dir / "звонки.csv"
+            latest_path = latest_dir / "звонки.csv"
+            headers = "Менеджер;Звонки;Целевые;Результативные;Минуты\n"
+            old_path.write_text(headers + "МОП 1;7;4;2;20\n", encoding="utf-8")
+            latest_path.write_text(headers + "МОП 1;9;5;3;25\n", encoding="utf-8")
+
+            records, ranges = load_csv_sources([old_path, latest_path], vats_dir)
+
+            self.assertEqual(len(records), 9)
+            self.assertEqual({record.path for record in records}, {latest_path})
+            self.assertEqual([source_range.path for source_range in ranges], [latest_path])
 
     def test_detects_swapped_calls_and_air_exports(self) -> None:
         calls_path = Path("01.08-18.08/звонки.csv")

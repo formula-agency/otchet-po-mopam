@@ -462,8 +462,6 @@ def aggregate_history_records(
 def clear_existing_megafon_data(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     cleaned: list[dict[str, Any]] = []
     megafon_keys = {
-        "callsSource",
-        "airTimeSource",
         "callsFactBaseBeforeMegafon",
         "airTimeFactSecondsBaseBeforeMegafon",
         "megafonCallsFact",
@@ -475,9 +473,11 @@ def clear_existing_megafon_data(rows: list[dict[str, Any]]) -> list[dict[str, An
             continue
         if row.get("callsSource") == MEGAFON_SOURCE:
             row["callsFact"] = parse_int(row.get("callsFactBaseBeforeMegafon"))
+            row.pop("callsSource", None)
         if row.get("airTimeSource") == MEGAFON_SOURCE:
             row["airTimeFactSeconds"] = parse_int(row.get("airTimeFactSecondsBaseBeforeMegafon"))
             row["airTimeFact"] = format_duration(row["airTimeFactSeconds"])
+            row.pop("airTimeSource", None)
         for key in megafon_keys:
             row.pop(key, None)
         cleaned.append(row)
