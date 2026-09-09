@@ -97,6 +97,14 @@ def override_mongo_endpoint(uri: str, endpoint: str) -> str:
     return f"{match.group(1)}{credentials}{endpoint}{match.group(3) or ''}"
 
 
+def mongo_endpoint_overrides() -> tuple[str, str]:
+    """Return config and tenant overrides, retaining the legacy shared setting."""
+    shared = os.getenv("MONGO_CALLS_ENDPOINT_OVERRIDE", "").strip()
+    config = os.getenv("MONGO_CALLS_CONFIG_ENDPOINT_OVERRIDE", "").strip() or shared
+    tenant = os.getenv("MONGO_CALLS_TENANT_ENDPOINT_OVERRIDE", "").strip() or shared
+    return config, tenant
+
+
 def resolve_formula_tenant(customers: Collection[Mapping[str, Any]]) -> FormulaTenantConfig:
     document = customers.find_one(
         _formula_query(),
@@ -240,8 +248,8 @@ class FormulaMongoReader:
         config_collection = os.getenv("MONGO_CALLS_CONFIG_COLLECTION", DEFAULT_CONFIG_COLLECTION).strip()
         if not config_database or not config_collection:
             raise FormulaMongoError("Не заданы база или коллекция центральной конфигурации MongoDB.")
-        endpoint_override = os.getenv("MONGO_CALLS_ENDPOINT_OVERRIDE", "").strip()
-        config_uri = override_mongo_endpoint(config_uri, endpoint_override)
+        config_endpoint_override, tenant_endpoint_override = mongo_endpoint_overrides()
+        config_uri = override_mongo_endpoint(config_uri, config_endpoint_override)
         try:
             timeout_ms = max(
                 1_000,
@@ -270,7 +278,7 @@ class FormulaMongoReader:
         finally:
             config_client.close()
 
-        tenant_uri = override_mongo_endpoint(tenant.connection_string, endpoint_override)
+        tenant_uri = override_mongo_endpoint(tenant.connection_string, tenant_endpoint_override)
         tenant_client: MongoClient[Any] = MongoClient(
             tenant_uri,
             serverSelectionTimeoutMS=timeout_ms,

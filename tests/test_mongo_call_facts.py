@@ -77,6 +77,7 @@ class MongoCallPipelineTests(unittest.TestCase):
         pipeline = build_mongo_deal_call_pipeline(window, timezone_name)
 
         serialized = str(pipeline)
+        self.assertIn("b24_deal_id", serialized)
         self.assertIn("deal_id", serialized)
         self.assertIn("bitrix_deal_id", serialized)
         self.assertIn("CRM_ENTITY_ID", serialized)

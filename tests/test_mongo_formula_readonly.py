@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 from typing import Any
 
 from scripts.mongo_formula_readonly import (
@@ -9,6 +10,7 @@ from scripts.mongo_formula_readonly import (
     ReadOnlyCollection,
     _role_scope_violations,
     _write_capabilities,
+    mongo_endpoint_overrides,
     override_mongo_endpoint,
     resolve_formula_tenant,
 )
@@ -29,6 +31,32 @@ class EndpointOverrideTests(unittest.TestCase):
         uri = "mongodb://mongo.internal:27017/mongo_calls"
 
         self.assertEqual(override_mongo_endpoint(uri, ""), uri)
+
+    def test_supports_separate_config_and_tenant_tunnels(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {
+                "MONGO_CALLS_ENDPOINT_OVERRIDE": "127.0.0.1:27017",
+                "MONGO_CALLS_CONFIG_ENDPOINT_OVERRIDE": "127.0.0.1:27018",
+                "MONGO_CALLS_TENANT_ENDPOINT_OVERRIDE": "127.0.0.1:27019",
+            },
+            clear=True,
+        ):
+            self.assertEqual(
+                mongo_endpoint_overrides(),
+                ("127.0.0.1:27018", "127.0.0.1:27019"),
+            )
+
+    def test_legacy_override_remains_shared(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {"MONGO_CALLS_ENDPOINT_OVERRIDE": "127.0.0.1:27018"},
+            clear=True,
+        ):
+            self.assertEqual(
+                mongo_endpoint_overrides(),
+                ("127.0.0.1:27018", "127.0.0.1:27018"),
+            )
 
 
 class FakeCustomers:

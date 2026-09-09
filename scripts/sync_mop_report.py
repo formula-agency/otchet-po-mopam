@@ -110,6 +110,7 @@ MANUAL_SALES_DATE_OVERRIDES = {
     "5461": date(2026, 6, 30),
     "5497": date(2026, 6, 30),
     "5518": date(2026, 6, 30),
+    "5824": date(2026, 8, 17),
 }
 MANUAL_MONTHLY_MOP_PLANS = (
     {
@@ -2555,6 +2556,7 @@ def build_mongo_deal_call_pipeline(
     timezone_name: str,
 ) -> list[dict[str, Any]]:
     direct_deal_id = mongo_first_nonempty_string((
+        "b24_deal_id",
         "deal_id",
         "dealId",
         "bitrix_deal_id",

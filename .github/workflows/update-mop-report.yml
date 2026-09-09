@@ -35,6 +35,25 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Open TempLab MongoDB tunnel
+        env:
+          MONGO_SSH_PRIVATE_KEY: ${{ secrets.MONGO_SSH_PRIVATE_KEY }}
+          MONGO_SSH_KNOWN_HOSTS: ${{ secrets.MONGO_SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$MONGO_SSH_PRIVATE_KEY" | tr -d '\r' > "$HOME/.ssh/formula_templab_bastion"
+          printf '%s\n' "$MONGO_SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/formula_templab_bastion" "$HOME/.ssh/known_hosts"
+          ssh -f -N \
+            -i "$HOME/.ssh/formula_templab_bastion" \
+            -o BatchMode=yes \
+            -o ExitOnForwardFailure=yes \
+            -o IdentitiesOnly=yes \
+            -o ServerAliveInterval=30 \
+            -L 127.0.0.1:27018:94.198.221.153:27017 \
+            -L 127.0.0.1:27019:89.223.71.184:27017 \
+            root@45.91.238.53
+
       - name: Sync MOP report
         env:
           BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
@@ -61,7 +80,14 @@ jobs:
           MOP_INCLUDE_USERS: Черткова Ирина,Попова Олеся,Попова Юлия,Губайдулина Заррина,Тончу Ростислав,Погребинский Артем,Камболин Александр,Жуков Лев,Гавриленко Елена,Войнов Данил,Султанов Есен,Парфенов Владислав,Ядрышникова Кристина,Васильев Владимир,Марина Данчук
           MOP_EXCLUDE_USERS: ""
           MOP_CALL_MIN_DURATION_SECONDS: ${{ secrets.MOP_CALL_MIN_DURATION_SECONDS }}
-          MOP_HIGH_PRIORITY_SOURCE: templab-history
+          MOP_HIGH_PRIORITY_SOURCE: mongodb
+          MONGO_CALLS_CONFIG_URI: ${{ secrets.MONGO_CALLS_CONFIG_URI }}
+          MONGO_CALLS_CONFIG_DATABASE: mongo_calls
+          MONGO_CALLS_CONFIG_COLLECTION: customers
+          MONGO_CALLS_CONFIG_ENDPOINT_OVERRIDE: 127.0.0.1:27018
+          MONGO_CALLS_TENANT_ENDPOINT_OVERRIDE: 127.0.0.1:27019
+          MONGO_CALLS_REQUIRE_SERVER_READ_ONLY: "false"
+          MONGO_CALLS_CONNECT_TIMEOUT_MS: "10000"
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
