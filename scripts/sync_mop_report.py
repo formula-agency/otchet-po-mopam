@@ -39,6 +39,13 @@ DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD = "UF_DEAL_DATE_FIRST_SUCCESSFUL_COMMUN
 DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES = ("4559", "1", "да", "yes", "y", "true")
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS = 120_000
+MONGO_FAILED_CALL_CLASSIFICATION = "Несостоявшийся разговор"
+MONGO_RESULTATIVE_TARGET_CLASSIFICATION = "Целевой результативный"
+MONGO_TARGET_CALL_CLASSIFICATIONS = (
+    MONGO_RESULTATIVE_TARGET_CLASSIFICATION,
+    "Целевой нерезультативный",
+    "Целевой звонок",
+)
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
 DEFAULT_BOOKING_LIST_ID = "38"
@@ -489,6 +496,8 @@ class MopMetricSet:
     reservations: int = 0
     approved_mortgages: int = 0
     calls: int = 0
+    target_calls: int = 0
+    successful_target_calls: int = 0
     air_seconds: int = 0
     target_minutes_after_meeting_seconds: int = 0
 
@@ -498,6 +507,8 @@ class MopMetricSet:
         self.reservations += other.reservations
         self.approved_mortgages += other.approved_mortgages
         self.calls += other.calls
+        self.target_calls += other.target_calls
+        self.successful_target_calls += other.successful_target_calls
         self.air_seconds += other.air_seconds
         self.target_minutes_after_meeting_seconds += other.target_minutes_after_meeting_seconds
 
@@ -516,6 +527,8 @@ class MopMetricSet:
             )
         if suffix == "Fact":
             result["callsFact"] = self.calls
+            result["targetCallsFact"] = self.target_calls
+            result["targetSuccessfulCallsFact"] = self.successful_target_calls
             result["targetMinutesAfterMeetingFactSeconds"] = self.target_minutes_after_meeting_seconds
         return result
 
@@ -2462,6 +2475,7 @@ def build_mongo_call_aggregation_pipeline(
     timezone_name: str,
     min_duration_seconds: int,
 ) -> list[dict[str, Any]]:
+    del min_duration_seconds  # TempLab uses its fixed 15-second classification rule.
     return [
         {
             "$match": {
@@ -2470,18 +2484,8 @@ def build_mongo_call_aggregation_pipeline(
         },
         {
             "$project": {
-                "dedupeKey": {
-                    "$cond": [
-                        {
-                            "$and": [
-                                {"$eq": [{"$type": "$call_uid"}, "string"]},
-                                {"$ne": ["$call_uid", ""]},
-                            ]
-                        },
-                        "$call_uid",
-                        "$_id",
-                    ]
-                },
+                "call_uid": 1,
+                "call_status": 1,
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2501,24 +2505,75 @@ def build_mongo_call_aggregation_pipeline(
             }
         },
         {
-            "$match": {
-                "mopName": {"$ne": ""},
-                "duration": {"$gte": max(0, min_duration_seconds)},
+            "$addFields": {
+                "duration": {
+                    "$cond": [
+                        {"$eq": ["$call_status", "Пропущенный звонок."]},
+                        0,
+                        "$duration",
+                    ]
+                }
             }
         },
         {
-            "$group": {
-                "_id": "$dedupeKey",
-                "day": {"$first": "$day"},
-                "mopName": {"$first": "$mopName"},
-                "duration": {"$max": "$duration"},
+            "$lookup": {
+                "from": "call_analysis",
+                "localField": "call_uid",
+                "foreignField": "uuid",
+                "as": "analysisDocs",
             }
         },
+        {
+            "$addFields": {
+                "classification": {
+                    "$cond": [
+                        {"$lt": ["$duration", 15]},
+                        MONGO_FAILED_CALL_CLASSIFICATION,
+                        {"$arrayElemAt": ["$analysisDocs.call_classification", 0]},
+                    ]
+                }
+            }
+        },
+        {"$match": {"mopName": {"$ne": ""}}},
         {
             "$group": {
                 "_id": {"day": "$day", "mopName": "$mopName"},
-                "calls": {"$sum": 1},
-                "airSeconds": {"$sum": "$duration"},
+                "calls": {
+                    "$sum": {
+                        "$cond": [
+                            {"$ne": ["$classification", MONGO_FAILED_CALL_CLASSIFICATION]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "targetCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "successfulTargetCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {"$eq": ["$classification", MONGO_RESULTATIVE_TARGET_CLASSIFICATION]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "airSeconds": {
+                    "$sum": {
+                        "$cond": [
+                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
+                            "$duration",
+                            0,
+                        ]
+                    }
+                },
             }
         },
         {"$sort": {"_id.day": 1, "_id.mopName": 1}},
@@ -2733,9 +2788,22 @@ def apply_mongo_call_aggregates(
         if not mop_name or not mop_is_allowed(mop_id, mop_name, mop_settings):
             continue
         calls = max(0, parse_number(row.get("calls")))
+        target_calls = max(0, parse_number(row.get("targetCalls")))
+        successful_target_calls = max(0, parse_number(row.get("successfulTargetCalls")))
         air_seconds = max(0, parse_number(row.get("airSeconds")))
         if calls:
             add_fact(data, event_date, mop_id, "calls", calls, mop_name=mop_name)
+        if target_calls:
+            add_fact(data, event_date, mop_id, "target_calls", target_calls, mop_name=mop_name)
+        if successful_target_calls:
+            add_fact(
+                data,
+                event_date,
+                mop_id,
+                "successful_target_calls",
+                successful_target_calls,
+                mop_name=mop_name,
+            )
         if air_seconds:
             add_fact(data, event_date, mop_id, "air_seconds", air_seconds, mop_name=mop_name)
         if calls or air_seconds:
@@ -4404,11 +4472,7 @@ def main() -> int:
             and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
         ):
             build_mongo_deal_call_facts(data, settings, window)
-        apply_manual_fact_adjustments(
-            data,
-            window,
-            include_call_metrics=not mongo_calls_loaded,
-        )
+        apply_manual_fact_adjustments(data, window, include_call_metrics=True)
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
         hydrate_fact_identities(data, user_names)

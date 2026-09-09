@@ -62,8 +62,14 @@ class MongoCallPipelineTests(unittest.TestCase):
             pipeline[1]["$project"]["day"]["$dateToString"]["timezone"],
             timezone_name,
         )
-        self.assertEqual(pipeline[2]["$match"]["duration"], {"$gte": 5})
-        self.assertEqual(pipeline[3]["$group"]["_id"], "$dedupeKey")
+        self.assertEqual(pipeline[2]["$addFields"]["duration"]["$cond"][2], "$duration")
+        self.assertEqual(pipeline[3]["$lookup"]["from"], "call_analysis")
+        self.assertEqual(
+            pipeline[4]["$addFields"]["classification"]["$cond"][1],
+            "Несостоявшийся разговор",
+        )
+        self.assertIn("targetCalls", pipeline[6]["$group"])
+        self.assertIn("successfulTargetCalls", pipeline[6]["$group"])
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
     def test_deal_pipeline_supports_direct_and_crm_entity_ids(self) -> None:
@@ -107,6 +113,8 @@ class MongoCallAggregateTests(unittest.TestCase):
             {
                 "_id": {"day": "2026-08-19", "mopName": "Войнов Данил"},
                 "calls": 2,
+                "targetCalls": 1,
+                "successfulTargetCalls": 1,
                 "airSeconds": 65,
             }
         ]
@@ -117,6 +125,8 @@ class MongoCallAggregateTests(unittest.TestCase):
         sprint = week_start_for_date(date(2026, 8, 19))
         self.assertEqual(totals, (2, 65, 1))
         self.assertEqual(data.facts[sprint][key].calls, 2)
+        self.assertEqual(data.facts[sprint][key].target_calls, 1)
+        self.assertEqual(data.facts[sprint][key].successful_target_calls, 1)
         self.assertEqual(data.facts[sprint][key].air_seconds, 65)
         self.assertEqual(data.daily_facts[date(2026, 8, 19)][key].calls, 2)
         self.assertEqual(data.identities[key].mop_name, "Войнов Данил")

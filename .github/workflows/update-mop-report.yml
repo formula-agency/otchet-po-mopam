@@ -21,7 +21,7 @@ jobs:
   sync-report:
     runs-on: ubuntu-latest
     env:
-      MOP_CALL_SOURCE: none
+      MOP_CALL_SOURCE: mongodb
 
     steps:
       - name: Checkout repository
