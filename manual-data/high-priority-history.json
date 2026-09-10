@@ -6058,20 +6058,6 @@
           "title": "Алексей"
         },
         {
-          "dateCreate": "2026-03-27",
-          "daysWithoutAttempt": 14,
-          "daysWithoutCall": 23,
-          "dealId": "4460",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4460/",
-          "lastCallAttemptDate": "2026-08-27",
-          "lastSuccessfulCommunicationDate": "2026-08-18",
-          "mopId": "",
-          "mopName": "Парфенов Владислав",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Артём"
-        },
-        {
           "dateCreate": "2026-02-05",
           "daysWithoutAttempt": 23,
           "daysWithoutCall": 23,
@@ -6280,20 +6266,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Евгения"
-        },
-        {
-          "dateCreate": "2026-02-18",
-          "daysWithoutAttempt": 20,
-          "daysWithoutCall": 20,
-          "dealId": "4082",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4082/",
-          "lastCallAttemptDate": "2026-08-21",
-          "lastSuccessfulCommunicationDate": "2026-08-21",
-          "mopId": "",
-          "mopName": "Парфенов Владислав",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Виктор"
         },
         {
           "dateCreate": "2026-08-22",
@@ -7241,11 +7213,9 @@
         "4004",
         "4010",
         "4064",
-        "4082",
         "4168",
         "4185",
         "4195",
-        "4460",
         "4536",
         "4627",
         "4681",
