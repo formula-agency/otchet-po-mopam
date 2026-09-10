@@ -5556,6 +5556,8 @@
     },
     "2026-09-10": {
       "calledFromPreviousDealIds": [
+        "4082",
+        "4681",
         "5990",
         "6048",
         "6131",
@@ -5987,11 +5989,11 @@
         },
         {
           "dateCreate": "2026-04-10",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 24,
           "dealId": "4681",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4681/",
-          "lastCallAttemptDate": "2026-09-07",
+          "lastCallAttemptDate": "2026-09-10",
           "lastSuccessfulCommunicationDate": "2026-08-17",
           "mopId": "",
           "mopName": "Парфенов Владислав",
@@ -7176,20 +7178,6 @@
           "title": "Николай"
         },
         {
-          "dateCreate": "2026-08-27",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 8,
-          "dealId": "6113",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6113/",
-          "lastCallAttemptDate": "2026-09-09",
-          "lastSuccessfulCommunicationDate": "2026-09-02",
-          "mopId": "",
-          "mopName": "Парфенов Владислав",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Анастасия"
-        },
-        {
           "dateCreate": "2026-08-28",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -7363,7 +7351,6 @@
         "6107",
         "6111",
         "6112",
-        "6113",
         "6118",
         "6125",
         "6132",
