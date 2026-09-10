@@ -12,7 +12,8 @@ const state = {
   activeDateFrom: '',
   activeDateTo: '',
   activeMopName: '',
-  priorityDate: '',
+  priorityDateFrom: '',
+  priorityDateTo: '',
   priorityMopName: 'all',
   airtimeMonth: '',
   airtimeSprint: '',
@@ -76,7 +77,8 @@ const els = {
   activeReservationCount: document.getElementById('active-reservation-count'),
   activeMortgageCount: document.getElementById('active-mortgage-count'),
   activeGapCount: document.getElementById('active-gap-count'),
-  priorityDate: document.getElementById('priority-date'),
+  priorityDateFrom: document.getElementById('priority-date-from'),
+  priorityDateTo: document.getElementById('priority-date-to'),
   priorityMop: document.getElementById('priority-mop'),
   priorityCaption: document.getElementById('priority-caption'),
   priorityRule: document.getElementById('priority-rule'),
@@ -1363,6 +1365,19 @@ function prioritySnapshotForDate(value) {
   return snapshots.filter((snapshot) => snapshot.date <= requested).at(-1) || snapshots[0];
 }
 
+function prioritySnapshotsInRange(fromValue, toValue) {
+  const snapshots = [...(highPriorityData().snapshots || [])]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  if (!snapshots.length) return [];
+  const range = normalizedDateRange(fromValue, toValue);
+  const endSnapshot = prioritySnapshotForDate(range.to || range.from);
+  if (!endSnapshot) return [];
+  const startDate = range.from || endSnapshot.date;
+  return snapshots.filter((snapshot) => (
+    snapshot.date >= startDate && snapshot.date <= endSnapshot.date
+  ));
+}
+
 function prioritySourceLabel(row) {
   const labels = [];
   if (row.calledFromPrevious) labels.push('Прозвонили');
@@ -1372,16 +1387,20 @@ function prioritySourceLabel(row) {
 
 function renderHighPriority() {
   const priorityData = highPriorityData();
-  const snapshot = prioritySnapshotForDate(state.priorityDate);
+  const range = normalizedDateRange(state.priorityDateFrom, state.priorityDateTo);
+  const snapshot = prioritySnapshotForDate(range.to || range.from);
+  const movementSnapshots = prioritySnapshotsInRange(range.from, range.to);
   const overdueFromDays = Number(
     priorityData.rules?.overdueFromDays
     ?? priorityData.rules?.maxDaysWithoutCall
     ?? 8
   );
   const stopThreshold = Number(priorityData.rules?.stopLeadThreshold ?? 10);
-  const prioritySource = priorityData.source === 'templab-history'
-    ? 'ручной Excel-архив (не live TempLab)'
-    : 'не определен';
+  const prioritySource = priorityData.source === 'templab-mongodb'
+    ? 'TempLab MongoDB'
+    : priorityData.source === 'templab-history'
+      ? 'ручной Excel-архив'
+      : 'резервный источник';
   els.priorityRule.textContent = `Источник: ${prioritySource} · Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
 
   if (!snapshot) {
@@ -1398,10 +1417,30 @@ function renderHighPriority() {
     return;
   }
 
-  state.priorityDate = snapshot.date;
-  els.priorityDate.value = snapshot.date;
+  const selectedFrom = range.from || snapshot.date;
+  const selectedTo = range.to || snapshot.date;
+  state.priorityDateFrom = selectedFrom;
+  state.priorityDateTo = selectedTo;
+  els.priorityDateFrom.value = selectedFrom;
+  els.priorityDateTo.value = selectedTo;
   const selectedMop = state.priorityMopName || 'all';
+  const movementByMop = new Map();
+  for (const movementSnapshot of movementSnapshots) {
+    for (const row of movementSnapshot.mops || []) {
+      const totals = movementByMop.get(row.mopName) || { called: 0, flowed: 0 };
+      if (movementSnapshot.calledFromPreviousAvailable) {
+        totals.called += Number(row.calledFromPreviousCount || 0);
+      }
+      totals.flowed += Number(row.flowedFromPreviousCount || 0);
+      movementByMop.set(row.mopName, totals);
+    }
+  }
   const mopRows = (snapshot.mops || [])
+    .map((row) => ({
+      ...row,
+      calledFromPreviousCount: movementByMop.get(row.mopName)?.called || 0,
+      flowedFromPreviousCount: movementByMop.get(row.mopName)?.flowed || 0,
+    }))
     .filter((row) => selectedMop === 'all' || row.mopName === selectedMop)
     .sort((a, b) => (
       Number(b.isStop) - Number(a.isStop)
@@ -1423,13 +1462,16 @@ function renderHighPriority() {
   }, { overdue: 0, called: 0, flowed: 0, stop: 0 });
 
   els.priorityOverdueCount.textContent = formatNumber(totals.overdue);
-  els.priorityCalledCount.textContent = snapshot.calledFromPreviousAvailable
+  const movementAvailable = movementSnapshots.some((item) => item.calledFromPreviousAvailable);
+  els.priorityCalledCount.textContent = movementAvailable
     ? formatNumber(totals.called)
     : '—';
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
-  const previousLabel = snapshot.previousDate ? formatDate(snapshot.previousDate) : 'нет';
-  els.priorityCaption.textContent = `Архивный снимок: ${formatDate(snapshot.date)} · Предыдущий: ${previousLabel}`;
+  const movementFrom = movementSnapshots[0]?.date || snapshot.date;
+  els.priorityCaption.textContent = movementFrom === snapshot.date
+    ? `Срез на ${formatDate(snapshot.date)}`
+    : `Срез на ${formatDate(snapshot.date)} · Движение за ${formatDate(movementFrom)}-${formatDate(snapshot.date)}`;
   els.priorityDealsCaption.textContent = `${formatNumber(dealRows.length)} сделок`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
@@ -1437,7 +1479,7 @@ function renderHighPriority() {
       <tr class="${row.isStop ? 'priority-row--stop' : 'priority-row--work'}">
         <td><strong>${escapeHtml(row.mopName)}</strong></td>
         <td>${formatNumber(row.overdueCount)}</td>
-        <td>${snapshot.calledFromPreviousAvailable ? formatNumber(row.calledFromPreviousCount) : '—'}</td>
+        <td>${movementAvailable ? formatNumber(row.calledFromPreviousCount) : '—'}</td>
         <td>${formatNumber(row.flowedFromPreviousCount)}</td>
         <td class="priority-days priority-days--critical">${formatNumber(row.withoutCallCount)}</td>
         <td class="priority-days">${formatNumber(row.withoutAttemptCount)}</td>
@@ -1979,8 +2021,26 @@ function bindControls() {
     state.activeMopName = els.activeDealMop.value;
     renderActiveDeals();
   });
-  els.priorityDate?.addEventListener('change', () => {
-    state.priorityDate = els.priorityDate.value;
+  els.priorityDateFrom?.addEventListener('change', () => {
+    const range = normalizedDateRange(
+      els.priorityDateFrom.value || els.priorityDateTo.value,
+      els.priorityDateTo.value || els.priorityDateFrom.value,
+    );
+    state.priorityDateFrom = range.from;
+    state.priorityDateTo = range.to;
+    els.priorityDateFrom.value = range.from;
+    els.priorityDateTo.value = range.to;
+    renderHighPriority();
+  });
+  els.priorityDateTo?.addEventListener('change', () => {
+    const range = normalizedDateRange(
+      els.priorityDateFrom.value || els.priorityDateTo.value,
+      els.priorityDateTo.value || els.priorityDateFrom.value,
+    );
+    state.priorityDateFrom = range.from;
+    state.priorityDateTo = range.to;
+    els.priorityDateFrom.value = range.from;
+    els.priorityDateTo.value = range.to;
     renderHighPriority();
   });
   els.priorityMop?.addEventListener('change', () => {
@@ -2056,23 +2116,21 @@ function init() {
     .map((snapshot) => String(snapshot.date || ''))
     .filter((snapshotDate) => snapshotDate && snapshotDate < String(priorityData.currentDate || ''))
     .sort();
-  state.priorityDate = (priorityData.source === 'templab-history' ? priorityData.currentDate : '')
+  const defaultPriorityDate = (priorityData.source === 'templab-history' ? priorityData.currentDate : '')
     || completedPriorityDates.at(-1)
     || priorityData.currentDate
     || priorityData.maxDate
     || '';
+  state.priorityDateFrom = defaultPriorityDate;
+  state.priorityDateTo = defaultPriorityDate;
   state.priorityMopName = 'all';
-  populateSelect(
-    els.priorityDate,
-    (priorityData.snapshots || [])
-      .map((snapshot) => ({ value: snapshot.date, label: formatDate(snapshot.date) }))
-      .sort((a, b) => b.value.localeCompare(a.value)),
-    '',
-    false,
-  );
+  for (const input of [els.priorityDateFrom, els.priorityDateTo]) {
+    input.min = priorityData.minDate || '';
+    input.max = priorityData.maxDate || priorityData.currentDate || '';
+    input.value = defaultPriorityDate;
+  }
   populateSelect(els.priorityMop, priorityData.mopNames || [], 'Все МОПы');
   els.priorityMop.value = state.priorityMopName;
-  els.priorityDate.value = state.priorityDate;
   bindControls();
   bindViewNavigation();
   bindHeaderState();

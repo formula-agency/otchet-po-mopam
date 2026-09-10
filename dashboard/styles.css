@@ -549,9 +549,9 @@ select {
 
 .priority-controls {
   display: grid;
-  grid-template-columns: minmax(160px, 190px) minmax(210px, 280px);
+  grid-template-columns: repeat(2, minmax(150px, 180px)) minmax(210px, 280px);
   gap: 12px;
-  width: min(490px, 100%);
+  width: min(660px, 100%);
 }
 
 .priority-summary__stats {
