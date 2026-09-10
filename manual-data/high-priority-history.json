@@ -5556,6 +5556,7 @@
     },
     "2026-09-10": {
       "calledFromPreviousDealIds": [
+        "5990",
         "6048"
       ],
       "calledFromPreviousEvaluated": true,
@@ -5575,6 +5576,20 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Анна"
+        },
+        {
+          "dateCreate": "2026-05-29",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 104,
+          "dealId": "5361",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5361/",
+          "lastCallAttemptDate": "2026-09-10",
+          "lastSuccessfulCommunicationDate": "",
+          "mopId": "",
+          "mopName": "Погребинский Артем",
+          "stageId": "",
+          "stageName": "Совершить первый контакт",
+          "title": "Алена"
         },
         {
           "dateCreate": "2026-06-02",
@@ -5799,6 +5814,20 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Светлана"
+        },
+        {
+          "dateCreate": "2026-07-21",
+          "daysWithoutAttempt": 2,
+          "daysWithoutCall": 30,
+          "dealId": "5724",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5724/",
+          "lastCallAttemptDate": "2026-09-08",
+          "lastSuccessfulCommunicationDate": "2026-08-11",
+          "mopId": "",
+          "mopName": "Тончу Ростислав",
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Евгений"
         },
         {
           "dateCreate": "2026-08-12",
@@ -6289,20 +6318,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Евгения"
-        },
-        {
-          "dateCreate": "2026-08-19",
-          "daysWithoutAttempt": 20,
-          "daysWithoutCall": 20,
-          "dealId": "5990",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5990/",
-          "lastCallAttemptDate": "2026-08-21",
-          "lastSuccessfulCommunicationDate": "2026-08-21",
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "stageId": "",
-          "stageName": "3-7 звонков после показа",
-          "title": "Батаева Нина"
         },
         {
           "dateCreate": "2026-02-18",
@@ -7337,7 +7352,6 @@
         "5976",
         "5985",
         "5989",
-        "5990",
         "5991",
         "6005",
         "6020",
@@ -7362,11 +7376,13 @@
         "4273",
         "4289",
         "4303",
+        "5361",
         "5570",
         "5593",
         "5641",
         "5694",
         "5705",
+        "5724",
         "5787",
         "5850",
         "5866",
