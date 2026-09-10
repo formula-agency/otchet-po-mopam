@@ -559,6 +559,9 @@ class MopReportData:
     call_dates_by_deal: dict[str, list[date]] = field(
         default_factory=lambda: defaultdict(list)
     )
+    call_attempt_dates_by_deal: dict[str, list[date]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
 
 
 @dataclass(frozen=True)
@@ -2627,7 +2630,9 @@ def build_mongo_deal_call_pipeline(
         ))
     }
     return [
-        {"$match": {"call_date": {"$gte": window.start, "$lte": window.end}}},
+        # Priority counters need the true last call, including calls made before
+        # the report's first month.
+        {"$match": {"call_date": {"$lte": window.end}}},
         {
             "$project": {
                 "dedupeKey": {
@@ -2649,15 +2654,56 @@ def build_mongo_deal_call_pipeline(
                         "timezone": timezone_name,
                     }
                 },
+                "call_uid": 1,
+                "call_status": 1,
+                "duration": {
+                    "$convert": {
+                        "input": "$call_duration",
+                        "to": "int",
+                        "onError": 0,
+                        "onNull": 0,
+                    }
+                },
                 "directDealId": direct_deal_id,
                 "crmEntityId": crm_entity_id,
                 "crmEntityType": crm_entity_type,
             }
         },
         {
+            "$addFields": {
+                "duration": {
+                    "$cond": [
+                        {"$eq": ["$call_status", "Пропущенный звонок."]},
+                        0,
+                        "$duration",
+                    ]
+                }
+            }
+        },
+        {
+            "$lookup": {
+                "from": "call_analysis",
+                "localField": "call_uid",
+                "foreignField": "uuid",
+                "as": "analysisDocs",
+            }
+        },
+        {
+            "$addFields": {
+                "classification": {
+                    "$cond": [
+                        {"$lt": ["$duration", 15]},
+                        MONGO_FAILED_CALL_CLASSIFICATION,
+                        {"$arrayElemAt": ["$analysisDocs.call_classification", 0]},
+                    ]
+                }
+            }
+        },
+        {
             "$project": {
                 "dedupeKey": 1,
                 "day": 1,
+                "classification": 1,
                 "dealId": {
                     "$cond": [
                         {"$ne": ["$directDealId", ""]},
@@ -2679,12 +2725,22 @@ def build_mongo_deal_call_pipeline(
                 "_id": "$dedupeKey",
                 "day": {"$first": "$day"},
                 "dealId": {"$first": "$dealId"},
+                "classification": {"$first": "$classification"},
             }
         },
         {
             "$group": {
                 "_id": "$dealId",
-                "dates": {"$addToSet": "$day"},
+                "attemptDates": {"$addToSet": "$day"},
+                "successfulDates": {
+                    "$addToSet": {
+                        "$cond": [
+                            {"$ne": ["$classification", MONGO_FAILED_CALL_CLASSIFICATION]},
+                            "$day",
+                            "$$REMOVE",
+                        ]
+                    }
+                },
             }
         },
     ]
@@ -2699,14 +2755,23 @@ def apply_mongo_deal_call_dates(
         deal_id = str(row.get("_id") or "").strip()
         if not deal_id:
             continue
-        parsed_dates: set[date] = set()
-        for raw_date in row.get("dates", []):
+        attempt_dates: set[date] = set()
+        successful_dates: set[date] = set()
+        raw_attempt_dates = row.get("attemptDates", row.get("dates", []))
+        raw_successful_dates = row.get("successfulDates", row.get("dates", []))
+        for raw_date in raw_attempt_dates:
             try:
-                parsed_dates.add(date.fromisoformat(str(raw_date)))
+                attempt_dates.add(date.fromisoformat(str(raw_date)))
             except ValueError:
                 continue
-        data.call_dates_by_deal[deal_id] = sorted(parsed_dates)
-        linked_calls += len(parsed_dates)
+        for raw_date in raw_successful_dates:
+            try:
+                successful_dates.add(date.fromisoformat(str(raw_date)))
+            except ValueError:
+                continue
+        data.call_attempt_dates_by_deal[deal_id] = sorted(attempt_dates)
+        data.call_dates_by_deal[deal_id] = sorted(successful_dates)
+        linked_calls += len(attempt_dates)
     return linked_calls
 
 
@@ -2757,6 +2822,109 @@ def build_mongo_deal_call_facts(
             + safe_error_text(exc)
         )
     return False
+
+
+def build_mongo_high_priority_active_deals(
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+    warnings: list[str],
+) -> dict[str, Any] | None:
+    require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
+    try:
+        with FormulaMongoReader.from_env(
+            None,
+            require_server_read_only=require_server_read_only,
+        ) as reader:
+            collection = reader.collection("formula_client_list_cache")
+            documents = list(
+                collection.find(
+                    {},
+                    {
+                        "_id": 0,
+                        "process_deal_id": 1,
+                        "process_deal_url": 1,
+                        "process_deal_stage": 1,
+                        "process_deal_stage_semantic_id": 1,
+                        "process_deal_create_date": 1,
+                        "crm_responsible_manager_name": 1,
+                        "contact_name": 1,
+                        "last_call_date": 1,
+                        "last_successful_call_date": 1,
+                        "updated_at": 1,
+                    },
+                )
+            )
+    except Exception as exc:
+        warnings.append(
+            "Активные сделки высокого приоритета из TempLab не загружены: "
+            + safe_error_text(exc)
+        )
+        return None
+
+    as_of_date = window.end.date()
+    rows: list[dict[str, Any]] = []
+    mop_names: set[str] = set()
+    cache_dates: list[date] = []
+    for document in documents:
+        deal_id = str(document.get("process_deal_id") or "").strip()
+        raw_mop_name = str(document.get("crm_responsible_manager_name") or "").strip()
+        mop_name = canonical_mop_label(raw_mop_name, mop_settings)
+        if not deal_id or not mop_name or not mop_is_allowed("", mop_name, mop_settings):
+            continue
+
+        create_date = parse_bitrix_date(
+            document.get("process_deal_create_date"),
+            settings.report_timezone,
+        )
+        last_attempt = parse_bitrix_date(
+            document.get("last_call_date"),
+            settings.report_timezone,
+        )
+        last_successful = parse_bitrix_date(
+            document.get("last_successful_call_date"),
+            settings.report_timezone,
+        )
+        cache_date = parse_bitrix_date(document.get("updated_at"), settings.report_timezone)
+        if cache_date:
+            cache_dates.append(cache_date)
+        successful_reference = last_successful or create_date
+        attempt_reference = last_attempt or create_date
+        mop_names.add(mop_name)
+        rows.append(
+            {
+                "dealId": deal_id,
+                "dealUrl": str(document.get("process_deal_url") or bitrix_deal_url(settings, deal_id)),
+                "title": str(document.get("contact_name") or f"Сделка {deal_id}"),
+                "mopId": "",
+                "mopName": mop_name,
+                "stageId": "",
+                "stageName": str(document.get("process_deal_stage") or ""),
+                "stageSemanticId": str(document.get("process_deal_stage_semantic_id") or ""),
+                "dateCreate": date_iso(create_date),
+                "lastCallAttemptDate": date_iso(last_attempt),
+                "lastSuccessfulCommunicationDate": date_iso(last_successful),
+                "daysWithoutAttempt": (
+                    max(0, (as_of_date - attempt_reference).days)
+                    if attempt_reference
+                    else None
+                ),
+                "daysWithoutCall": (
+                    max(0, (as_of_date - successful_reference).days)
+                    if successful_reference
+                    else None
+                ),
+            }
+        )
+
+    return {
+        "source": "templab-mongodb",
+        "rows": rows,
+        "mopNames": sorted(mop_names),
+        "minDate": window.start.date().isoformat(),
+        "maxDate": window.end.date().isoformat(),
+        "cacheDate": max(cache_dates).isoformat() if cache_dates else "",
+    }
 
 
 def mongo_mop_identity(raw_name: Any, mop_settings: MopSettings) -> tuple[str, str]:
@@ -3766,6 +3934,50 @@ def high_priority_called_deal_ids(
     )
 
 
+def apply_mongo_call_recency_to_active_deals(
+    active_deals_payload: dict[str, Any],
+    successful_dates_by_deal: dict[str, list[date]],
+    attempt_dates_by_deal: dict[str, list[date]],
+    as_of_date: date,
+) -> None:
+    for row in active_deals_payload.get("rows", []):
+        if not isinstance(row, dict):
+            continue
+        deal_id = str(row.get("dealId") or "")
+        try:
+            create_date = date.fromisoformat(str(row.get("dateCreate") or ""))
+        except ValueError:
+            create_date = None
+
+        successful_dates = [
+            value
+            for value in successful_dates_by_deal.get(deal_id, [])
+            if value <= as_of_date
+        ]
+        attempt_dates = [
+            value
+            for value in attempt_dates_by_deal.get(deal_id, [])
+            if value <= as_of_date
+        ]
+        last_successful = max(successful_dates, default=None)
+        last_attempt = max(attempt_dates, default=None)
+        successful_reference = last_successful or create_date
+        attempt_reference = last_attempt or create_date
+
+        row["lastSuccessfulCommunicationDate"] = date_iso(last_successful)
+        row["lastCallAttemptDate"] = date_iso(last_attempt)
+        row["daysWithoutCall"] = (
+            max(0, (as_of_date - successful_reference).days)
+            if successful_reference
+            else None
+        )
+        row["daysWithoutAttempt"] = (
+            max(0, (as_of_date - attempt_reference).days)
+            if attempt_reference
+            else None
+        )
+
+
 def high_priority_snapshot_mops(
     snapshots: dict[str, Any],
     snapshot_date: str,
@@ -3993,9 +4205,15 @@ def build_high_priority_payload(
             for row in source_snapshot.get("deals", [])
             if isinstance(row, dict) and row.get("dealId")
         }
-        detected_called_ids = sorted(
-            source_previous_ids - source_current_ids,
-            key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
+        detected_called_ids = (
+            high_priority_called_deal_ids(
+                source_previous_ids,
+                call_dates_by_deal,
+                source_previous_date,
+                snapshot_date,
+            )
+            if call_data_available and source_previous_date
+            else []
         )
         source_snapshot["calledFromPreviousDealIds"] = detected_called_ids
         source_snapshot["flowedFromPreviousDealIds"] = sorted(
@@ -4006,9 +4224,11 @@ def build_high_priority_payload(
             source_current_ids - source_previous_ids,
             key=lambda value: (0, int(value)) if value.isdigit() else (1, value),
         )
-        source_snapshot["calledFromPreviousEvaluated"] = bool(source_previous_date)
-        source_snapshot["calledFromPreviousSource"] = "templab-daily-diff"
-    history["schemaVersion"] = 4
+        source_snapshot["calledFromPreviousEvaluated"] = bool(
+            source_previous_date and call_data_available
+        )
+        source_snapshot["calledFromPreviousSource"] = "templab-mongodb-attempts"
+    history["schemaVersion"] = 5
     write_high_priority_history(history_path, history)
 
     visible_snapshots: dict[str, Any] = {}
@@ -4114,7 +4334,15 @@ def build_high_priority_payload(
                 DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
             )),
         },
-        "source": "templab-history" if history_only else "bitrix-fallback",
+        "source": (
+            "templab-history"
+            if history_only
+            else "templab-mongodb"
+            if active_deals_payload.get("source") == "templab-mongodb"
+            else "bitrix+templab-mongodb"
+            if call_data_available
+            else "bitrix-fallback"
+        ),
         "currentDate": current_date,
         "minDate": min(available_dates) if available_dates else current_date,
         "maxDate": max(available_dates) if available_dates else current_date,
@@ -4446,6 +4674,7 @@ def main() -> int:
         mongo_calls_loaded = False
         if call_source == "mongodb":
             mongo_calls_loaded = build_mongo_call_facts(data, settings, mop_settings, window)
+            build_mongo_deal_call_facts(data, settings, window)
             if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
                 build_call_facts(data, session, settings, mop_settings, window)
             elif not mongo_calls_loaded and read_bool_env("MONGO_CALLS_REQUIRED", False):
@@ -4499,9 +4728,29 @@ def main() -> int:
             window,
             booking_events,
         )
+        priority_active_deals_payload = active_deals_payload
+        if os.getenv("MOP_HIGH_PRIORITY_SOURCE", "templab-history").strip().lower() == "mongodb":
+            mongo_priority_payload = build_mongo_high_priority_active_deals(
+                settings,
+                mop_settings,
+                window,
+                data.warnings,
+            )
+            if mongo_priority_payload is not None:
+                priority_active_deals_payload = mongo_priority_payload
+        if (
+            data.call_deal_link_available
+            and priority_active_deals_payload.get("source") != "templab-mongodb"
+        ):
+            apply_mongo_call_recency_to_active_deals(
+                priority_active_deals_payload,
+                data.call_dates_by_deal,
+                data.call_attempt_dates_by_deal,
+                window.end.date(),
+            )
         high_priority_payload = build_high_priority_payload(
-            active_deals_payload,
-            data.call_dates_by_deal,
+            priority_active_deals_payload,
+            data.call_attempt_dates_by_deal,
             data.call_deal_link_available,
             window,
             data.warnings,

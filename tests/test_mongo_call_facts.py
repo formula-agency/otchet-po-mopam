@@ -97,14 +97,22 @@ class MongoCallAggregateTests(unittest.TestCase):
         linked_days = apply_mongo_deal_call_dates(
             data,
             [
-                {"_id": "501", "dates": ["2026-08-24", "2026-08-25", "2026-08-25"]},
-                {"_id": "", "dates": ["2026-08-25"]},
+                {
+                    "_id": "501",
+                    "attemptDates": ["2026-08-24", "2026-08-25", "2026-08-25"],
+                    "successfulDates": ["2026-08-24"],
+                },
+                {"_id": "", "attemptDates": ["2026-08-25"]},
             ],
         )
 
         self.assertEqual(linked_days, 2)
         self.assertEqual(
             data.call_dates_by_deal["501"],
+            [date(2026, 8, 24)],
+        )
+        self.assertEqual(
+            data.call_attempt_dates_by_deal["501"],
             [date(2026, 8, 24), date(2026, 8, 25)],
         )
     def test_maps_formula_manager_name_to_existing_bitrix_identity(self) -> None:

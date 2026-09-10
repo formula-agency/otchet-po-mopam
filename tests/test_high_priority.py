@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 from scripts.sync_mop_report import (
     ReportWindow,
+    apply_mongo_call_recency_to_active_deals,
     build_high_priority_payload,
     deal_is_high_priority,
     high_priority_called_deal_ids,
@@ -22,7 +23,7 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
-    def test_history_source_uses_daily_templab_diff_instead_of_bitrix(self) -> None:
+    def test_history_source_uses_templab_call_attempts_instead_of_bitrix(self) -> None:
         tz = ZoneInfo("Asia/Yekaterinburg")
         history = {
             "schemaVersion": 4,
@@ -55,8 +56,8 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
             ):
                 payload = build_high_priority_payload(
                     {"rows": [deal(999, "Битрикс МОП")], "mopNames": ["Битрикс МОП"]},
-                    {},
-                    False,
+                    {"1": [date(2026, 8, 25)]},
+                    True,
                     ReportWindow(
                         datetime(2026, 3, 1, tzinfo=tz),
                         datetime(2026, 8, 26, tzinfo=tz),
@@ -73,6 +74,31 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
         self.assertEqual({row["mopName"] for row in latest["rows"]}, {"МОП"})
         self.assertEqual(latest["mops"][0]["withoutCallCount"], 2)
         self.assertEqual(latest["mops"][0]["withoutAttemptCount"], 0)
+
+    def test_mongo_dates_replace_bitrix_call_recency(self) -> None:
+        payload = {
+            "rows": [
+                {
+                    "dealId": "501",
+                    "dateCreate": "2026-07-01",
+                    "lastSuccessfulCommunicationDate": "2026-09-09",
+                    "lastCallAttemptDate": "2026-09-09",
+                }
+            ]
+        }
+
+        apply_mongo_call_recency_to_active_deals(
+            payload,
+            {"501": [date(2026, 8, 20)]},
+            {"501": [date(2026, 8, 20), date(2026, 9, 8)]},
+            date(2026, 9, 10),
+        )
+
+        [row] = payload["rows"]
+        self.assertEqual(row["lastSuccessfulCommunicationDate"], "2026-08-20")
+        self.assertEqual(row["lastCallAttemptDate"], "2026-09-08")
+        self.assertEqual(row["daysWithoutCall"], 21)
+        self.assertEqual(row["daysWithoutAttempt"], 2)
 
     def test_called_from_previous_uses_only_supplied_call_source(self) -> None:
         called_ids = high_priority_called_deal_ids(
