@@ -7332,14 +7332,19 @@
     "2026-09-11": {
       "calledFromPreviousDealIds": [
         "5570",
+        "5724",
         "5787",
         "5866",
         "6002",
+        "6005",
         "6020",
+        "6032",
         "6057",
         "6074",
         "6107",
-        "6132"
+        "6131",
+        "6132",
+        "6154"
       ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
@@ -7392,6 +7397,22 @@
           "stageName": "3-7 звонков после показа",
           "title": "Игорь",
           "utmSource": "selfwalk"
+        },
+        {
+          "dateCreate": "2026-06-19",
+          "daysWithoutAttempt": 46,
+          "daysWithoutCall": 67,
+          "dealId": "5507",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5507/",
+          "lastCallAttemptDate": "2026-07-27",
+          "lastSuccessfulCommunicationDate": "2026-07-06",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Попова Олеся",
+          "stageId": "",
+          "stageName": "Провести встречу",
+          "title": "Данил",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-03-20",
@@ -7488,22 +7509,6 @@
           "stageName": "Дожать на встречу",
           "title": "Светлана",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-07-21",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 31,
-          "dealId": "5724",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5724/",
-          "lastCallAttemptDate": "2026-09-08",
-          "lastSuccessfulCommunicationDate": "2026-08-11",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Евгений",
-          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-12",
@@ -7728,22 +7733,6 @@
           "stageName": "Дожать на встречу",
           "title": "Евгения",
           "utmSource": "avito"
-        },
-        {
-          "dateCreate": "2026-08-22",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 20,
-          "dealId": "6032",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6032/",
-          "lastCallAttemptDate": "2026-09-03",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Александр",
-          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-17",
@@ -8098,22 +8087,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-31",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 11,
-          "dealId": "6131",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6131/",
-          "lastCallAttemptDate": "2026-09-10",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Погребинский Артем",
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Ксения",
-          "utmSource": "selfwalk"
-        },
-        {
           "dateCreate": "2026-08-27",
           "daysWithoutAttempt": 11,
           "daysWithoutCall": 11,
@@ -8195,11 +8168,11 @@
         },
         {
           "dateCreate": "2026-09-01",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 10,
           "dealId": "6154",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6154/",
-          "lastCallAttemptDate": "2026-09-10",
+          "lastCallAttemptDate": "2026-09-11",
           "lastSuccessfulCommunicationDate": "2026-09-01",
           "meetingHeld": true,
           "mopId": "",
@@ -8211,11 +8184,11 @@
         },
         {
           "dateCreate": "2026-08-19",
-          "daysWithoutAttempt": 10,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 10,
           "dealId": "6005",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6005/",
-          "lastCallAttemptDate": "2026-09-01",
+          "lastCallAttemptDate": "2026-09-11",
           "lastSuccessfulCommunicationDate": "2026-09-01",
           "meetingHeld": true,
           "mopId": "",
@@ -8287,22 +8260,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Сергей Валерьевич",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-31",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 9,
-          "dealId": "6146",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6146/",
-          "lastCallAttemptDate": "2026-09-09",
-          "lastSuccessfulCommunicationDate": "2026-09-02",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Елена",
           "utmSource": "leadit"
         },
         {
@@ -8384,22 +8341,6 @@
           "stageName": "Документы на ипотеку поданы",
           "title": "Андрей",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 8,
-          "dealId": "6181",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6181/",
-          "lastCallAttemptDate": "2026-09-10",
-          "lastSuccessfulCommunicationDate": "2026-09-03",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Ядрышникова Кристина",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Рамиля",
-          "utmSource": "leadit"
         }
       ],
       "flowedFromPreviousDealIds": [
@@ -8428,7 +8369,6 @@
         "5660",
         "5695",
         "5718",
-        "5724",
         "5810",
         "5816",
         "5850",
@@ -8443,7 +8383,6 @@
         "5973",
         "5984",
         "6005",
-        "6032",
         "6038",
         "6039",
         "6048",
@@ -8457,20 +8396,18 @@
         "6111",
         "6112",
         "6118",
-        "6131",
         "6135",
-        "6146",
         "6154",
         "6167"
       ],
       "newOverdueDealIds": [
         "4055",
         "4359",
+        "5507",
         "5941",
         "6122",
         "6129",
-        "6173",
-        "6181"
+        "6173"
       ],
       "previousDate": "2026-09-10"
     }
