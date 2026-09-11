@@ -7351,7 +7351,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Анна"
+          "title": "Анна",
+          "utmSource": ""
         },
         {
           "dateCreate": "2026-05-29",
@@ -7366,7 +7367,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Алена"
+          "title": "Алена",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-06-25",
@@ -7381,7 +7383,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "3-7 звонков после показа",
-          "title": "Игорь"
+          "title": "Игорь",
+          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-07-15",
@@ -7396,7 +7399,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Мария"
+          "title": "Мария",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-20",
@@ -7411,7 +7415,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Нина"
+          "title": "Нина",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-05-22",
@@ -7426,7 +7431,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Татьяна"
+          "title": "Татьяна",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-03",
@@ -7441,7 +7447,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Дмитрий"
+          "title": "Дмитрий",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-05-04",
@@ -7456,7 +7463,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Светлана"
+          "title": "Светлана",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-21",
@@ -7471,7 +7479,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Евгений"
+          "title": "Евгений",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-12",
@@ -7486,7 +7495,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Алексей"
+          "title": "Алексей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-04-28",
@@ -7501,7 +7511,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Наталья"
+          "title": "Наталья",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-10",
@@ -7516,7 +7527,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Дмитрий"
+          "title": "Дмитрий",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2025-08-06",
@@ -7531,7 +7543,8 @@
           "mopName": "Васильев Владимир",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Сергей"
+          "title": "Сергей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-01",
@@ -7546,7 +7559,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Ирина"
+          "title": "Ирина",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-04-10",
@@ -7561,7 +7575,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Ксения"
+          "title": "Ксения",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-17",
@@ -7576,7 +7591,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Кудрад"
+          "title": "Кудрад",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-17",
@@ -7591,7 +7607,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Анна"
+          "title": "Анна",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-11",
@@ -7606,7 +7623,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Алексей"
+          "title": "Алексей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-02-07",
@@ -7621,7 +7639,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Алексей"
+          "title": "Алексей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-05-27",
@@ -7636,7 +7655,8 @@
           "mopName": "Черткова Ирина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Сергей"
+          "title": "Сергей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-19",
@@ -7651,7 +7671,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Евгения"
+          "title": "Евгения",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-13",
@@ -7666,7 +7687,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Фаез"
+          "title": "Фаез",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-06-24",
@@ -7681,7 +7703,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Дмитрий"
+          "title": "Дмитрий",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-21",
@@ -7696,7 +7719,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Евгения"
+          "title": "Евгения",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-22",
@@ -7711,7 +7735,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Александр"
+          "title": "Александр",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-17",
@@ -7726,7 +7751,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Марат"
+          "title": "Марат",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-07",
@@ -7741,7 +7767,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Илья"
+          "title": "Илья",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-04-07",
@@ -7756,7 +7783,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Виталий"
+          "title": "Виталий",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-12",
@@ -7771,7 +7799,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Ангелина"
+          "title": "Ангелина",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-18",
@@ -7786,7 +7815,8 @@
           "mopName": "Черткова Ирина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Гульнара"
+          "title": "Гульнара",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-28",
@@ -7801,7 +7831,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Ширшин Сергей"
+          "title": "Ширшин Сергей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-24",
@@ -7816,7 +7847,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Станислав Елизаров"
+          "title": "Станислав Елизаров",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-24",
@@ -7831,7 +7863,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Булат"
+          "title": "Булат",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-02-05",
@@ -7846,7 +7879,8 @@
           "mopName": "Васильев Владимир",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Хуши"
+          "title": "Хуши",
+          "utmSource": "eLama-yandex"
         },
         {
           "dateCreate": "2026-02-17",
@@ -7861,7 +7895,8 @@
           "mopName": "Васильев Владимир",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Нэлли"
+          "title": "Нэлли",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-25",
@@ -7876,7 +7911,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Наталья"
+          "title": "Наталья",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-26",
@@ -7891,7 +7927,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Рузиля"
+          "title": "Рузиля",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-26",
@@ -7906,7 +7943,8 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Спирина Алена Сергеевна"
+          "title": "Спирина Алена Сергеевна",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-24",
@@ -7921,7 +7959,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "0-2 звонка после показа",
-          "title": "Сергей"
+          "title": "Сергей",
+          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-03-03",
@@ -7936,7 +7975,8 @@
           "mopName": "Ядрышникова Кристина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Ирина"
+          "title": "Ирина",
+          "utmSource": "whatsapp"
         },
         {
           "dateCreate": "2026-02-27",
@@ -7951,7 +7991,8 @@
           "mopName": "Васильев Владимир",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Алексей"
+          "title": "Алексей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-27",
@@ -7966,7 +8007,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Евгений"
+          "title": "Евгений",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-25",
@@ -7981,7 +8023,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Сусанна"
+          "title": "Сусанна",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-27",
@@ -7996,7 +8039,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Павел"
+          "title": "Павел",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-03-13",
@@ -8011,7 +8055,8 @@
           "mopName": "Попова Олеся",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Венера"
+          "title": "Венера",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-18",
@@ -8026,7 +8071,8 @@
           "mopName": "Попова Олеся",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Денис"
+          "title": "Денис",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-27",
@@ -8041,7 +8087,8 @@
           "mopName": "Попова Олеся",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Владимир"
+          "title": "Владимир",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-03-16",
@@ -8056,7 +8103,8 @@
           "mopName": "Султанов Есен",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Артем"
+          "title": "Артем",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-27",
@@ -8071,7 +8119,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Алексей"
+          "title": "Алексей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-24",
@@ -8086,7 +8135,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "0-2 звонка после показа",
-          "title": "Светлана"
+          "title": "Светлана",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-31",
@@ -8101,7 +8151,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Совершить первый контакт",
-          "title": "Андрей"
+          "title": "Андрей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-31",
@@ -8116,7 +8167,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "0-2 звонка после показа",
-          "title": "Ксения"
+          "title": "Ксения",
+          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-08-27",
@@ -8131,7 +8183,8 @@
           "mopName": "Попова Олеся",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Максим"
+          "title": "Максим",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-03-12",
@@ -8146,7 +8199,8 @@
           "mopName": "Ядрышникова Кристина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Андрей"
+          "title": "Андрей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-30",
@@ -8161,7 +8215,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Ирина"
+          "title": "Ирина",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-25",
@@ -8176,7 +8231,8 @@
           "mopName": "Марина Данчук",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Виталий"
+          "title": "Виталий",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-30",
@@ -8191,7 +8247,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Документы на ипотеку поданы",
-          "title": "Бикшанов Данияр Фаграмович"
+          "title": "Бикшанов Данияр Фаграмович",
+          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-09-01",
@@ -8206,7 +8263,8 @@
           "mopName": "Погребинский Артем",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Илькин"
+          "title": "Илькин",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-19",
@@ -8221,7 +8279,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Евгений"
+          "title": "Евгений",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-05",
@@ -8236,7 +8295,8 @@
           "mopName": "Войнов Данил",
           "stageId": "",
           "stageName": "3-7 звонков после показа",
-          "title": "Кристина"
+          "title": "Кристина",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-09-02",
@@ -8251,7 +8311,8 @@
           "mopName": "Жуков Лев",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Татьяна Юрьевна"
+          "title": "Татьяна Юрьевна",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-03-03",
@@ -8266,7 +8327,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Николай"
+          "title": "Николай",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-28",
@@ -8281,7 +8343,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Провести встречу",
-          "title": "Сергей Валерьевич"
+          "title": "Сергей Валерьевич",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-31",
@@ -8296,7 +8359,8 @@
           "mopName": "Парфенов Владислав",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Сергей"
+          "title": "Сергей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-31",
@@ -8311,7 +8375,8 @@
           "mopName": "Тончу Ростислав",
           "stageId": "",
           "stageName": "0-2 звонка после показа",
-          "title": "Елена"
+          "title": "Елена",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-29",
@@ -8326,22 +8391,8 @@
           "mopName": "Васильев Владимир",
           "stageId": "",
           "stageName": "3-7 звонков после показа",
-          "title": "Анна"
-        },
-        {
-          "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 7,
-          "daysWithoutCall": 8,
-          "dealId": "6180",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6180/",
-          "lastCallAttemptDate": "2026-09-04",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Диана"
+          "title": "Анна",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-02-16",
@@ -8356,7 +8407,8 @@
           "mopName": "Султанов Есен",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Вадим"
+          "title": "Вадим",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-09-03",
@@ -8371,7 +8423,8 @@
           "mopName": "Султанов Есен",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Оксана"
+          "title": "Оксана",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-14",
@@ -8386,7 +8439,8 @@
           "mopName": "Черткова Ирина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Светлана"
+          "title": "Светлана",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-28",
@@ -8401,7 +8455,8 @@
           "mopName": "Ядрышникова Кристина",
           "stageId": "",
           "stageName": "Документы на ипотеку поданы",
-          "title": "Андрей"
+          "title": "Андрей",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-09-03",
@@ -8416,7 +8471,8 @@
           "mopName": "Ядрышникова Кристина",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Рамиля"
+          "title": "Рамиля",
+          "utmSource": "leadit"
         }
       ],
       "flowedFromPreviousDealIds": [
@@ -8468,6 +8524,7 @@
         "6039",
         "6048",
         "6057",
+        "6060",
         "6065",
         "6077",
         "6082",
@@ -8488,11 +8545,9 @@
       "newOverdueDealIds": [
         "4055",
         "5941",
-        "6060",
         "6122",
         "6129",
         "6173",
-        "6180",
         "6181"
       ],
       "previousDate": "2026-09-10"
