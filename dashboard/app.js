@@ -153,7 +153,7 @@ const PLAN_METRIC_FIELDS = [
   'airTimePlanSeconds',
 ];
 const SCOREBOARD_METRICS = [
-  { label: 'Звонки', fact: 'completedCallsFact', kind: 'number', weight: 1 },
+  { label: 'Звонки', fact: 'callsFact', kind: 'number', weight: 1 },
   { label: 'Эфир', plan: 'airTimePlanSeconds', fact: 'airTimeFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Эфир после встречи', plan: 'targetMinutesAfterMeetingPlanSeconds', fact: 'targetMinutesAfterMeetingFactSeconds', kind: 'duration', weight: 1 / 60 },
   { label: 'Встречи', plan: 'meetingsPlan', fact: 'meetingsFact', kind: 'number', weight: 60 },
