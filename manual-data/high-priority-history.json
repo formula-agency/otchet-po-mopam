@@ -7334,6 +7334,7 @@
         "5570",
         "5787",
         "5866",
+        "6002",
         "6020",
         "6057",
         "6074",
@@ -7391,6 +7392,22 @@
           "stageName": "3-7 звонков после показа",
           "title": "Игорь",
           "utmSource": "selfwalk"
+        },
+        {
+          "dateCreate": "2026-03-20",
+          "daysWithoutAttempt": 37,
+          "daysWithoutCall": 63,
+          "dealId": "4359",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4359/",
+          "lastCallAttemptDate": "2026-08-05",
+          "lastSuccessfulCommunicationDate": "2026-07-10",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Жуков Лев",
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Валентина",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-07-15",
@@ -7665,22 +7682,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-19",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 23,
-          "dealId": "6002",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6002/",
-          "lastCallAttemptDate": "2026-09-09",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Евгения",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-13",
           "daysWithoutAttempt": 6,
           "daysWithoutCall": 22,
@@ -7759,22 +7760,6 @@
           "stageName": "Дожать на встречу",
           "title": "Марат",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-07",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 18,
-          "dealId": "5866",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5866/",
-          "lastCallAttemptDate": "2026-09-11",
-          "lastSuccessfulCommunicationDate": "2026-08-24",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Илья",
-          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-04-07",
@@ -8447,7 +8432,6 @@
         "5810",
         "5816",
         "5850",
-        "5866",
         "5897",
         "5899",
         "5912",
@@ -8458,7 +8442,6 @@
         "5969",
         "5973",
         "5984",
-        "6002",
         "6005",
         "6032",
         "6038",
@@ -8482,6 +8465,7 @@
       ],
       "newOverdueDealIds": [
         "4055",
+        "4359",
         "5941",
         "6122",
         "6129",
