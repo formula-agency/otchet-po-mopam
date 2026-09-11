@@ -15,6 +15,7 @@ const state = {
   priorityDateFrom: '',
   priorityDateTo: '',
   priorityMopName: 'all',
+  priorityOverrides: { schemaVersion: 1, entries: {} },
   airtimeMonth: '',
   airtimeSprint: '',
   airtimeDateFrom: '',
@@ -141,6 +142,8 @@ let factChart;
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
 const DASHBOARD_DATA_VERSION = '20260826-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
+const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
+const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
 const AGGREGATE_PLAN_NAME = 'Общий план';
 const PLAN_METRIC_FIELDS = [
   'salesPlan',
@@ -1378,6 +1381,80 @@ function prioritySnapshotsInRange(fromValue, toValue) {
   ));
 }
 
+function normalizePriorityOverrides(payload) {
+  const entries = payload?.entries && typeof payload.entries === 'object'
+    ? payload.entries
+    : {};
+  return { schemaVersion: 1, entries };
+}
+
+function readLocalPriorityOverrides() {
+  try {
+    return normalizePriorityOverrides(JSON.parse(
+      localStorage.getItem(PRIORITY_OVERRIDES_STORAGE_KEY) || '{}'
+    ));
+  } catch (_error) {
+    return normalizePriorityOverrides({});
+  }
+}
+
+function writeLocalPriorityOverrides(payload) {
+  try {
+    localStorage.setItem(PRIORITY_OVERRIDES_STORAGE_KEY, JSON.stringify(payload));
+  } catch (_error) {
+    // The server remains authoritative when browser storage is unavailable.
+  }
+}
+
+async function loadPriorityOverrides() {
+  try {
+    const response = await fetch(`${PRIORITY_OVERRIDES_ENDPOINT}?v=${Date.now()}`, {
+      cache: 'no-store',
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = normalizePriorityOverrides(await response.json());
+    writeLocalPriorityOverrides(payload);
+    return payload;
+  } catch (_error) {
+    return readLocalPriorityOverrides();
+  }
+}
+
+function priorityOverrideIsSet(snapshotDate, dealId) {
+  return Boolean(state.priorityOverrides.entries?.[snapshotDate]?.[String(dealId)]);
+}
+
+async function savePriorityOverride(snapshotDate, dealId, excluded) {
+  const entries = { ...(state.priorityOverrides.entries || {}) };
+  const dateEntries = { ...(entries[snapshotDate] || {}) };
+  if (excluded) dateEntries[String(dealId)] = true;
+  else delete dateEntries[String(dealId)];
+  if (Object.keys(dateEntries).length) entries[snapshotDate] = dateEntries;
+  else delete entries[snapshotDate];
+  state.priorityOverrides = { schemaVersion: 1, entries };
+  writeLocalPriorityOverrides(state.priorityOverrides);
+
+  try {
+    const response = await fetch(PRIORITY_OVERRIDES_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: snapshotDate, dealId: String(dealId), excluded }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    state.priorityOverrides = normalizePriorityOverrides(await response.json());
+    writeLocalPriorityOverrides(state.priorityOverrides);
+  } catch (_error) {
+    // GitHub Pages has no PHP runtime; local storage keeps the control usable there.
+  }
+}
+
+function offsetIsoDate(value, offsetDays) {
+  const parsed = parseISODate(value);
+  if (!parsed) return '';
+  parsed.setUTCDate(parsed.getUTCDate() + offsetDays);
+  return isoDate(parsed);
+}
+
 function prioritySourceLabel(row) {
   const labels = [];
   if (row.calledFromPrevious) labels.push('Прозвонили');
@@ -1396,12 +1473,13 @@ function renderHighPriority() {
     ?? 8
   );
   const stopThreshold = Number(priorityData.rules?.stopLeadThreshold ?? 10);
+  const noMeetingDays = Number(priorityData.rules?.noMeetingDaysWithoutCall ?? 14);
   const prioritySource = priorityData.source === 'templab-mongodb'
     ? 'TempLab MongoDB'
     : priorityData.source === 'templab-history'
       ? 'ручной Excel-архив'
       : 'резервный источник';
-  els.priorityRule.textContent = `Источник: ${prioritySource} · Просрочка: от ${formatNumber(overdueFromDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
+  els.priorityRule.textContent = `Источник: ${prioritySource} · После встречи: от ${formatNumber(overdueFromDays)} дней · Без встречи: более ${formatNumber(noMeetingDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
 
   if (!snapshot) {
     els.priorityCaption.textContent = 'Нет снимков';
@@ -1413,7 +1491,7 @@ function renderHighPriority() {
       els.priorityStopCount,
     ]) element.textContent = '0';
     els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
-    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
+    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
     return;
   }
 
@@ -1424,31 +1502,53 @@ function renderHighPriority() {
   els.priorityDateFrom.value = selectedFrom;
   els.priorityDateTo.value = selectedTo;
   const selectedMop = state.priorityMopName || 'all';
+  const snapshotRows = (snapshot.rows || [])
+    .filter((row) => selectedMop === 'all' || row.mopName === selectedMop);
+  const errorRows = snapshotRows.filter(
+    (row) => !priorityOverrideIsSet(snapshot.date, row.dealId)
+  );
   const movementByMop = new Map();
   for (const movementSnapshot of movementSnapshots) {
-    for (const row of movementSnapshot.mops || []) {
+    for (const row of movementSnapshot.rows || []) {
+      if (priorityOverrideIsSet(movementSnapshot.date, row.dealId)) continue;
       const totals = movementByMop.get(row.mopName) || { called: 0, flowed: 0 };
-      if (movementSnapshot.calledFromPreviousAvailable) {
-        totals.called += Number(row.calledFromPreviousCount || 0);
-      }
-      totals.flowed += Number(row.flowedFromPreviousCount || 0);
+      if (movementSnapshot.calledFromPreviousAvailable && row.calledFromPrevious) totals.called += 1;
+      if (row.flowedFromPrevious) totals.flowed += 1;
       movementByMop.set(row.mopName, totals);
     }
   }
+  const snapshotsThroughEnd = (priorityData.snapshots || [])
+    .filter((item) => item.date <= snapshot.date);
   const mopRows = (snapshot.mops || [])
-    .map((row) => ({
-      ...row,
-      calledFromPreviousCount: movementByMop.get(row.mopName)?.called || 0,
-      flowedFromPreviousCount: movementByMop.get(row.mopName)?.flowed || 0,
-    }))
+    .map((row) => {
+      const currentErrors = errorRows.filter((item) => item.mopName === row.mopName);
+      const stopDays = snapshotsThroughEnd.reduce((count, item) => {
+        const errors = (item.rows || []).filter((deal) => (
+          deal.mopName === row.mopName
+          && !priorityOverrideIsSet(item.date, deal.dealId)
+        )).length;
+        return count + Number(errors > stopThreshold);
+      }, 0);
+      return {
+        ...row,
+        overdueCount: currentErrors.length,
+        calledFromPreviousCount: movementByMop.get(row.mopName)?.called || 0,
+        flowedFromPreviousCount: movementByMop.get(row.mopName)?.flowed || 0,
+        withoutCallCount: currentErrors.filter((item) => Number.isFinite(Number(item.daysWithoutCall))).length,
+        withoutAttemptCount: currentErrors.filter(
+          (item) => Number(item.daysWithoutAttempt) >= overdueFromDays
+        ).length,
+        isStop: currentErrors.length > stopThreshold,
+        stopDays,
+      };
+    })
     .filter((row) => selectedMop === 'all' || row.mopName === selectedMop)
     .sort((a, b) => (
       Number(b.isStop) - Number(a.isStop)
       || Number(b.overdueCount || 0) - Number(a.overdueCount || 0)
       || String(a.mopName).localeCompare(String(b.mopName))
     ));
-  const dealRows = (snapshot.rows || [])
-    .filter((row) => selectedMop === 'all' || row.mopName === selectedMop)
+  const dealRows = snapshotRows
     .sort((a, b) => (
       Number(b.daysWithoutCall || 0) - Number(a.daysWithoutCall || 0)
       || String(a.mopName).localeCompare(String(b.mopName))
@@ -1472,7 +1572,10 @@ function renderHighPriority() {
   els.priorityCaption.textContent = movementFrom === snapshot.date
     ? `Срез на ${formatDate(snapshot.date)}`
     : `Срез на ${formatDate(snapshot.date)} · Движение за ${formatDate(movementFrom)}-${formatDate(snapshot.date)}`;
-  els.priorityDealsCaption.textContent = `${formatNumber(dealRows.length)} сделок`;
+  const excludedCount = dealRows.length - errorRows.length;
+  els.priorityDealsCaption.textContent = excludedCount
+    ? `${formatNumber(errorRows.length)} ошибок · ${formatNumber(excludedCount)} исключено`
+    : `${formatNumber(errorRows.length)} ошибок`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
     ? mopRows.map((row) => `
@@ -1492,18 +1595,48 @@ function renderHighPriority() {
   els.priorityDealsBody.innerHTML = dealRows.length
     ? dealRows.map((row) => {
       const title = `#${row.dealId} ${row.title || 'Без названия'}`;
+      const excluded = priorityOverrideIsSet(snapshot.date, row.dealId);
+      const excludedYesterday = priorityOverrideIsSet(offsetIsoDate(snapshot.date, -1), row.dealId);
+      const rowClass = excludedYesterday
+        ? 'priority-deal--previous-exception'
+        : excluded
+          ? 'priority-deal--exception'
+          : '';
       return `
-        <tr>
+        <tr class="${rowClass}">
           <td class="deal-cell"><a class="deal-link" href="${escapeHtml(row.dealUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a></td>
           <td>${escapeHtml(row.mopName || '—')}</td>
           <td>${escapeHtml(row.stageName || row.stageId || '—')}</td>
+          <td class="priority-meeting ${row.meetingHeld ? 'is-held' : ''}">${row.meetingHeld ? 'Да' : 'Нет'}</td>
           <td class="priority-days">${formatOptionalNumber(row.daysWithoutAttempt)}</td>
           <td class="priority-days priority-days--critical">${formatOptionalNumber(row.daysWithoutCall)}</td>
           <td>${escapeHtml(prioritySourceLabel(row))}</td>
+          <td class="priority-exception-cell">
+            <input
+              class="priority-exception-toggle"
+              type="checkbox"
+              data-date="${escapeHtml(snapshot.date)}"
+              data-deal-id="${escapeHtml(row.dealId)}"
+              aria-label="Ошибкой не является: сделка ${escapeHtml(row.dealId)}"
+              ${excluded ? 'checked' : ''}
+            >
+          </td>
         </tr>
       `;
     }).join('')
-    : '<tr class="empty-row"><td colspan="6">Нет просроченных сделок</td></tr>';
+    : '<tr class="empty-row"><td colspan="8">Нет просроченных сделок</td></tr>';
+
+  for (const input of els.priorityDealsBody.querySelectorAll('.priority-exception-toggle')) {
+    input.addEventListener('change', () => {
+      const pending = savePriorityOverride(
+        input.dataset.date,
+        input.dataset.dealId,
+        input.checked,
+      );
+      renderHighPriority();
+      pending.then(renderHighPriority);
+    });
+  }
 }
 
 function emptyScoreboardRow(mopName) {
@@ -2116,7 +2249,7 @@ function init() {
     .map((snapshot) => String(snapshot.date || ''))
     .filter((snapshotDate) => snapshotDate && snapshotDate < String(priorityData.currentDate || ''))
     .sort();
-  const defaultPriorityDate = (priorityData.source === 'templab-history' ? priorityData.currentDate : '')
+  const defaultPriorityDate = priorityData.currentDate
     || completedPriorityDates.at(-1)
     || priorityData.currentDate
     || priorityData.maxDate
@@ -2174,6 +2307,7 @@ async function bootstrap() {
     document.body.innerHTML = '<main class="page-shell"><section class="panel"><div class="panel-head"><h2>Нет данных</h2><p>Файл дашборда пока не сгенерирован.</p></div></section></main>';
     return;
   }
+  state.priorityOverrides = await loadPriorityOverrides();
   init();
   watchDashboardUpdates();
 }

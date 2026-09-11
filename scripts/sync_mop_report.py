@@ -56,6 +56,7 @@ DEFAULT_BOOKING_LIST_DEAL_FIELD = "PROPERTY_118"
 SUCCESSFUL_MEETING_STATUSES = {"прошла успешно"}
 DEFAULT_DEAL_LAST_SUCCESSFUL_COMMUNICATION_FIELD = "UF_DEAL_DATE_LAST_SUCCESSFUL_COMMUNICATION"
 DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL = 8
+DEFAULT_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL = 14
 DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD = 10
 DEFAULT_HIGH_PRIORITY_HISTORY_PATH = "manual-data/high-priority-history.json"
 DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
@@ -67,8 +68,6 @@ DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
     "Рассылки для подогрева",
     "Согласовать объект",
     "Документы на ипотеку поданы",
-    "Клиент в оформлении",
-    "Отложенный клиент",
 )
 DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS = (
     "Губайдулина Заррина",
@@ -2851,6 +2850,11 @@ def build_mongo_high_priority_active_deals(
                         "contact_name": 1,
                         "last_call_date": 1,
                         "last_successful_call_date": 1,
+                        "meeting_status": 1,
+                        "family_meeting_status": 1,
+                        "utm_source": 1,
+                        "source_id": 1,
+                        "source_description": 1,
                         "updated_at": 1,
                     },
                 )
@@ -2871,6 +2875,17 @@ def build_mongo_high_priority_active_deals(
         raw_mop_name = str(document.get("crm_responsible_manager_name") or "").strip()
         mop_name = canonical_mop_label(raw_mop_name, mop_settings)
         if not deal_id or not mop_name or not mop_is_allowed("", mop_name, mop_settings):
+            continue
+        source_values = (
+            document.get("utm_source"),
+            document.get("source_id"),
+            document.get("source_description"),
+        )
+        if any(
+            normalize_key(value) == "recommendation"
+            or "рекомендац" in normalize_key(value)
+            for value in source_values
+        ):
             continue
 
         create_date = parse_bitrix_date(
@@ -2904,6 +2919,11 @@ def build_mongo_high_priority_active_deals(
                 "dateCreate": date_iso(create_date),
                 "lastCallAttemptDate": date_iso(last_attempt),
                 "lastSuccessfulCommunicationDate": date_iso(last_successful),
+                "meetingHeld": normalize_key(
+                    document.get("meeting_status")
+                    or document.get("family_meeting_status")
+                ) == "completed",
+                "utmSource": str(document.get("utm_source") or ""),
                 "daysWithoutAttempt": (
                     max(0, (as_of_date - attempt_reference).days)
                     if attempt_reference
@@ -3895,6 +3915,8 @@ def high_priority_row(deal: dict[str, Any]) -> dict[str, Any]:
         ),
         "daysWithoutAttempt": deal.get("daysWithoutAttempt"),
         "daysWithoutCall": deal.get("daysWithoutCall"),
+        "meetingHeld": bool(deal.get("meetingHeld")),
+        "utmSource": str(deal.get("utmSource") or ""),
     }
 
 
@@ -3903,13 +3925,18 @@ def deal_is_high_priority(
     overdue_from_days: int,
     allowed_stage_names: set[str],
     excluded_mop_names: set[str],
+    no_meeting_days_without_call: int = DEFAULT_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL,
 ) -> bool:
     days_without_call = deal.get("daysWithoutCall")
+    overdue = (
+        days_without_call >= overdue_from_days
+        if deal.get("meetingHeld")
+        else days_without_call > no_meeting_days_without_call
+    ) if isinstance(days_without_call, int) else False
     return (
         normalize_key(deal.get("stageName")) in allowed_stage_names
         and normalize_key(deal.get("mopName")) not in excluded_mop_names
-        and isinstance(days_without_call, int)
-        and days_without_call >= overdue_from_days
+        and overdue
     )
 
 
@@ -4115,6 +4142,10 @@ def build_high_priority_payload(
         if history_only
         else window.end.date().isoformat()
     )
+    no_meeting_days_without_call = read_non_negative_int_env(
+        "MOP_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL",
+        DEFAULT_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL,
+    )
     all_active_rows = [
         row for row in active_deals_payload.get("rows", []) if isinstance(row, dict)
     ]
@@ -4134,6 +4165,7 @@ def build_high_priority_payload(
                     overdue_from_days,
                     allowed_stage_names,
                     excluded_mop_names,
+                    no_meeting_days_without_call,
                 )
             ),
             key=lambda row: (
@@ -4325,6 +4357,7 @@ def build_high_priority_payload(
         "rules": {
             "overdueFromDays": overdue_from_days,
             "stopLeadThreshold": stop_threshold,
+            "noMeetingDaysWithoutCall": no_meeting_days_without_call,
             "stageNames": list(read_filter_labels(
                 "MOP_HIGH_PRIORITY_STAGE_NAMES",
                 DEFAULT_HIGH_PRIORITY_STAGE_NAMES,

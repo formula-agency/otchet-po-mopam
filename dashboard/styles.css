@@ -1309,20 +1309,50 @@ select {
   text-align: center;
 }
 
-.data-table.priority-deals-table th:nth-child(1) { width: 29%; }
-.data-table.priority-deals-table th:nth-child(2) { width: 17%; }
-.data-table.priority-deals-table th:nth-child(3) { width: 20%; }
-.data-table.priority-deals-table th:nth-child(4),
-.data-table.priority-deals-table th:nth-child(5) { width: 11%; }
-.data-table.priority-deals-table th:nth-child(6) { width: 12%; }
+.data-table.priority-deals-table th:nth-child(1) { width: 23%; }
+.data-table.priority-deals-table th:nth-child(2) { width: 13%; }
+.data-table.priority-deals-table th:nth-child(3) { width: 15%; }
+.data-table.priority-deals-table th:nth-child(4) { width: 9%; }
+.data-table.priority-deals-table th:nth-child(5),
+.data-table.priority-deals-table th:nth-child(6) { width: 9%; }
+.data-table.priority-deals-table th:nth-child(7) { width: 11%; }
+.data-table.priority-deals-table th:nth-child(8) { width: 11%; }
 
 .data-table.priority-deals-table td:nth-child(n+2) {
   text-align: left;
 }
 
 .data-table.priority-deals-table td:nth-child(4),
-.data-table.priority-deals-table td:nth-child(5) {
+.data-table.priority-deals-table td:nth-child(5),
+.data-table.priority-deals-table td:nth-child(6),
+.data-table.priority-deals-table td:nth-child(8) {
   text-align: center;
+}
+
+.priority-meeting {
+  color: var(--coral);
+  font-weight: 800;
+}
+
+.priority-meeting.is-held {
+  color: var(--green);
+}
+
+.priority-exception-toggle {
+  width: 19px;
+  height: 19px;
+  margin: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+.priority-deal--exception {
+  background: rgba(90, 166, 143, 0.09);
+}
+
+.priority-deal--previous-exception {
+  background: rgba(239, 189, 85, 0.22);
+  box-shadow: inset 4px 0 0 var(--amber);
 }
 
 .active-deals-table td:nth-child(2),

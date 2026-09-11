@@ -114,26 +114,42 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
         self.assertEqual(called_ids, ["1"])
 
     def test_overdue_starts_on_day_eight_and_excludes_fired_mops(self) -> None:
-        allowed_stages = {"отложенный клиент"}
+        allowed_stages = {"дожать на встречу"}
         excluded_mops = {"уволенный моп"}
 
         self.assertTrue(deal_is_high_priority(
-            {"stageName": "Отложенный клиент", "mopName": "МОП", "daysWithoutCall": 8},
+            {"stageName": "Дожать на встречу", "mopName": "МОП", "daysWithoutCall": 8, "meetingHeld": True},
             8,
             allowed_stages,
             excluded_mops,
         ))
         self.assertFalse(deal_is_high_priority(
-            {"stageName": "Отложенный клиент", "mopName": "МОП", "daysWithoutCall": 7},
+            {"stageName": "Дожать на встречу", "mopName": "МОП", "daysWithoutCall": 7, "meetingHeld": True},
             8,
             allowed_stages,
             excluded_mops,
         ))
         self.assertFalse(deal_is_high_priority(
-            {"stageName": "Отложенный клиент", "mopName": "Уволенный МОП", "daysWithoutCall": 20},
+            {"stageName": "Дожать на встречу", "mopName": "Уволенный МОП", "daysWithoutCall": 20, "meetingHeld": True},
             8,
             allowed_stages,
             excluded_mops,
+        ))
+
+    def test_deal_without_meeting_becomes_error_after_fourteen_days(self) -> None:
+        allowed_stages = {"дожать на встречу"}
+
+        self.assertFalse(deal_is_high_priority(
+            {"stageName": "Дожать на встречу", "mopName": "МОП", "daysWithoutCall": 14},
+            8,
+            allowed_stages,
+            set(),
+        ))
+        self.assertTrue(deal_is_high_priority(
+            {"stageName": "Дожать на встречу", "mopName": "МОП", "daysWithoutCall": 15},
+            8,
+            allowed_stages,
+            set(),
         ))
 
     def test_counts_stop_days_and_daily_flow_by_manager(self) -> None:
