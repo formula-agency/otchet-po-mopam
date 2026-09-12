@@ -8397,7 +8397,9 @@
       "previousDate": "2026-09-10"
     },
     "2026-09-12": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4055"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-12",
@@ -9315,22 +9317,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-02-16",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 9,
-          "dealId": "4055",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4055/",
-          "lastCallAttemptDate": "2026-09-10",
-          "lastSuccessfulCommunicationDate": "2026-09-03",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Вадим",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-03",
           "daysWithoutAttempt": 7,
           "daysWithoutCall": 9,
@@ -9495,7 +9481,6 @@
         "3342",
         "3819",
         "4004",
-        "4055",
         "4064",
         "4168",
         "4195",
