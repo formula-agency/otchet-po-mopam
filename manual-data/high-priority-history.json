@@ -9551,7 +9551,10 @@
       "previousDate": "2026-09-11"
     },
     "2026-09-13": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5984",
+        "6154"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-13",
@@ -10181,22 +10184,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-18",
-          "daysWithoutAttempt": 9,
-          "daysWithoutCall": 17,
-          "dealId": "5984",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5984/",
-          "lastCallAttemptDate": "2026-09-04",
-          "lastSuccessfulCommunicationDate": "2026-08-27",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Денис",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-27",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 17,
@@ -10309,22 +10296,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-27",
-          "daysWithoutAttempt": 13,
-          "daysWithoutCall": 13,
-          "dealId": "6105",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6105/",
-          "lastCallAttemptDate": "2026-08-31",
-          "lastSuccessfulCommunicationDate": "2026-08-31",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Максим",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-03-12",
           "daysWithoutAttempt": 4,
           "daysWithoutCall": 13,
@@ -10387,22 +10358,6 @@
           "stageName": "Документы на ипотеку поданы",
           "title": "Бикшанов Данияр Фаграмович",
           "utmSource": "selfwalk"
-        },
-        {
-          "dateCreate": "2026-09-01",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 12,
-          "dealId": "6154",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6154/",
-          "lastCallAttemptDate": "2026-09-11",
-          "lastSuccessfulCommunicationDate": "2026-09-01",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Погребинский Артем",
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Илькин",
-          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-08-19",
@@ -10735,7 +10690,6 @@
         "5967",
         "5969",
         "5973",
-        "5984",
         "6005",
         "6038",
         "6039",
@@ -10746,14 +10700,12 @@
         "6082",
         "6091",
         "6097",
-        "6105",
         "6111",
         "6112",
         "6118",
         "6122",
         "6129",
         "6135",
-        "6154",
         "6167",
         "6168",
         "6171",
