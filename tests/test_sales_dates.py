@@ -14,6 +14,11 @@ class SalesDateOverrideTest(unittest.TestCase):
     def test_zhukov_sale_5824_stays_in_august(self) -> None:
         self.assertEqual(MANUAL_SALES_DATE_OVERRIDES["5824"], date(2026, 8, 17))
 
+    def test_corrected_sales_stay_in_august(self) -> None:
+        self.assertEqual(MANUAL_SALES_DATE_OVERRIDES["5377"], date(2026, 8, 31))
+        self.assertEqual(MANUAL_SALES_DATE_OVERRIDES["5891"], date(2026, 8, 31))
+        self.assertEqual(MANUAL_SALES_DATE_OVERRIDES["5974"], date(2026, 8, 31))
+
 
 if __name__ == "__main__":
     unittest.main()
