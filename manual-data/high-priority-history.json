@@ -10338,22 +10338,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-11",
-          "daysWithoutAttempt": 7,
-          "daysWithoutCall": 27,
-          "dealId": "5899",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5899/",
-          "lastCallAttemptDate": "2026-09-07",
-          "lastSuccessfulCommunicationDate": "2026-08-18",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Алексей",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-02-07",
           "daysWithoutAttempt": 27,
           "daysWithoutCall": 27,
@@ -11212,7 +11196,6 @@
         "5810",
         "5816",
         "5850",
-        "5899",
         "5918",
         "5937",
         "5941",
