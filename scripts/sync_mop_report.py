@@ -59,6 +59,7 @@ DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL = 8
 DEFAULT_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL = 14
 DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD = 10
 DEFAULT_HIGH_PRIORITY_HISTORY_PATH = "manual-data/high-priority-history.json"
+DEFAULT_MONGO_CALL_FACT_CACHE_PATH = "manual-data/mongo-call-facts.json"
 DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
     "Совершить первый контакт",
     "Дожать на встречу",
@@ -3001,6 +3002,68 @@ def apply_mongo_call_aggregates(
     return total_calls, total_air_seconds, len(manager_keys)
 
 
+def mongo_call_fact_cache_path() -> Path:
+    return Path(
+        os.getenv(
+            "MONGO_CALLS_FACT_CACHE_PATH",
+            DEFAULT_MONGO_CALL_FACT_CACHE_PATH,
+        ).strip()
+        or DEFAULT_MONGO_CALL_FACT_CACHE_PATH
+    )
+
+
+def read_mongo_call_fact_cache(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    rows = payload.get("rows") if isinstance(payload, dict) else None
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def write_mongo_call_fact_cache(path: Path, rows: list[dict[str, Any]]) -> None:
+    payload = {
+        "schemaVersion": 1,
+        "updatedAt": datetime.now(tz=ZoneInfo("UTC")).isoformat(timespec="seconds"),
+        "rows": rows,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(text, encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def apply_cached_mongo_call_facts(
+    data: MopReportData,
+    mop_settings: MopSettings,
+    error: Exception,
+) -> bool:
+    rows = read_mongo_call_fact_cache(mongo_call_fact_cache_path())
+    if not rows:
+        return False
+    total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
+        data,
+        rows,
+        mop_settings,
+    )
+    data.call_source = "mongodb-cache:formula/mongo_calls"
+    data.call_source_server_read_only = True
+    data.warnings.append(
+        "MongoDB временно недоступна; звонки и эфир восстановлены из последнего "
+        f"успешного снимка ({type(error).__name__})."
+    )
+    print(
+        "MongoDB call cache loaded: "
+        f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs"
+    )
+    return True
+
+
 def build_mongo_call_facts(
     data: MopReportData,
     settings: Settings,
@@ -3048,6 +3111,7 @@ def build_mongo_call_facts(
                 rows,
                 mop_settings,
             )
+            write_mongo_call_fact_cache(mongo_call_fact_cache_path(), rows)
             data.call_source = f"mongodb:formula/{collection_name}"
             data.call_source_server_read_only = reader.server_read_only
             print(
@@ -3058,10 +3122,14 @@ def build_mongo_call_facts(
             return True
     except (FormulaMongoError, ConfigError) as exc:
         data.warnings.append(f"Звонки из MongoDB не посчитаны: {safe_error_text(exc)}")
+        if apply_cached_mongo_call_facts(data, mop_settings, exc):
+            return True
     except Exception as exc:
         data.warnings.append(
             f"Звонки из MongoDB не посчитаны: {type(exc).__name__}: {safe_error_text(exc)}"
         )
+        if apply_cached_mongo_call_facts(data, mop_settings, exc):
+            return True
     return False
 
 

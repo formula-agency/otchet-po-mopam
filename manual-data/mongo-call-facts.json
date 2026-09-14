@@ -1,0 +1,14 @@
+{
+  "rows": [
+    {
+      "_id": {
+        "day": "2026-08-19",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 65,
+      "calls": 2
+    }
+  ],
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-14T04:36:16+00:00"
+}

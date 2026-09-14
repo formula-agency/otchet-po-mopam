@@ -7,6 +7,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
+from urllib.parse import unquote, urlsplit
 
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -146,6 +147,29 @@ def resolve_formula_tenant(customers: Collection[Mapping[str, Any]]) -> FormulaT
     )
 
 
+def direct_formula_tenant_from_env() -> FormulaTenantConfig | None:
+    connection_string = os.getenv("MONGO_CALLS_TENANT_URI", "").strip()
+    if not connection_string:
+        return None
+    parsed = urlsplit(connection_string)
+    database_name = os.getenv("MONGO_CALLS_TENANT_DATABASE", "").strip()
+    if not database_name:
+        database_name = unquote(parsed.path.lstrip("/").split("/", 1)[0])
+    if parsed.scheme != "mongodb" or not parsed.netloc or not database_name:
+        raise FormulaMongoError(
+            "MONGO_CALLS_TENANT_URI должен быть mongodb:// URI с именем базы данных."
+        )
+    calls_collection = os.getenv(
+        "MONGO_CALLS_TENANT_CALLS_COLLECTION",
+        "mongo_calls",
+    ).strip()
+    return FormulaTenantConfig(
+        database_name=database_name,
+        connection_string=connection_string,
+        data_sources={"calls_collection": calls_collection or "mongo_calls"},
+    )
+
+
 def _write_capabilities(status: Mapping[str, Any]) -> tuple[set[str], set[str]]:
     auth_info = status.get("authInfo")
     if not isinstance(auth_info, Mapping):
@@ -241,15 +265,7 @@ class FormulaMongoReader:
     ) -> "FormulaMongoReader":
         if env_file is not None:
             load_dotenv(dotenv_path=env_file, override=False)
-        config_uri = os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
-        if not config_uri:
-            raise FormulaMongoError("Не задан MONGO_CALLS_CONFIG_URI.")
-        config_database = os.getenv("MONGO_CALLS_CONFIG_DATABASE", DEFAULT_CONFIG_DATABASE).strip()
-        config_collection = os.getenv("MONGO_CALLS_CONFIG_COLLECTION", DEFAULT_CONFIG_COLLECTION).strip()
-        if not config_database or not config_collection:
-            raise FormulaMongoError("Не заданы база или коллекция центральной конфигурации MongoDB.")
         config_endpoint_override, tenant_endpoint_override = mongo_endpoint_overrides()
-        config_uri = override_mongo_endpoint(config_uri, config_endpoint_override)
         try:
             timeout_ms = max(
                 1_000,
@@ -258,25 +274,37 @@ class FormulaMongoReader:
         except ValueError as exc:
             raise FormulaMongoError("MONGO_CALLS_CONNECT_TIMEOUT_MS должен быть целым числом.") from exc
 
-        config_client: MongoClient[Any] = MongoClient(
-            config_uri,
-            serverSelectionTimeoutMS=timeout_ms,
-            connectTimeoutMS=timeout_ms,
-            socketTimeoutMS=timeout_ms * 2,
-            read_preference=SecondaryPreferred(),
-            appname="formula-report-config-reader",
-        )
-        try:
-            config_client.admin.command("ping")
-            tenant = resolve_formula_tenant(config_client[config_database][config_collection])
-        except FormulaMongoError:
-            raise
-        except Exception as exc:
-            raise FormulaMongoError(
-                f"Не удалось прочитать конфигурацию tenant formula: {type(exc).__name__}."
-            ) from exc
-        finally:
-            config_client.close()
+        tenant = direct_formula_tenant_from_env()
+        if tenant is None:
+            config_uri = os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
+            if not config_uri:
+                raise FormulaMongoError(
+                    "Не задан MONGO_CALLS_TENANT_URI или MONGO_CALLS_CONFIG_URI."
+                )
+            config_database = os.getenv("MONGO_CALLS_CONFIG_DATABASE", DEFAULT_CONFIG_DATABASE).strip()
+            config_collection = os.getenv("MONGO_CALLS_CONFIG_COLLECTION", DEFAULT_CONFIG_COLLECTION).strip()
+            if not config_database or not config_collection:
+                raise FormulaMongoError("Не заданы база или коллекция центральной конфигурации MongoDB.")
+            config_uri = override_mongo_endpoint(config_uri, config_endpoint_override)
+            config_client: MongoClient[Any] = MongoClient(
+                config_uri,
+                serverSelectionTimeoutMS=timeout_ms,
+                connectTimeoutMS=timeout_ms,
+                socketTimeoutMS=timeout_ms * 2,
+                read_preference=SecondaryPreferred(),
+                appname="formula-report-config-reader",
+            )
+            try:
+                config_client.admin.command("ping")
+                tenant = resolve_formula_tenant(config_client[config_database][config_collection])
+            except FormulaMongoError:
+                raise
+            except Exception as exc:
+                raise FormulaMongoError(
+                    f"Не удалось прочитать конфигурацию tenant formula: {type(exc).__name__}."
+                ) from exc
+            finally:
+                config_client.close()
 
         tenant_uri = override_mongo_endpoint(tenant.connection_string, tenant_endpoint_override)
         tenant_client: MongoClient[Any] = MongoClient(

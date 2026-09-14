@@ -10,6 +10,7 @@ from scripts.mongo_formula_readonly import (
     ReadOnlyCollection,
     _role_scope_violations,
     _write_capabilities,
+    direct_formula_tenant_from_env,
     mongo_endpoint_overrides,
     override_mongo_endpoint,
     resolve_formula_tenant,
@@ -81,6 +82,22 @@ class FakeCollection:
 
 
 class FormulaTenantResolutionTests(unittest.TestCase):
+    def test_direct_tenant_uri_avoids_central_config_lookup(self) -> None:
+        with patch.dict(
+            "os.environ",
+            {
+                "MONGO_CALLS_TENANT_URI": "mongodb://reader:secret@mongo.internal:27017/formula_db?authSource=formula_db",
+                "MONGO_CALLS_TENANT_CALLS_COLLECTION": "calls",
+            },
+            clear=True,
+        ):
+            tenant = direct_formula_tenant_from_env()
+
+        self.assertIsNotNone(tenant)
+        assert tenant is not None
+        self.assertEqual(tenant.database_name, "formula_db")
+        self.assertEqual(tenant.data_sources["calls_collection"], "calls")
+
     def test_query_is_pinned_to_active_formula_tenant(self) -> None:
         customers = FakeCustomers(
             {
