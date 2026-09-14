@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from tempfile import TemporaryDirectory
 from datetime import date, datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -202,11 +203,14 @@ class MongoCallSourceTests(unittest.TestCase):
         )
         data = MopReportData()
 
-        with patch.dict(
+        with TemporaryDirectory() as temporary_directory, patch.dict(
             "os.environ",
             {
                 "MONGO_CALLS_REQUIRE_SERVER_READ_ONLY": "false",
                 "MONGO_CALLS_AGGREGATION_TIMEOUT_MS": "120000",
+                "MONGO_CALLS_FACT_CACHE_PATH": str(
+                    Path(temporary_directory) / "mongo-call-facts.json"
+                ),
             },
             clear=False,
         ), patch(
