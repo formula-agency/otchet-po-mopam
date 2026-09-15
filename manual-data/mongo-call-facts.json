@@ -15459,8 +15459,38 @@
       "calls": 6,
       "successfulTargetCalls": 1,
       "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-09-15",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 650,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-15",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-15",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-15T00:23:21+00:00"
+  "updatedAt": "2026-09-15T04:55:19+00:00"
 }
