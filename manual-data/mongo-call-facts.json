@@ -15466,7 +15466,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 1183,
-      "calls": 3,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -15476,7 +15476,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2844,
-      "calls": 13,
+      "calls": 20,
       "successfulTargetCalls": 3,
       "targetCalls": 9
     },
@@ -15486,7 +15486,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 481,
-      "calls": 3,
+      "calls": 17,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -15496,7 +15496,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 580,
-      "calls": 6,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -15506,7 +15506,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15516,7 +15516,17 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 39,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-15",
+        "mopName": "Парфенов Владислав"
+      },
+      "airSeconds": 0,
+      "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15526,7 +15536,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15536,7 +15546,17 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 14,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-15",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15546,11 +15566,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-15T07:18:30+00:00"
+  "updatedAt": "2026-09-15T13:13:44+00:00"
 }
