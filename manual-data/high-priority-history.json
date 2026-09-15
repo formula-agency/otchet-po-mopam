@@ -11024,6 +11024,7 @@
         "5718",
         "5850",
         "5918",
+        "5937",
         "6039",
         "6060",
         "6065",
@@ -11240,22 +11241,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Кудрад",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-13",
-          "daysWithoutAttempt": 10,
-          "daysWithoutCall": 26,
-          "dealId": "5937",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5937/",
-          "lastCallAttemptDate": "2026-09-05",
-          "lastSuccessfulCommunicationDate": "2026-08-20",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Фаез",
           "utmSource": "leadit"
         },
         {
@@ -11873,7 +11858,6 @@
         "5897",
         "5912",
         "5918",
-        "5937",
         "5941",
         "5967",
         "5969",
