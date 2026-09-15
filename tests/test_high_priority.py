@@ -223,6 +223,21 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
         self.assertFalse(row["isStop"])
         self.assertEqual(row["stopDays"], 0)
 
+    def test_stop_days_reset_at_start_of_calendar_month(self) -> None:
+        stopped_deals = [deal(index, "МОП") for index in range(1, 12)]
+        snapshots = {
+            "2026-08-30": {"deals": stopped_deals},
+            "2026-08-31": {"deals": stopped_deals},
+            "2026-09-01": {"deals": stopped_deals},
+            "2026-09-02": {"deals": stopped_deals},
+        }
+
+        [august_row] = high_priority_snapshot_mops(snapshots, "2026-08-31", 10)
+        [september_row] = high_priority_snapshot_mops(snapshots, "2026-09-02", 10)
+
+        self.assertEqual(august_row["stopDays"], 2)
+        self.assertEqual(september_row["stopDays"], 2)
+
 
 if __name__ == "__main__":
     unittest.main()

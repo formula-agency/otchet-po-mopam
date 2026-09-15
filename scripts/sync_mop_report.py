@@ -4108,7 +4108,12 @@ def high_priority_snapshot_mops(
     }
     names.update(name for name in all_mop_names if name)
     stop_days: dict[str, int] = defaultdict(int)
-    for tracked_date in sorted(date_key for date_key in snapshots if date_key <= snapshot_date):
+    snapshot_month = snapshot_date[:7]
+    for tracked_date in sorted(
+        date_key
+        for date_key in snapshots
+        if date_key <= snapshot_date and date_key[:7] == snapshot_month
+    ):
         tracked = snapshots.get(tracked_date, {})
         counts: dict[str, int] = defaultdict(int)
         for row in tracked.get("deals", []):

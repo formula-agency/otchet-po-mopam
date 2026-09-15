@@ -1518,7 +1518,10 @@ function renderHighPriority() {
     }
   }
   const snapshotsThroughEnd = (priorityData.snapshots || [])
-    .filter((item) => item.date <= snapshot.date);
+    .filter((item) => (
+      item.date <= snapshot.date
+      && String(item.date || '').slice(0, 7) === String(snapshot.date || '').slice(0, 7)
+    ));
   const mopRows = (snapshot.mops || [])
     .map((row) => {
       const currentErrors = errorRows.filter((item) => item.mopName === row.mopName);
