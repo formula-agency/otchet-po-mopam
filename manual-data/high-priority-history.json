@@ -11893,7 +11893,12 @@
       "previousDate": "2026-09-14"
     },
     "2026-09-16": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5570",
+        "6060",
+        "6101",
+        "6199"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-16",
@@ -11911,7 +11916,7 @@
           "mopName": "Гавриленко Елена",
           "stageId": "",
           "stageName": "Дожать на встречу",
-          "title": "Анна",
+          "title": "Казыева Анна Евгеньевна",
           "utmSource": ""
         },
         {
@@ -12060,17 +12065,17 @@
         },
         {
           "dateCreate": "2026-07-01",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 30,
           "dealId": "5570",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5570/",
-          "lastCallAttemptDate": "2026-09-14",
+          "lastCallAttemptDate": "2026-09-16",
           "lastSuccessfulCommunicationDate": "2026-08-17",
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Войнов Данил",
           "stageId": "",
-          "stageName": "Провести встречу",
+          "stageName": "Дожать на встречу",
           "title": "Ирина",
           "utmSource": "avito"
         },
@@ -12316,11 +12321,11 @@
         },
         {
           "dateCreate": "2026-08-27",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 18,
           "dealId": "6101",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6101/",
-          "lastCallAttemptDate": "2026-09-15",
+          "lastCallAttemptDate": "2026-09-16",
           "lastSuccessfulCommunicationDate": "2026-08-29",
           "meetingHeld": false,
           "mopId": "",
@@ -12364,11 +12369,11 @@
         },
         {
           "dateCreate": "2026-08-25",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "6060",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6060/",
-          "lastCallAttemptDate": "2026-09-15",
+          "lastCallAttemptDate": "2026-09-16",
           "lastSuccessfulCommunicationDate": "2026-09-01",
           "meetingHeld": true,
           "mopId": "",
@@ -12652,11 +12657,11 @@
         },
         {
           "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 9,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 11,
           "dealId": "6199",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6199/",
-          "lastCallAttemptDate": "2026-09-07",
+          "lastCallAttemptDate": "2026-09-16",
           "lastSuccessfulCommunicationDate": "2026-09-05",
           "meetingHeld": true,
           "mopId": "",
@@ -12744,22 +12749,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Данилин Сергей Григорьевич",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 8,
-          "dealId": "6208",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6208/",
-          "lastCallAttemptDate": "2026-09-08",
-          "lastSuccessfulCommunicationDate": "2026-09-08",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Ирина",
           "utmSource": "leadit"
         },
         {
@@ -12869,8 +12858,7 @@
         "5971",
         "6052",
         "6155",
-        "6192",
-        "6208"
+        "6192"
       ],
       "previousDate": "2026-09-15"
     }
