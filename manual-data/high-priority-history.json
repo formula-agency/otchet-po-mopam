@@ -12852,7 +12852,9 @@
       "previousDate": "2026-09-15"
     },
     "2026-09-17": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4168"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-17",
@@ -13194,22 +13196,6 @@
           "utmSource": "selfwalk"
         },
         {
-          "dateCreate": "2026-02-27",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 21,
-          "dealId": "4168",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4168/",
-          "lastCallAttemptDate": "2026-09-15",
-          "lastSuccessfulCommunicationDate": "2026-08-27",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Алексей",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-25",
           "daysWithoutAttempt": 2,
           "daysWithoutCall": 21,
@@ -13255,22 +13241,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Алексей",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 19,
-          "dealId": "6048",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6048/",
-          "lastCallAttemptDate": "2026-09-14",
-          "lastSuccessfulCommunicationDate": "2026-08-29",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Светлана",
           "utmSource": "leadit"
         },
         {
@@ -13738,22 +13708,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-09-08",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 8,
-          "dealId": "6273",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6273/",
-          "lastCallAttemptDate": "2026-09-14",
-          "lastSuccessfulCommunicationDate": "2026-09-09",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Альберт",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-09",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -13823,7 +13777,6 @@
         "3970",
         "4062",
         "4064",
-        "4168",
         "4199",
         "4303",
         "4359",
@@ -13853,7 +13806,6 @@
         "6005",
         "6038",
         "6039",
-        "6048",
         "6051",
         "6052",
         "6060",
@@ -13878,7 +13830,6 @@
       "newOverdueDealIds": [
         "5353",
         "6139",
-        "6273",
         "6285",
         "6292"
       ],
