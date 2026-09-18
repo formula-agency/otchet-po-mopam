@@ -13774,8 +13774,10 @@
         "6039",
         "6060",
         "6065",
+        "6135",
         "6168",
-        "6177"
+        "6177",
+        "6198"
       ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
@@ -14006,22 +14008,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-07-28",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 24,
-          "dealId": "5787",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5787/",
-          "lastCallAttemptDate": "2026-09-18",
-          "lastSuccessfulCommunicationDate": "2026-08-25",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Ширшин Сергей",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-02-17",
           "daysWithoutAttempt": 23,
           "daysWithoutCall": 23,
@@ -14164,22 +14150,6 @@
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
           "utmSource": "avito"
-        },
-        {
-          "dateCreate": "2026-08-31",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 18,
-          "dealId": "6135",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6135/",
-          "lastCallAttemptDate": "2026-08-31",
-          "lastSuccessfulCommunicationDate": "2026-08-31",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Андрей",
-          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-02-06",
@@ -14407,11 +14377,11 @@
         },
         {
           "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 11,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 14,
           "dealId": "6198",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6198/",
-          "lastCallAttemptDate": "2026-09-07",
+          "lastCallAttemptDate": "2026-09-18",
           "lastSuccessfulCommunicationDate": "",
           "meetingHeld": true,
           "mopId": "",
@@ -14467,22 +14437,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-02-17",
-          "daysWithoutAttempt": 11,
-          "daysWithoutCall": 11,
-          "dealId": "4062",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4062/",
-          "lastCallAttemptDate": "2026-09-07",
-          "lastSuccessfulCommunicationDate": "2026-09-07",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Бахром",
           "utmSource": "leadit"
         },
         {
@@ -14713,7 +14667,6 @@
       "flowedFromPreviousDealIds": [
         "3342",
         "3970",
-        "4062",
         "4064",
         "4199",
         "4303",
@@ -14731,7 +14684,6 @@
         "5660",
         "5695",
         "5786",
-        "5787",
         "5816",
         "5897",
         "5912",
@@ -14749,7 +14701,6 @@
         "6112",
         "6125",
         "6129",
-        "6135",
         "6155",
         "6167",
         "6171",

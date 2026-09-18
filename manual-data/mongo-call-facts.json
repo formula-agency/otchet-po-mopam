@@ -15846,7 +15846,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 0,
-      "calls": 9,
+      "calls": 23,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15856,7 +15856,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 473,
-      "calls": 7,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -15866,7 +15866,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 1821,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -15876,7 +15876,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15886,7 +15886,17 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 6,
+      "calls": 9,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-18",
+        "mopName": "Парфенов Владислав"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15907,6 +15917,16 @@
       },
       "airSeconds": 0,
       "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-18",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -15942,5 +15962,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-18T08:52:15+00:00"
+  "updatedAt": "2026-09-18T14:09:56+00:00"
 }
