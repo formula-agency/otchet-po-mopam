@@ -15845,50 +15845,50 @@
         "day": "2026-09-18",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 0,
-      "calls": 23,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 1853,
+      "calls": 16,
+      "successfulTargetCalls": 1,
+      "targetCalls": 4
     },
     {
       "_id": {
         "day": "2026-09-18",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 473,
-      "calls": 9,
-      "successfulTargetCalls": 0,
-      "targetCalls": 1
+      "airSeconds": 4169,
+      "calls": 8,
+      "successfulTargetCalls": 2,
+      "targetCalls": 5
     },
     {
       "_id": {
         "day": "2026-09-18",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 1821,
-      "calls": 7,
-      "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "airSeconds": 2202,
+      "calls": 6,
+      "successfulTargetCalls": 2,
+      "targetCalls": 4
     },
     {
       "_id": {
         "day": "2026-09-18",
         "mopName": "Жуков Лев"
       },
-      "airSeconds": 0,
-      "calls": 4,
+      "airSeconds": 411,
+      "calls": 2,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-09-18",
         "mopName": "Зенкова Анастасия"
       },
-      "airSeconds": 0,
-      "calls": 9,
+      "airSeconds": 91,
+      "calls": 6,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -15925,10 +15925,10 @@
         "day": "2026-09-18",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
+      "airSeconds": 199,
       "calls": 2,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -15956,11 +15956,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-18T14:09:56+00:00"
+  "updatedAt": "2026-09-18T18:56:24+00:00"
 }
