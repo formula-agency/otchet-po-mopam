@@ -14726,7 +14726,10 @@
       "previousDate": "2026-09-17"
     },
     "2026-09-19": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5786",
+        "6101"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-19",
@@ -14842,22 +14845,6 @@
           "stageName": "Дожать на встречу",
           "title": "Алексей",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-07-28",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 37,
-          "dealId": "5786",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5786/",
-          "lastCallAttemptDate": "2026-09-18",
-          "lastSuccessfulCommunicationDate": "2026-08-13",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Виктория",
-          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-10",
@@ -14988,22 +14975,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-26",
-          "daysWithoutAttempt": 10,
-          "daysWithoutCall": 24,
-          "dealId": "6091",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6091/",
-          "lastCallAttemptDate": "2026-09-09",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Спирина Алена Сергеевна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-24",
           "daysWithoutAttempt": 24,
           "daysWithoutCall": 24,
@@ -15065,22 +15036,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Алексей",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-27",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 21,
-          "dealId": "6101",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6101/",
-          "lastCallAttemptDate": "2026-09-17",
-          "lastSuccessfulCommunicationDate": "2026-08-29",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Зухра",
           "utmSource": "leadit"
         },
         {
@@ -15810,7 +15765,6 @@
         "5660",
         "5695",
         "5759",
-        "5786",
         "5816",
         "5897",
         "5912",
@@ -15824,8 +15778,6 @@
         "6053",
         "6065",
         "6082",
-        "6091",
-        "6101",
         "6112",
         "6125",
         "6129",

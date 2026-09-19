@@ -15963,12 +15963,22 @@
     {
       "_id": {
         "day": "2026-09-19",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-19",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 82,
-      "calls": 2,
+      "airSeconds": 1058,
+      "calls": 7,
       "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -16005,10 +16015,10 @@
         "day": "2026-09-19",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 0,
+      "airSeconds": 84,
+      "calls": 1,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -16022,5 +16032,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-19T08:37:56+00:00"
+  "updatedAt": "2026-09-19T13:44:46+00:00"
 }
