@@ -15986,7 +15986,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -16032,5 +16032,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-19T13:44:46+00:00"
+  "updatedAt": "2026-09-19T17:02:55+00:00"
 }
