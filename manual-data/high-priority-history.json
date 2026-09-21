@@ -16838,11 +16838,17 @@
     },
     "2026-09-21": {
       "calledFromPreviousDealIds": [
+        "4627",
+        "5371",
         "5918",
+        "5967",
         "6020",
+        "6052",
         "6112",
         "6169",
-        "6224"
+        "6198",
+        "6224",
+        "6375"
       ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
@@ -16978,11 +16984,11 @@
         },
         {
           "dateCreate": "2026-08-17",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 35,
           "dealId": "5967",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5967/",
-          "lastCallAttemptDate": "2026-09-18",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "2026-08-17",
           "meetingHeld": false,
           "mopId": "",
@@ -16990,22 +16996,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Кудрад",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-04-07",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 28,
-          "dealId": "4627",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4627/",
-          "lastCallAttemptDate": "2026-09-18",
-          "lastSuccessfulCommunicationDate": "2026-08-24",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Погребинский Артем",
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Виталий",
           "utmSource": "leadit"
         },
         {
@@ -17330,11 +17320,11 @@
         },
         {
           "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 17,
           "dealId": "6198",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6198/",
-          "lastCallAttemptDate": "2026-09-18",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "",
           "meetingHeld": true,
           "mopId": "",
@@ -17458,11 +17448,11 @@
         },
         {
           "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 16,
           "dealId": "6224",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6224/",
-          "lastCallAttemptDate": "2026-09-18",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "2026-09-05",
           "meetingHeld": false,
           "mopId": "",
@@ -17474,11 +17464,11 @@
         },
         {
           "dateCreate": "2026-06-01",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 14,
           "dealId": "5371",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5371/",
-          "lastCallAttemptDate": "2026-09-20",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "2026-09-07",
           "meetingHeld": true,
           "mopId": "",
@@ -17506,11 +17496,11 @@
         },
         {
           "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 13,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 13,
           "dealId": "6052",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6052/",
-          "lastCallAttemptDate": "2026-09-08",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "2026-09-08",
           "meetingHeld": true,
           "mopId": "",
@@ -17634,11 +17624,11 @@
         },
         {
           "dateCreate": "2026-09-10",
-          "daysWithoutAttempt": 9,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 11,
           "dealId": "6375",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6375/",
-          "lastCallAttemptDate": "2026-09-12",
+          "lastCallAttemptDate": "2026-09-21",
           "lastSuccessfulCommunicationDate": "",
           "meetingHeld": true,
           "mopId": "",
@@ -17711,6 +17701,22 @@
           "stageName": "Дожать на встречу",
           "title": "Вадим",
           "utmSource": "leadit"
+        },
+        {
+          "dateCreate": "2026-09-04",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 8,
+          "dealId": "6197",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6197/",
+          "lastCallAttemptDate": "2026-09-21",
+          "lastSuccessfulCommunicationDate": "2026-09-13",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Погребинский Артем",
+          "stageId": "",
+          "stageName": "Провести встречу",
+          "title": "Белла",
+          "utmSource": "leadit"
         }
       ],
       "flowedFromPreviousDealIds": [
@@ -17722,7 +17728,6 @@
         "4199",
         "4303",
         "4362",
-        "4627",
         "4681",
         "5253",
         "5263",
@@ -17769,7 +17774,9 @@
         "6375",
         "6405"
       ],
-      "newOverdueDealIds": [],
+      "newOverdueDealIds": [
+        "6197"
+      ],
       "previousDate": "2026-09-20"
     }
   }
