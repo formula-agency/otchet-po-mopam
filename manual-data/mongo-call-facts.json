@@ -16259,8 +16259,18 @@
       "calls": 2,
       "successfulTargetCalls": 1,
       "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-09-22",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-21T21:47:07+00:00"
+  "updatedAt": "2026-09-22T00:39:25+00:00"
 }
