@@ -18235,6 +18235,22 @@
         },
         {
           "dateCreate": "2026-09-04",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 18,
+          "dealId": "6214",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6214/",
+          "lastCallAttemptDate": "2026-09-22",
+          "lastSuccessfulCommunicationDate": "2026-09-04",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Султанов Есен",
+          "stageId": "",
+          "stageName": "Совершить первый контакт",
+          "title": "Ирина",
+          "utmSource": "leadit"
+        },
+        {
+          "dateCreate": "2026-09-04",
           "daysWithoutAttempt": 18,
           "daysWithoutCall": 18,
           "dealId": "6225",
@@ -18279,6 +18295,22 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
+          "utmSource": "leadit"
+        },
+        {
+          "dateCreate": "2026-09-04",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 17,
+          "dealId": "6224",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6224/",
+          "lastCallAttemptDate": "2026-09-22",
+          "lastSuccessfulCommunicationDate": "2026-09-05",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Ядрышникова Кристина",
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Алексей",
           "utmSource": "leadit"
         },
         {
@@ -18755,7 +18787,9 @@
         "6173",
         "6192",
         "6197",
+        "6214",
         "6223",
+        "6224",
         "6225",
         "6292",
         "6375"
