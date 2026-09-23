@@ -18897,11 +18897,11 @@
         },
         {
           "dateCreate": "2026-08-12",
-          "daysWithoutAttempt": 42,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 42,
           "dealId": "5912",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5912/",
-          "lastCallAttemptDate": "2026-08-12",
+          "lastCallAttemptDate": "2026-09-23",
           "lastSuccessfulCommunicationDate": "2026-08-12",
           "meetingHeld": false,
           "mopId": "",
@@ -19264,6 +19264,22 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-09-04",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 19,
+          "dealId": "6214",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6214/",
+          "lastCallAttemptDate": "2026-09-23",
+          "lastSuccessfulCommunicationDate": "2026-09-04",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Султанов Есен",
+          "stageId": "",
+          "stageName": "Совершить первый контакт",
+          "title": "Ирина",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-08-25",
           "daysWithoutAttempt": 19,
           "daysWithoutCall": 19,
@@ -19440,6 +19456,22 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-05-20",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 15,
+          "dealId": "5263",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5263/",
+          "lastCallAttemptDate": "2026-09-23",
+          "lastSuccessfulCommunicationDate": "2026-09-08",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Султанов Есен",
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Мария",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-09-01",
           "daysWithoutAttempt": 15,
           "daysWithoutCall": 15,
@@ -19454,6 +19486,22 @@
           "stageName": "Дожать на встречу",
           "title": "Светлана",
           "utmSource": "avito"
+        },
+        {
+          "dateCreate": "2026-09-08",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 15,
+          "dealId": "6271",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6271/",
+          "lastCallAttemptDate": "2026-09-23",
+          "lastSuccessfulCommunicationDate": "",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Султанов Есен",
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Полина",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-09-02",
@@ -19552,6 +19600,22 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-08-24",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 13,
+          "dealId": "6053",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6053/",
+          "lastCallAttemptDate": "2026-09-23",
+          "lastSuccessfulCommunicationDate": "2026-09-10",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Васильев Владимир",
+          "stageId": "",
+          "stageName": "Совершить первый контакт",
+          "title": "Екатерина",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-09-04",
           "daysWithoutAttempt": 13,
           "daysWithoutCall": 13,
@@ -19645,22 +19709,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Белла",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 9,
-          "dealId": "6441",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6441/",
-          "lastCallAttemptDate": "2026-09-23",
-          "lastSuccessfulCommunicationDate": "2026-09-14",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Татьяна",
           "utmSource": "leadit"
         },
         {
@@ -19833,6 +19881,7 @@
         "4303",
         "4362",
         "5253",
+        "5263",
         "5293",
         "5353",
         "5366",
@@ -19850,6 +19899,7 @@
         "5973",
         "6038",
         "6052",
+        "6053",
         "6070",
         "6073",
         "6082",
@@ -19867,6 +19917,7 @@
         "6192",
         "6197",
         "6202",
+        "6214",
         "6223",
         "6224",
         "6225",
@@ -19875,8 +19926,7 @@
         "6288",
         "6292",
         "6375",
-        "6422",
-        "6441"
+        "6422"
       ],
       "newOverdueDealIds": [
         "5480",
@@ -19887,6 +19937,7 @@
         "6230",
         "6257",
         "6266",
+        "6271",
         "6434",
         "6436"
       ],
