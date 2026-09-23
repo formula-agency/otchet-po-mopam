@@ -18812,7 +18812,12 @@
       "previousDate": "2026-09-21"
     },
     "2026-09-23": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5329",
+        "6112",
+        "6214",
+        "6292"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-23",
@@ -19011,11 +19016,11 @@
         },
         {
           "dateCreate": "2026-08-27",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 25,
           "dealId": "6112",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6112/",
-          "lastCallAttemptDate": "2026-09-21",
+          "lastCallAttemptDate": "2026-09-23",
           "lastSuccessfulCommunicationDate": "2026-08-29",
           "meetingHeld": true,
           "mopId": "",
@@ -19346,22 +19351,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-05-26",
-          "daysWithoutAttempt": 14,
-          "daysWithoutCall": 16,
-          "dealId": "5329",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5329/",
-          "lastCallAttemptDate": "2026-09-09",
-          "lastSuccessfulCommunicationDate": "2026-09-07",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Данилин Сергей Григорьевич",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-06-05",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 16,
@@ -19619,11 +19608,11 @@
         },
         {
           "dateCreate": "2026-09-09",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 14,
           "dealId": "6292",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6292/",
-          "lastCallAttemptDate": "2026-09-22",
+          "lastCallAttemptDate": "2026-09-23",
           "lastSuccessfulCommunicationDate": "",
           "meetingHeld": true,
           "mopId": "",
@@ -19965,7 +19954,6 @@
         "5253",
         "5263",
         "5293",
-        "5329",
         "5353",
         "5366",
         "5371",
