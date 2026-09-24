@@ -16519,8 +16519,118 @@
       "calls": 8,
       "successfulTargetCalls": 1,
       "targetCalls": 4
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 703,
+      "calls": 5,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 6,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 282,
+      "calls": 19,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Парфенов Владислав"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 381,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 5,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-24",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-24T03:32:36+00:00"
+  "updatedAt": "2026-09-24T09:04:39+00:00"
 }
