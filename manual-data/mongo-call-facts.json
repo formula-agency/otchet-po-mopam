@@ -16655,10 +16655,10 @@
         "day": "2026-09-25",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 1013,
-      "calls": 20,
+      "airSeconds": 1315,
+      "calls": 10,
       "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -16695,10 +16695,10 @@
         "day": "2026-09-25",
         "mopName": "Зенкова Анастасия"
       },
-      "airSeconds": 396,
-      "calls": 26,
-      "successfulTargetCalls": 0,
-      "targetCalls": 3
+      "airSeconds": 721,
+      "calls": 18,
+      "successfulTargetCalls": 1,
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -16725,20 +16725,20 @@
         "day": "2026-09-25",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 16,
+      "airSeconds": 1679,
+      "calls": 15,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 5
     },
     {
       "_id": {
         "day": "2026-09-25",
         "mopName": "Тончу Ростислав"
       },
-      "airSeconds": 970,
+      "airSeconds": 2049,
       "calls": 11,
-      "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "successfulTargetCalls": 3,
+      "targetCalls": 6
     },
     {
       "_id": {
@@ -16759,8 +16759,18 @@
       "calls": 2,
       "successfulTargetCalls": 1,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-26",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-25T15:03:36+00:00"
+  "updatedAt": "2026-09-25T19:54:07+00:00"
 }
