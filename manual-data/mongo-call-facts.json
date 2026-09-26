@@ -16766,9 +16766,19 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 606,
-      "calls": 10,
+      "calls": 14,
       "successfulTargetCalls": 3,
       "targetCalls": 4
+    },
+    {
+      "_id": {
+        "day": "2026-09-26",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -16805,10 +16815,10 @@
         "day": "2026-09-26",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 168,
-      "calls": 4,
+      "airSeconds": 303,
+      "calls": 7,
       "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -16819,8 +16829,18 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-26",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 82,
+      "calls": 1,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-26T09:13:22+00:00"
+  "updatedAt": "2026-09-26T14:12:25+00:00"
 }

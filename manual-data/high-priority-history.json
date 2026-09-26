@@ -22143,7 +22143,9 @@
     },
     "2026-09-26": {
       "calledFromPreviousDealIds": [
+        "6153",
         "6169",
+        "6436",
         "6438"
       ],
       "calledFromPreviousEvaluated": true,
@@ -22306,7 +22308,7 @@
           "mopId": "",
           "mopName": "Султанов Есен",
           "stageId": "",
-          "stageName": "Дожать на встречу",
+          "stageName": "Документы на ипотеку поданы",
           "title": "Артем",
           "utmSource": "leadit"
         },
@@ -22677,22 +22679,6 @@
           "stageName": "Дожать на встречу",
           "title": "Мария",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-01",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 18,
-          "dealId": "6153",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6153/",
-          "lastCallAttemptDate": "2026-09-08",
-          "lastSuccessfulCommunicationDate": "2026-09-08",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Светлана",
-          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-09-08",
@@ -23112,22 +23098,6 @@
         },
         {
           "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 4,
-          "daysWithoutCall": 11,
-          "dealId": "6436",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6436/",
-          "lastCallAttemptDate": "2026-09-22",
-          "lastSuccessfulCommunicationDate": "2026-09-15",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Рафат",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 11,
           "daysWithoutCall": 11,
           "dealId": "6434",
@@ -23260,7 +23230,6 @@
         "6119",
         "6125",
         "6139",
-        "6153",
         "6155",
         "6165",
         "6171",
@@ -23285,7 +23254,6 @@
         "6288",
         "6422",
         "6434",
-        "6436",
         "6439",
         "6487"
       ],
