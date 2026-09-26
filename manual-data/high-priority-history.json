@@ -22142,7 +22142,10 @@
       "previousDate": "2026-09-24"
     },
     "2026-09-26": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6169",
+        "6438"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-26",
@@ -22385,22 +22388,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Виктор",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-02",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 23,
-          "dealId": "6169",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6169/",
-          "lastCallAttemptDate": "2026-09-25",
-          "lastSuccessfulCommunicationDate": "2026-09-03",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Александр",
           "utmSource": "leadit"
         },
         {
@@ -23173,22 +23160,6 @@
         },
         {
           "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 9,
-          "dealId": "6438",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6438/",
-          "lastCallAttemptDate": "2026-09-25",
-          "lastSuccessfulCommunicationDate": "2026-09-17",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Анфиса",
-          "utmSource": "avito"
-        },
-        {
-          "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 9,
           "dealId": "6439",
@@ -23292,7 +23263,6 @@
         "6153",
         "6155",
         "6165",
-        "6169",
         "6171",
         "6172",
         "6182",
@@ -23316,7 +23286,6 @@
         "6422",
         "6434",
         "6436",
-        "6438",
         "6439",
         "6487"
       ],
