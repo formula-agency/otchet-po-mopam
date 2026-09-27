@@ -16839,8 +16839,68 @@
       "calls": 1,
       "successfulTargetCalls": 1,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 718,
+      "calls": 8,
+      "successfulTargetCalls": 4,
+      "targetCalls": 4
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 62,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Парфенов Владислав"
+      },
+      "airSeconds": 339,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Попова Олеся"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 37,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-27T04:04:53+00:00"
+  "updatedAt": "2026-09-27T11:34:48+00:00"
 }

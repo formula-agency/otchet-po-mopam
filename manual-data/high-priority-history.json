@@ -23265,7 +23265,10 @@
       "previousDate": "2026-09-25"
     },
     "2026-09-27": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4055",
+        "6487"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-09-27",
@@ -24056,11 +24059,11 @@
         },
         {
           "dateCreate": "2026-02-16",
-          "daysWithoutAttempt": 5,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "4055",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4055/",
-          "lastCallAttemptDate": "2026-09-22",
+          "lastCallAttemptDate": "2026-09-27",
           "lastSuccessfulCommunicationDate": "2026-09-12",
           "meetingHeld": true,
           "mopId": "",
@@ -24263,22 +24266,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-16",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 10,
-          "dealId": "6487",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6487/",
-          "lastCallAttemptDate": "2026-09-25",
-          "lastSuccessfulCommunicationDate": "2026-09-17",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Яна",
-          "utmSource": "avito"
-        },
-        {
           "dateCreate": "2026-03-03",
           "daysWithoutAttempt": 6,
           "daysWithoutCall": 10,
@@ -24391,8 +24378,7 @@
         "6397",
         "6422",
         "6434",
-        "6439",
-        "6487"
+        "6439"
       ],
       "newOverdueDealIds": [
         "6451"
