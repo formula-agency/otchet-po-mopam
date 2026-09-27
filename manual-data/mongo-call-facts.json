@@ -16899,8 +16899,18 @@
       "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-09-27",
+        "mopName": "Черткова Ирина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-27T11:34:48+00:00"
+  "updatedAt": "2026-09-27T16:34:13+00:00"
 }
