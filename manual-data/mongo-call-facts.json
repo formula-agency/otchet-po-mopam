@@ -17019,8 +17019,28 @@
       "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-29",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-09-29",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 573,
+      "calls": 2,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-09-28T23:12:56+00:00"
+  "updatedAt": "2026-09-29T04:39:23+00:00"
 }
