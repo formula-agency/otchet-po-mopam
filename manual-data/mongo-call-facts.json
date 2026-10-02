@@ -17383,7 +17383,47 @@
     {
       "_id": {
         "day": "2026-10-02",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 764,
+      "calls": 9,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 988,
+      "calls": 13,
+      "successfulTargetCalls": 0,
+      "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
         "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
       "calls": 0,
@@ -17395,12 +17435,82 @@
         "day": "2026-10-02",
         "mopName": "Зенкова Анастасия"
       },
+      "airSeconds": 376,
+      "calls": 12,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Парфенов Владислав"
+      },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 1018,
+      "calls": 8,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Попова Олеся"
+      },
+      "airSeconds": 879,
+      "calls": 6,
+      "successfulTargetCalls": 1,
+      "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 281,
+      "calls": 4,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Черткова Ирина"
+      },
+      "airSeconds": 203,
+      "calls": 3,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 1041,
+      "calls": 9,
+      "successfulTargetCalls": 0,
+      "targetCalls": 2
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-02T04:27:47+00:00"
+  "updatedAt": "2026-10-02T12:02:02+00:00"
 }
