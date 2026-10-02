@@ -17379,8 +17379,28 @@
       "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-01T23:44:58+00:00"
+  "updatedAt": "2026-10-02T04:27:47+00:00"
 }
