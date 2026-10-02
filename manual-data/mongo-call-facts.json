@@ -17396,7 +17396,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 764,
-      "calls": 9,
+      "calls": 8,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -17405,10 +17405,10 @@
         "day": "2026-10-02",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 988,
-      "calls": 13,
+      "airSeconds": 3602,
+      "calls": 12,
       "successfulTargetCalls": 0,
-      "targetCalls": 3
+      "targetCalls": 6
     },
     {
       "_id": {
@@ -17436,7 +17436,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 376,
-      "calls": 12,
+      "calls": 8,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -17455,30 +17455,30 @@
         "day": "2026-10-02",
         "mopName": "Погребинский Артем"
       },
-      "airSeconds": 1018,
-      "calls": 8,
-      "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "airSeconds": 1221,
+      "calls": 13,
+      "successfulTargetCalls": 2,
+      "targetCalls": 4
     },
     {
       "_id": {
         "day": "2026-10-02",
         "mopName": "Попова Олеся"
       },
-      "airSeconds": 879,
+      "airSeconds": 1356,
       "calls": 6,
-      "successfulTargetCalls": 1,
-      "targetCalls": 3
+      "successfulTargetCalls": 2,
+      "targetCalls": 5
     },
     {
       "_id": {
         "day": "2026-10-02",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 281,
-      "calls": 4,
+      "airSeconds": 379,
+      "calls": 5,
       "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -17495,22 +17495,22 @@
         "day": "2026-10-02",
         "mopName": "Черткова Ирина"
       },
-      "airSeconds": 203,
-      "calls": 3,
-      "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "airSeconds": 804,
+      "calls": 5,
+      "successfulTargetCalls": 3,
+      "targetCalls": 3
     },
     {
       "_id": {
         "day": "2026-10-02",
         "mopName": "Ядрышникова Кристина"
       },
-      "airSeconds": 1041,
+      "airSeconds": 1743,
       "calls": 9,
-      "successfulTargetCalls": 0,
-      "targetCalls": 2
+      "successfulTargetCalls": 1,
+      "targetCalls": 3
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-02T12:02:02+00:00"
+  "updatedAt": "2026-10-02T17:51:00+00:00"
 }
