@@ -28687,6 +28687,7 @@
     },
     "2026-10-03": {
       "calledFromPreviousDealIds": [
+        "6496",
         "6557"
       ],
       "calledFromPreviousEvaluated": true,
@@ -28915,22 +28916,6 @@
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Эльвин",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-07",
-          "daysWithoutAttempt": 9,
-          "daysWithoutCall": 26,
-          "dealId": "6240",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6240/",
-          "lastCallAttemptDate": "2026-09-24",
-          "lastSuccessfulCommunicationDate": "2026-09-07",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Татьяна",
           "utmSource": "leadit"
         },
         {
@@ -29222,22 +29207,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-17",
-          "daysWithoutAttempt": 16,
-          "daysWithoutCall": 16,
-          "dealId": "6496",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6496/",
-          "lastCallAttemptDate": "",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Ольга девайкина",
-          "utmSource": "avito"
-        },
-        {
           "dateCreate": "2026-09-04",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 15,
@@ -29410,7 +29379,6 @@
         "6182",
         "6237",
         "6238",
-        "6240",
         "6271",
         "6277",
         "6288",
@@ -29419,7 +29387,6 @@
         "6439",
         "6450",
         "6451",
-        "6496",
         "6523",
         "6557",
         "6559"
