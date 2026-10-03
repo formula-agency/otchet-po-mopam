@@ -28686,7 +28686,9 @@
       "previousDate": "2026-10-01"
     },
     "2026-10-03": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6557"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-03",
@@ -29365,11 +29367,11 @@
         },
         {
           "dateCreate": "2026-09-21",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 9,
           "dealId": "6557",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6557/",
-          "lastCallAttemptDate": "2026-10-02",
+          "lastCallAttemptDate": "2026-10-03",
           "lastSuccessfulCommunicationDate": "2026-09-24",
           "meetingHeld": true,
           "mopId": "",
