@@ -17563,6 +17563,16 @@
     {
       "_id": {
         "day": "2026-10-03",
+        "mopName": "Попова Олеся"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-03",
         "mopName": "Султанов Есен"
       },
       "airSeconds": 740,
@@ -17602,5 +17612,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-03T13:08:12+00:00"
+  "updatedAt": "2026-10-03T17:51:50+00:00"
 }

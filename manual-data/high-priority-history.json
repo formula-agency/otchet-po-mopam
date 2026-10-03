@@ -28687,6 +28687,7 @@
     },
     "2026-10-03": {
       "calledFromPreviousDealIds": [
+        "6439",
         "6496",
         "6557"
       ],
@@ -29192,11 +29193,11 @@
         },
         {
           "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 16,
           "dealId": "6439",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6439/",
-          "lastCallAttemptDate": "2026-10-02",
+          "lastCallAttemptDate": "2026-10-03",
           "lastSuccessfulCommunicationDate": "2026-09-17",
           "meetingHeld": false,
           "mopId": "",
