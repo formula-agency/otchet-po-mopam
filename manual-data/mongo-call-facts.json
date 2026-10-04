@@ -17609,8 +17609,38 @@
       "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-04",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 182,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-04",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 616,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-04",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-04T00:24:19+00:00"
+  "updatedAt": "2026-10-04T07:54:38+00:00"
 }
