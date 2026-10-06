@@ -30813,7 +30813,10 @@
     },
     "2026-10-06": {
       "calledFromPreviousDealIds": [
+        "3342",
         "6125",
+        "6187",
+        "6237",
         "6470"
       ],
       "calledFromPreviousEvaluated": true,
@@ -30844,7 +30847,7 @@
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5538/",
           "lastCallAttemptDate": "",
           "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
+          "meetingHeld": true,
           "mopId": "",
           "mopName": "Жуков Лев",
           "stageId": "",
@@ -30882,22 +30885,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Зиля",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2025-08-06",
-          "daysWithoutAttempt": 14,
-          "daysWithoutCall": 50,
-          "dealId": "3342",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/3342/",
-          "lastCallAttemptDate": "2026-09-22",
-          "lastSuccessfulCommunicationDate": "2026-08-17",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Сергей",
           "utmSource": "leadit"
         },
         {
@@ -31206,11 +31193,11 @@
         },
         {
           "dateCreate": "2026-09-07",
-          "daysWithoutAttempt": 12,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 21,
           "dealId": "6237",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6237/",
-          "lastCallAttemptDate": "2026-09-24",
+          "lastCallAttemptDate": "2026-10-06",
           "lastSuccessfulCommunicationDate": "2026-09-15",
           "meetingHeld": false,
           "mopId": "",
@@ -31285,22 +31272,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 18,
-          "dealId": "6187",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6187/",
-          "lastCallAttemptDate": "2026-10-05",
-          "lastSuccessfulCommunicationDate": "2026-09-18",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Куйлиев Шухрат Абдурахмонович",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-15",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 15,
@@ -31318,11 +31289,11 @@
         },
         {
           "dateCreate": "2026-09-11",
-          "daysWithoutAttempt": 6,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "6396",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6396/",
-          "lastCallAttemptDate": "2026-09-30",
+          "lastCallAttemptDate": "2026-10-06",
           "lastSuccessfulCommunicationDate": "2026-09-21",
           "meetingHeld": false,
           "mopId": "",
@@ -31382,7 +31353,6 @@
         }
       ],
       "flowedFromPreviousDealIds": [
-        "3342",
         "3819",
         "3850",
         "3970",
@@ -31404,7 +31374,6 @@
         "6171",
         "6172",
         "6182",
-        "6187",
         "6237",
         "6238",
         "6277",
