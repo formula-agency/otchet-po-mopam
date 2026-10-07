@@ -17936,7 +17936,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 988,
-      "calls": 23,
+      "calls": 24,
       "successfulTargetCalls": 1,
       "targetCalls": 6
     },
@@ -17966,7 +17966,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 1696,
-      "calls": 2,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -17992,5 +17992,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-07T12:51:54+00:00"
+  "updatedAt": "2026-10-07T12:58:12+00:00"
 }
