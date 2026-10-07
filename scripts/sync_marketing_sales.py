@@ -3,8 +3,10 @@ from __future__ import annotations
 import os
 import re
 import sys
+from calendar import monthrange
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +52,13 @@ class RegistrySale:
     deal_id: str
     client_name: str
     source_row: int
+
+
+@dataclass(frozen=True)
+class MarketingMeeting:
+    month_key: str
+    deal_id: str
+    meeting_date: date
 
 
 def required_env(name: str) -> str:
@@ -124,6 +133,63 @@ def count_sales(
     return counts, unknown
 
 
+def target_month_keys(target_rows: list[list[Any]], report_year: int) -> set[str]:
+    return {
+        parsed
+        for row in target_rows
+        if (parsed := month_key(row[0] if row else "", report_year))
+    }
+
+
+def successful_meetings(
+    entries: list[sync.MeetingLogEntry],
+    report_months: set[str],
+) -> tuple[list[MarketingMeeting], int]:
+    candidates = [
+        MarketingMeeting(entry.meeting_date.strftime("%Y-%m"), entry.deal_id, entry.meeting_date)
+        for entry in entries
+        if entry.successful
+        and entry.deal_id
+        and entry.meeting_date.strftime("%Y-%m") in report_months
+    ]
+    by_deal: dict[str, MarketingMeeting] = {}
+    for meeting in sorted(candidates, key=lambda item: (item.meeting_date, int(item.deal_id))):
+        by_deal.setdefault(meeting.deal_id, meeting)
+    return list(by_deal.values()), len(candidates) - len(by_deal)
+
+
+def report_period(report_months: set[str]) -> tuple[date, date]:
+    if not report_months:
+        raise RuntimeError("No report months found in Данные")
+    first_year, first_month = map(int, min(report_months).split("-"))
+    last_year, last_month = map(int, max(report_months).split("-"))
+    return (
+        date(first_year, first_month, 1),
+        date(last_year, last_month, monthrange(last_year, last_month)[1]),
+    )
+
+
+def count_meetings(
+    meetings: list[MarketingMeeting],
+    deals_by_id: dict[str, dict[str, Any]],
+    timezone_name: str,
+    period_start: date,
+    period_end: date,
+) -> tuple[Counter[tuple[str, str]], list[MarketingMeeting]]:
+    counts: Counter[tuple[str, str]] = Counter()
+    excluded: list[MarketingMeeting] = []
+    for meeting in meetings:
+        record = deals_by_id.get(meeting.deal_id)
+        created = sync.parse_bitrix_date((record or {}).get("DATE_CREATE"), timezone_name)
+        if created is None:
+            raise RuntimeError(f"Deal {meeting.deal_id} has no DATE_CREATE")
+        if created < period_start or created > period_end:
+            excluded.append(meeting)
+            continue
+        counts[(meeting.month_key, classify_source(record))] += 1
+    return counts, excluded
+
+
 def sales_cell_updates(
     target_rows: list[list[Any]],
     counts: Counter[tuple[str, str]],
@@ -143,6 +209,25 @@ def sales_cell_updates(
     return updates
 
 
+def meeting_cell_updates(
+    target_rows: list[list[Any]],
+    counts: Counter[tuple[str, str]],
+    report_year: int,
+    first_row: int = 4,
+) -> list[dict[str, Any]]:
+    updates: list[dict[str, Any]] = []
+    for offset, row in enumerate(target_rows):
+        month = month_key(row[0] if row else "", report_year)
+        channel = str(row[1] if len(row) > 1 else "").strip()
+        if not month or channel not in REPORT_CHANNELS:
+            continue
+        updates.append({
+            "range": f"'Данные'!E{first_row + offset}",
+            "values": [[counts[(month, channel)]]],
+        })
+    return updates
+
+
 def unknown_cell_updates(
     target_rows: list[list[Any]],
     counts: Counter[tuple[str, str]],
@@ -156,6 +241,24 @@ def unknown_cell_updates(
             continue
         updates.append({
             "range": f"'Без меток'!C{first_row + offset}",
+            "values": [[counts[(month, UNKNOWN_SOURCE)]]],
+        })
+    return updates
+
+
+def unknown_meeting_cell_updates(
+    target_rows: list[list[Any]],
+    counts: Counter[tuple[str, str]],
+    report_year: int,
+    first_row: int = 4,
+) -> list[dict[str, Any]]:
+    updates: list[dict[str, Any]] = []
+    for offset, row in enumerate(target_rows):
+        month = month_key(row[0] if row else "", report_year)
+        if not month:
+            continue
+        updates.append({
+            "range": f"'Без меток'!B{first_row + offset}",
             "values": [[counts[(month, UNKNOWN_SOURCE)]]],
         })
     return updates
@@ -191,18 +294,38 @@ def main() -> None:
     if not sales:
         raise RuntimeError(f"No completed sales found for {report_year}")
 
+    data_rows = read_values(service, target_sheet_id, "'Данные'!A4:B1000")
+    unknown_rows = read_values(service, target_sheet_id, "'Без меток'!A4:A1000")
+    report_months = target_month_keys(data_rows, report_year)
+    period_start, period_end = report_period(report_months)
+
+    meeting_entries = sync.build_meeting_log_entries(service, settings)
+    meetings, duplicate_meetings = successful_meetings(meeting_entries, report_months)
+    if not meetings:
+        raise RuntimeError(f"No successful meetings found for {report_year}")
+
     session = sync.build_bitrix_session()
-    deal_ids = sorted({sale.deal_id for sale in sales if sale.deal_id}, key=int)
+    deal_ids = sorted(
+        {sale.deal_id for sale in sales if sale.deal_id} | {meeting.deal_id for meeting in meetings},
+        key=int,
+    )
     deals_by_id = sync.fetch_deals_by_ids_batch(session, settings, deal_ids)
     missing_deals = sorted(set(deal_ids) - set(deals_by_id), key=int)
     if missing_deals:
         raise RuntimeError(f"Bitrix did not return linked deals: {', '.join(missing_deals)}")
 
-    counts, unknown = count_sales(sales, deals_by_id)
-    data_rows = read_values(service, target_sheet_id, "'Данные'!A4:B1000")
-    unknown_rows = read_values(service, target_sheet_id, "'Без меток'!A4:A1000")
-    updates = sales_cell_updates(data_rows, counts, report_year)
-    updates.extend(unknown_cell_updates(unknown_rows, counts, report_year))
+    sales_counts, unknown_sales = count_sales(sales, deals_by_id)
+    meeting_counts, excluded_meetings = count_meetings(
+        meetings,
+        deals_by_id,
+        settings.report_timezone,
+        period_start,
+        period_end,
+    )
+    updates = sales_cell_updates(data_rows, sales_counts, report_year)
+    updates.extend(meeting_cell_updates(data_rows, meeting_counts, report_year))
+    updates.extend(unknown_cell_updates(unknown_rows, sales_counts, report_year))
+    updates.extend(unknown_meeting_cell_updates(unknown_rows, meeting_counts, report_year))
     if not updates:
         raise RuntimeError("No matching target rows found in Данные or Без меток")
 
@@ -213,15 +336,29 @@ def main() -> None:
         )
     )
 
-    print(f"Marketing sales synced: {len(sales)} completed rows, {len(updates)} target cells")
-    for month in sorted({sale.month_key for sale in sales}):
-        summary = ", ".join(
-            f"{source}={counts[(month, source)]}"
+    print(
+        "Marketing metrics synced: "
+        f"{len(sales)} completed sales, {len(meetings) - len(excluded_meetings)} unique meetings, "
+        f"{duplicate_meetings} duplicate meeting rows removed, {len(updates)} target cells"
+    )
+    for month in sorted(report_months):
+        sales_summary = ", ".join(
+            f"{source}={sales_counts[(month, source)]}"
             for source in (*REPORT_CHANNELS, UNKNOWN_SOURCE)
         )
-        print(f"{month}: {summary}")
-    if unknown:
-        print("Unclassified registry rows: " + ", ".join(str(sale.source_row) for sale in unknown))
+        meeting_summary = ", ".join(
+            f"{source}={meeting_counts[(month, source)]}"
+            for source in (*REPORT_CHANNELS, UNKNOWN_SOURCE)
+        )
+        print(f"{month} sales: {sales_summary}")
+        print(f"{month} meetings: {meeting_summary}")
+    if unknown_sales:
+        print("Unclassified registry rows: " + ", ".join(str(sale.source_row) for sale in unknown_sales))
+    if excluded_meetings:
+        print(
+            "Meetings excluded because the deal was created outside the report period: "
+            + ", ".join(meeting.deal_id for meeting in excluded_meetings)
+        )
 
 
 if __name__ == "__main__":
