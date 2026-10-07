@@ -96,6 +96,16 @@ jobs:
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}
         run: python scripts/sync_mop_report.py
 
+      - name: Sync marketing sales
+        env:
+          BITRIX_WEBHOOK_URL: ${{ secrets.BITRIX_WEBHOOK_URL }}
+          BITRIX_REQUEST_TIMEOUT: ${{ secrets.BITRIX_REQUEST_TIMEOUT }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          MARKETING_SALES_SOURCE_SHEET_ID: 1TAPajJopFjU7YZWt0e2Pm0RoBSbB0sgIuyQxE2L95g0
+          MARKETING_SALES_TARGET_SHEET_ID: 1pGjQrKr4iQWs5UzUcpSjB-h10j88848NpdwDWunQ_p4
+          MARKETING_SALES_REPORT_YEAR: "2026"
+        run: python scripts/sync_marketing_sales.py
+
       - name: Import VATS calls
         if: ${{ env.MOP_CALL_SOURCE != 'mongodb' }}
         run: python scripts/import_vats_data.py
