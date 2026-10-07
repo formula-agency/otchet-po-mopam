@@ -31994,22 +31994,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-07-30",
-          "daysWithoutAttempt": 14,
-          "daysWithoutCall": 14,
-          "dealId": "5810",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5810/",
-          "lastCallAttemptDate": "2026-09-23",
-          "lastSuccessfulCommunicationDate": "2026-09-23",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Ирина",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 11,
           "daysWithoutCall": 11,
@@ -32068,7 +32052,6 @@
         "5293",
         "5538",
         "5660",
-        "5810",
         "5973",
         "6038",
         "6059",
