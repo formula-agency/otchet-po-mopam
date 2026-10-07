@@ -17879,8 +17879,18 @@
       "calls": 16,
       "successfulTargetCalls": 2,
       "targetCalls": 5
+    },
+    {
+      "_id": {
+        "day": "2026-10-07",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-06T22:26:37+00:00"
+  "updatedAt": "2026-10-07T04:44:31+00:00"
 }
