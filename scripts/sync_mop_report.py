@@ -2826,6 +2826,19 @@ def build_mongo_deal_call_facts(
                     "MongoDB call analysis schema: "
                     + ", ".join(mongo_document_field_types(analysis_sample))
                 )
+                for diagnostic_collection_name in (
+                    "call_transcriptions",
+                    "call_summary",
+                    "sales_technique_analysis_v2",
+                ):
+                    diagnostic_sample = reader.collection(diagnostic_collection_name).find_one(
+                        {},
+                        {"_id": 0},
+                    ) or {}
+                    print(
+                        f"MongoDB {diagnostic_collection_name} schema: "
+                        + ", ".join(mongo_document_field_types(diagnostic_sample))
+                    )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
