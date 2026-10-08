@@ -2839,6 +2839,32 @@ def build_mongo_deal_call_facts(
                         f"MongoDB {diagnostic_collection_name} schema: "
                         + ", ".join(mongo_document_field_types(diagnostic_sample))
                     )
+                analysis_candidates = list(
+                    reader.collection("call_analysis").find(
+                        {},
+                        {
+                            "_id": 0,
+                            "presentation": 1,
+                            "promotion": 1,
+                            "suggestion_vs_needs": 1,
+                            "mortgage_offer": 1,
+                        },
+                    ).limit(12)
+                )
+                technique_candidates = list(
+                    reader.collection("sales_technique_analysis_v2").find(
+                        {"techniques.0": {"$exists": True}},
+                        {"_id": 0, "techniques": 1},
+                    ).limit(5)
+                )
+                print(
+                    "MongoDB offer-analysis samples: "
+                    + json.dumps(analysis_candidates, ensure_ascii=False)
+                )
+                print(
+                    "MongoDB sales-technique samples: "
+                    + json.dumps(technique_candidates, ensure_ascii=False)
+                )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
