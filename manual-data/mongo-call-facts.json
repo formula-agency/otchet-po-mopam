@@ -18015,10 +18015,10 @@
         "day": "2026-10-08",
         "mopName": "Зенкова Анастасия"
       },
-      "airSeconds": 636,
-      "calls": 4,
-      "successfulTargetCalls": 2,
-      "targetCalls": 2
+      "airSeconds": 852,
+      "calls": 5,
+      "successfulTargetCalls": 3,
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -18029,8 +18029,28 @@
       "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T06:46:17+00:00"
+  "updatedAt": "2026-10-08T06:55:13+00:00"
 }
