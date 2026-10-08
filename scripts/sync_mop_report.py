@@ -2820,6 +2820,7 @@ def build_mongo_deal_call_facts(
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
                 analysis_sample = reader.collection("call_analysis").find_one({}, {"_id": 0}) or {}
+                print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
                 print("MongoDB call schema: " + ", ".join(mongo_document_field_types(sample)))
                 print(
                     "MongoDB call analysis schema: "
