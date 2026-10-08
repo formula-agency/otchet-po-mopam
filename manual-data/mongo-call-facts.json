@@ -17993,14 +17993,44 @@
     {
       "_id": {
         "day": "2026-10-08",
-        "mopName": "Зенкова Анастасия"
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 165,
+      "calls": 1,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 636,
+      "calls": 2,
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T00:04:01+00:00"
+  "updatedAt": "2026-10-08T06:11:45+00:00"
 }
