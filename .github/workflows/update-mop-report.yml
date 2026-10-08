@@ -91,6 +91,7 @@ jobs:
           MONGO_CALLS_REQUIRE_SERVER_READ_ONLY: "false"
           MONGO_CALLS_REQUIRED: "true"
           MONGO_CALLS_CONNECT_TIMEOUT_MS: "10000"
+          MONGO_CALL_SCHEMA_DIAGNOSTICS: "true"
           REPORT_TIMEZONE: ${{ secrets.REPORT_TIMEZONE }}
           REPORT_PERIOD_MODE: ${{ secrets.REPORT_PERIOD_MODE }}
           REPORT_START_DATE: ${{ secrets.REPORT_START_DATE }}

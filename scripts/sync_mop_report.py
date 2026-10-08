@@ -2612,6 +2612,28 @@ def mongo_first_nonempty_string(field_paths: tuple[str, ...]) -> dict[str, Any]:
     }
 
 
+def mongo_document_field_types(
+    document: dict[str, Any],
+    prefix: str = "",
+) -> list[str]:
+    field_types: list[str] = []
+    for key, value in sorted(document.items()):
+        path = f"{prefix}.{key}" if prefix else str(key)
+        if isinstance(value, dict):
+            field_types.append(f"{path}:object")
+            field_types.extend(mongo_document_field_types(value, path))
+        elif isinstance(value, list):
+            item_types = sorted({type(item).__name__ for item in value})
+            field_types.append(f"{path}:array[{','.join(item_types) or 'empty'}]")
+            for item in value:
+                if isinstance(item, dict):
+                    field_types.extend(mongo_document_field_types(item, f"{path}[]"))
+                    break
+        else:
+            field_types.append(f"{path}:{type(value).__name__}")
+    return field_types
+
+
 def build_mongo_deal_call_pipeline(
     window: ReportWindow,
     timezone_name: str,
@@ -2797,7 +2819,12 @@ def build_mongo_deal_call_facts(
             collection = reader.collection(collection_name)
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
-                print("MongoDB call fields: " + ", ".join(sorted(sample)))
+                analysis_sample = reader.collection("call_analysis").find_one({}, {"_id": 0}) or {}
+                print("MongoDB call schema: " + ", ".join(mongo_document_field_types(sample)))
+                print(
+                    "MongoDB call analysis schema: "
+                    + ", ".join(mongo_document_field_types(analysis_sample))
+                )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
