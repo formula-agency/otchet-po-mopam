@@ -87,7 +87,7 @@ class MarketingSalesTest(unittest.TestCase):
         self.assertEqual(meetings, [MarketingMeeting("2026-09", "100", date(2026, 9, 2))])
         self.assertEqual(duplicates, 1)
 
-    def test_counts_meetings_by_event_month_and_deal_source(self):
+    def test_counts_meetings_by_event_month_regardless_of_deal_creation_date(self):
         meetings = [
             MarketingMeeting("2026-09", "100", date(2026, 9, 2)),
             MarketingMeeting("2026-09", "101", date(2026, 9, 3)),
@@ -99,17 +99,14 @@ class MarketingSalesTest(unittest.TestCase):
             "102": {"DATE_CREATE": "2026-02-28T10:00:00+05:00", "UTM_SOURCE": "selfwalk"},
         }
 
-        counts, excluded = count_meetings(
+        counts = count_meetings(
             meetings,
             deals,
-            "Asia/Yekaterinburg",
-            date(2026, 3, 1),
-            date(2026, 9, 30),
         )
 
         self.assertEqual(counts[("2026-09", "КЦ")], 1)
         self.assertEqual(counts[("2026-09", "Авито")], 1)
-        self.assertEqual([meeting.deal_id for meeting in excluded], ["102"])
+        self.assertEqual(counts[("2026-09", "Самоход")], 1)
 
     def test_builds_meeting_updates_for_data_and_unknown_tabs(self):
         counts = Counter({

@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-from calendar import monthrange
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date
@@ -158,36 +157,15 @@ def successful_meetings(
     return list(by_deal.values()), len(candidates) - len(by_deal)
 
 
-def report_period(report_months: set[str]) -> tuple[date, date]:
-    if not report_months:
-        raise RuntimeError("No report months found in Данные")
-    first_year, first_month = map(int, min(report_months).split("-"))
-    last_year, last_month = map(int, max(report_months).split("-"))
-    return (
-        date(first_year, first_month, 1),
-        date(last_year, last_month, monthrange(last_year, last_month)[1]),
-    )
-
-
 def count_meetings(
     meetings: list[MarketingMeeting],
     deals_by_id: dict[str, dict[str, Any]],
-    timezone_name: str,
-    period_start: date,
-    period_end: date,
-) -> tuple[Counter[tuple[str, str]], list[MarketingMeeting]]:
+) -> Counter[tuple[str, str]]:
     counts: Counter[tuple[str, str]] = Counter()
-    excluded: list[MarketingMeeting] = []
     for meeting in meetings:
         record = deals_by_id.get(meeting.deal_id)
-        created = sync.parse_bitrix_date((record or {}).get("DATE_CREATE"), timezone_name)
-        if created is None:
-            raise RuntimeError(f"Deal {meeting.deal_id} has no DATE_CREATE")
-        if created < period_start or created > period_end:
-            excluded.append(meeting)
-            continue
         counts[(meeting.month_key, classify_source(record))] += 1
-    return counts, excluded
+    return counts
 
 
 def sales_cell_updates(
@@ -297,7 +275,6 @@ def main() -> None:
     data_rows = read_values(service, target_sheet_id, "'Данные'!A4:B1000")
     unknown_rows = read_values(service, target_sheet_id, "'Без меток'!A4:A1000")
     report_months = target_month_keys(data_rows, report_year)
-    period_start, period_end = report_period(report_months)
 
     meeting_entries = sync.build_meeting_log_entries(service, settings)
     meetings, duplicate_meetings = successful_meetings(meeting_entries, report_months)
@@ -315,12 +292,9 @@ def main() -> None:
         raise RuntimeError(f"Bitrix did not return linked deals: {', '.join(missing_deals)}")
 
     sales_counts, unknown_sales = count_sales(sales, deals_by_id)
-    meeting_counts, excluded_meetings = count_meetings(
+    meeting_counts = count_meetings(
         meetings,
         deals_by_id,
-        settings.report_timezone,
-        period_start,
-        period_end,
     )
     updates = sales_cell_updates(data_rows, sales_counts, report_year)
     updates.extend(meeting_cell_updates(data_rows, meeting_counts, report_year))
@@ -338,7 +312,7 @@ def main() -> None:
 
     print(
         "Marketing metrics synced: "
-        f"{len(sales)} completed sales, {len(meetings) - len(excluded_meetings)} unique meetings, "
+        f"{len(sales)} completed sales, {len(meetings)} unique meetings, "
         f"{duplicate_meetings} duplicate meeting rows removed, {len(updates)} target cells"
     )
     for month in sorted(report_months):
@@ -354,11 +328,6 @@ def main() -> None:
         print(f"{month} meetings: {meeting_summary}")
     if unknown_sales:
         print("Unclassified registry rows: " + ", ".join(str(sale.source_row) for sale in unknown_sales))
-    if excluded_meetings:
-        print(
-            "Meetings excluded because the deal was created outside the report period: "
-            + ", ".join(meeting.deal_id for meeting in excluded_meetings)
-        )
 
 
 if __name__ == "__main__":
