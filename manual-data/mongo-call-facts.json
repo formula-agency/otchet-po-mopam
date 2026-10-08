@@ -17996,7 +17996,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 165,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18032,5 +18032,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T06:35:36+00:00"
+  "updatedAt": "2026-10-08T06:46:17+00:00"
 }
