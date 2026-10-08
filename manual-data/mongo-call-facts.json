@@ -17996,7 +17996,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 549,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18092,5 +18092,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T08:16:09+00:00"
+  "updatedAt": "2026-10-08T08:31:41+00:00"
 }
