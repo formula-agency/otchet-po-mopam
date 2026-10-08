@@ -18016,7 +18016,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 636,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 2,
       "targetCalls": 2
     },
@@ -18032,5 +18032,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T06:20:57+00:00"
+  "updatedAt": "2026-10-08T06:25:33+00:00"
 }
