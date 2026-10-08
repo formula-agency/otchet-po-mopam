@@ -46,6 +46,15 @@ MONGO_TARGET_CALL_CLASSIFICATIONS = (
     "Целевой нерезультативный",
     "Целевой звонок",
 )
+MONGO_OFFER_PRESENTATION_PATTERN = (
+    r"квартир|апартамент|объект|вариант|\bжк\b|жил(?:ой|ого|ому|ом|ая|ую)\s+комплекс|"
+    r"новостро|ипотек|рассроч|первоначальн(?:ый|ого|ому|ом)\s+взнос|ставк|"
+    r"застройщик|проект|студи"
+)
+MONGO_NEGATED_OFFER_PRESENTATION_PATTERN = (
+    r"не\s+(?:предлагал[аи]?|предложил[аи]?|презентовал[аи]?|делал[аи]?|проводил[аи]?)"
+    r".{0,40}(?:квартир|объект|вариант|\bжк\b|ипотек|рассроч|презентац)"
+)
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
 DEFAULT_BOOKING_LIST_IBLOCK_TYPE = "lists"
 DEFAULT_BOOKING_LIST_ID = "38"
@@ -565,6 +574,7 @@ class MopReportData:
     call_attempt_dates_by_deal: dict[str, list[date]] = field(
         default_factory=lambda: defaultdict(list)
     )
+    offer_calls_by_deal: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -2612,26 +2622,43 @@ def mongo_first_nonempty_string(field_paths: tuple[str, ...]) -> dict[str, Any]:
     }
 
 
-def mongo_document_field_types(
-    document: dict[str, Any],
-    prefix: str = "",
-) -> list[str]:
-    field_types: list[str] = []
-    for key, value in sorted(document.items()):
-        path = f"{prefix}.{key}" if prefix else str(key)
-        if isinstance(value, dict):
-            field_types.append(f"{path}:object")
-            field_types.extend(mongo_document_field_types(value, path))
-        elif isinstance(value, list):
-            item_types = sorted({type(item).__name__ for item in value})
-            field_types.append(f"{path}:array[{','.join(item_types) or 'empty'}]")
-            for item in value:
-                if isinstance(item, dict):
-                    field_types.extend(mongo_document_field_types(item, f"{path}[]"))
-                    break
-        else:
-            field_types.append(f"{path}:{type(value).__name__}")
-    return field_types
+def presentation_contains_offer(value: Any) -> bool:
+    presentation = str(value or "").strip()
+    return bool(
+        presentation
+        and re.search(MONGO_OFFER_PRESENTATION_PATTERN, presentation, re.IGNORECASE)
+        and not re.search(
+            MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
+            presentation,
+            re.IGNORECASE,
+        )
+    )
+
+
+def mongo_offer_presentation_expression(field_name: str) -> dict[str, Any]:
+    presentation = {"$ifNull": [field_name, ""]}
+    return {
+        "$and": [
+            {
+                "$regexMatch": {
+                    "input": presentation,
+                    "regex": MONGO_OFFER_PRESENTATION_PATTERN,
+                    "options": "i",
+                }
+            },
+            {
+                "$not": [
+                    {
+                        "$regexMatch": {
+                            "input": presentation,
+                            "regex": MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
+                            "options": "i",
+                        }
+                    }
+                ]
+            },
+        ]
+    }
 
 
 def build_mongo_deal_call_pipeline(
@@ -2721,7 +2748,8 @@ def build_mongo_deal_call_pipeline(
                         MONGO_FAILED_CALL_CLASSIFICATION,
                         {"$arrayElemAt": ["$analysisDocs.call_classification", 0]},
                     ]
-                }
+                },
+                "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
             }
         },
         {
@@ -2729,6 +2757,7 @@ def build_mongo_deal_call_pipeline(
                 "dedupeKey": 1,
                 "day": 1,
                 "classification": 1,
+                "presentation": 1,
                 "dealId": {
                     "$cond": [
                         {"$ne": ["$directDealId", ""]},
@@ -2751,6 +2780,7 @@ def build_mongo_deal_call_pipeline(
                 "day": {"$first": "$day"},
                 "dealId": {"$first": "$dealId"},
                 "classification": {"$first": "$classification"},
+                "presentation": {"$first": "$presentation"},
             }
         },
         {
@@ -2763,6 +2793,15 @@ def build_mongo_deal_call_pipeline(
                             {"$ne": ["$classification", MONGO_FAILED_CALL_CLASSIFICATION]},
                             "$day",
                             "$$REMOVE",
+                        ]
+                    }
+                },
+                "offerCallsCount": {
+                    "$sum": {
+                        "$cond": [
+                            mongo_offer_presentation_expression("$presentation"),
+                            1,
+                            0,
                         ]
                     }
                 },
@@ -2796,6 +2835,10 @@ def apply_mongo_deal_call_dates(
                 continue
         data.call_attempt_dates_by_deal[deal_id] = sorted(attempt_dates)
         data.call_dates_by_deal[deal_id] = sorted(successful_dates)
+        data.offer_calls_by_deal[deal_id] = max(
+            0,
+            parse_number(row.get("offerCallsCount")),
+        )
         linked_calls += len(attempt_dates)
     return linked_calls
 
@@ -2819,52 +2862,7 @@ def build_mongo_deal_call_facts(
             collection = reader.collection(collection_name)
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
-                analysis_sample = reader.collection("call_analysis").find_one({}, {"_id": 0}) or {}
-                print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
-                print("MongoDB call schema: " + ", ".join(mongo_document_field_types(sample)))
-                print(
-                    "MongoDB call analysis schema: "
-                    + ", ".join(mongo_document_field_types(analysis_sample))
-                )
-                for diagnostic_collection_name in (
-                    "call_transcriptions",
-                    "call_summary",
-                    "sales_technique_analysis_v2",
-                ):
-                    diagnostic_sample = reader.collection(diagnostic_collection_name).find_one(
-                        {},
-                        {"_id": 0},
-                    ) or {}
-                    print(
-                        f"MongoDB {diagnostic_collection_name} schema: "
-                        + ", ".join(mongo_document_field_types(diagnostic_sample))
-                    )
-                analysis_candidates = list(
-                    reader.collection("call_analysis").find(
-                        {},
-                        {
-                            "_id": 0,
-                            "presentation": 1,
-                            "promotion": 1,
-                            "suggestion_vs_needs": 1,
-                            "mortgage_offer": 1,
-                        },
-                    ).limit(12)
-                )
-                technique_candidates = list(
-                    reader.collection("sales_technique_analysis_v2").find(
-                        {"techniques.0": {"$exists": True}},
-                        {"_id": 0, "techniques": 1},
-                    ).limit(5)
-                )
-                print(
-                    "MongoDB offer-analysis samples: "
-                    + json.dumps(analysis_candidates, ensure_ascii=False)
-                )
-                print(
-                    "MongoDB sales-technique samples: "
-                    + json.dumps(technique_candidates, ensure_ascii=False)
-                )
+                print("MongoDB call fields: " + ", ".join(sorted(sample)))
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
@@ -4054,6 +4052,7 @@ def high_priority_row(deal: dict[str, Any]) -> dict[str, Any]:
         "daysWithoutAttempt": deal.get("daysWithoutAttempt"),
         "daysWithoutCall": deal.get("daysWithoutCall"),
         "meetingHeld": bool(deal.get("meetingHeld")),
+        "offerCallsCount": max(0, parse_number(deal.get("offerCallsCount"))),
         "utmSource": str(deal.get("utmSource") or ""),
     }
 
@@ -4141,6 +4140,17 @@ def apply_mongo_call_recency_to_active_deals(
             if attempt_reference
             else None
         )
+
+
+def apply_mongo_offer_counts_to_active_deals(
+    active_deals_payload: dict[str, Any],
+    offer_calls_by_deal: dict[str, int],
+) -> None:
+    for row in active_deals_payload.get("rows", []):
+        if not isinstance(row, dict):
+            continue
+        deal_id = str(row.get("dealId") or "")
+        row["offerCallsCount"] = max(0, offer_calls_by_deal.get(deal_id, 0))
 
 
 def high_priority_snapshot_mops(
@@ -4403,7 +4413,7 @@ def build_high_priority_payload(
             source_previous_date and call_data_available
         )
         source_snapshot["calledFromPreviousSource"] = "templab-mongodb-attempts"
-    history["schemaVersion"] = 5
+    history["schemaVersion"] = 6
     write_high_priority_history(history_path, history)
 
     visible_snapshots: dict[str, Any] = {}
@@ -4923,6 +4933,11 @@ def main() -> int:
                 data.call_dates_by_deal,
                 data.call_attempt_dates_by_deal,
                 window.end.date(),
+            )
+        if data.call_deal_link_available:
+            apply_mongo_offer_counts_to_active_deals(
+                priority_active_deals_payload,
+                data.offer_calls_by_deal,
             )
         high_priority_payload = build_high_priority_payload(
             priority_active_deals_payload,

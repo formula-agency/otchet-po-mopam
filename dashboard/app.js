@@ -1491,7 +1491,7 @@ function renderHighPriority() {
       els.priorityStopCount,
     ]) element.textContent = '0';
     els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
-    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
+    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет данных</td></tr>';
     return;
   }
 
@@ -1611,6 +1611,7 @@ function renderHighPriority() {
           <td>${escapeHtml(row.mopName || '—')}</td>
           <td>${escapeHtml(row.stageName || row.stageId || '—')}</td>
           <td class="priority-meeting ${row.meetingHeld ? 'is-held' : ''}">${row.meetingHeld ? 'Да' : 'Нет'}</td>
+          <td class="priority-offers">${formatOptionalNumber(row.offerCallsCount)}</td>
           <td class="priority-days">${formatOptionalNumber(row.daysWithoutAttempt)}</td>
           <td class="priority-days priority-days--critical">${formatOptionalNumber(row.daysWithoutCall)}</td>
           <td>${escapeHtml(prioritySourceLabel(row))}</td>
@@ -1627,7 +1628,7 @@ function renderHighPriority() {
         </tr>
       `;
     }).join('')
-    : '<tr class="empty-row"><td colspan="8">Нет просроченных сделок</td></tr>';
+    : '<tr class="empty-row"><td colspan="9">Нет просроченных сделок</td></tr>';
 
   for (const input of els.priorityDealsBody.querySelectorAll('.priority-exception-toggle')) {
     input.addEventListener('change', () => {

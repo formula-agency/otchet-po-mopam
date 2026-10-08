@@ -570,6 +570,7 @@ select {
 
 .priority-status-panel,
 .priority-deals-panel {
+  min-width: 0;
   box-shadow: var(--shadow);
 }
 
@@ -1309,14 +1310,15 @@ select {
   text-align: center;
 }
 
-.data-table.priority-deals-table th:nth-child(1) { width: 23%; }
-.data-table.priority-deals-table th:nth-child(2) { width: 13%; }
-.data-table.priority-deals-table th:nth-child(3) { width: 15%; }
-.data-table.priority-deals-table th:nth-child(4) { width: 9%; }
-.data-table.priority-deals-table th:nth-child(5),
-.data-table.priority-deals-table th:nth-child(6) { width: 9%; }
-.data-table.priority-deals-table th:nth-child(7) { width: 11%; }
-.data-table.priority-deals-table th:nth-child(8) { width: 11%; }
+.data-table.priority-deals-table th:nth-child(1) { width: 20%; }
+.data-table.priority-deals-table th:nth-child(2) { width: 11%; }
+.data-table.priority-deals-table th:nth-child(3) { width: 12%; }
+.data-table.priority-deals-table th:nth-child(4) { width: 8%; }
+.data-table.priority-deals-table th:nth-child(5) { width: 9%; }
+.data-table.priority-deals-table th:nth-child(6),
+.data-table.priority-deals-table th:nth-child(7) { width: 8%; }
+.data-table.priority-deals-table th:nth-child(8) { width: 10%; }
+.data-table.priority-deals-table th:nth-child(9) { width: 14%; }
 
 .data-table.priority-deals-table td:nth-child(n+2) {
   text-align: left;
@@ -1325,7 +1327,8 @@ select {
 .data-table.priority-deals-table td:nth-child(4),
 .data-table.priority-deals-table td:nth-child(5),
 .data-table.priority-deals-table td:nth-child(6),
-.data-table.priority-deals-table td:nth-child(8) {
+.data-table.priority-deals-table td:nth-child(7),
+.data-table.priority-deals-table td:nth-child(9) {
   text-align: center;
 }
 
@@ -1570,6 +1573,14 @@ select {
   .priority-summary__stats {
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .data-table.priority-status-table {
+    min-width: 880px;
+  }
+
+  .data-table.priority-deals-table {
+    min-width: 980px;
   }
 
   .contest-banner,

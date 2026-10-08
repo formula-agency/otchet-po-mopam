@@ -14,6 +14,7 @@ from scripts.sync_mop_report import (
     build_high_priority_payload,
     deal_is_high_priority,
     high_priority_called_deal_ids,
+    high_priority_row,
     high_priority_snapshot_mops,
 )
 
@@ -23,6 +24,11 @@ def deal(deal_id: int, mop_name: str) -> dict[str, str]:
 
 
 class HighPrioritySnapshotMopsTest(unittest.TestCase):
+    def test_snapshot_row_preserves_offer_call_count(self) -> None:
+        row = high_priority_row({"dealId": "501", "offerCallsCount": 3})
+
+        self.assertEqual(row["offerCallsCount"], 3)
+
     def test_history_source_uses_templab_call_attempts_instead_of_bitrix(self) -> None:
         tz = ZoneInfo("Asia/Yekaterinburg")
         history = {
