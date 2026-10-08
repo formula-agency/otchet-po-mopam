@@ -69,6 +69,7 @@ DEFAULT_HIGH_PRIORITY_NO_MEETING_DAYS_WITHOUT_CALL = 14
 DEFAULT_HIGH_PRIORITY_STOP_THRESHOLD = 10
 DEFAULT_HIGH_PRIORITY_HISTORY_PATH = "manual-data/high-priority-history.json"
 DEFAULT_MONGO_CALL_FACT_CACHE_PATH = "manual-data/mongo-call-facts.json"
+DEFAULT_TARGET_AFTER_MEETING_HISTORY_PATH = "manual-data/target-after-meeting-history.json"
 DEFAULT_HIGH_PRIORITY_STAGE_NAMES = (
     "Совершить первый контакт",
     "Дожать на встречу",
@@ -1686,6 +1687,99 @@ def build_target_after_meeting_entries(
     return entries
 
 
+def target_after_meeting_history_path() -> Path:
+    raw_path = os.getenv(
+        "MOP_TARGET_AFTER_MEETING_HISTORY_PATH",
+        DEFAULT_TARGET_AFTER_MEETING_HISTORY_PATH,
+    ).strip()
+    return Path(raw_path or DEFAULT_TARGET_AFTER_MEETING_HISTORY_PATH)
+
+
+def load_target_after_meeting_history(
+    path: Path,
+    warnings: list[str] | None = None,
+) -> list[TargetAfterMeetingEntry]:
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        if warnings is not None:
+            warnings.append(f"Архив эфира после встречи не прочитан: {safe_error_text(exc)}")
+        return []
+    raw_entries = payload.get("entries") if isinstance(payload, dict) else None
+    if not isinstance(raw_entries, list):
+        if warnings is not None:
+            warnings.append("Архив эфира после встречи имеет неверный формат.")
+        return []
+
+    entries: list[TargetAfterMeetingEntry] = []
+    for raw_entry in raw_entries:
+        if not isinstance(raw_entry, dict):
+            continue
+        try:
+            event_date = date.fromisoformat(str(raw_entry.get("date") or ""))
+        except ValueError:
+            continue
+        mop_name = str(raw_entry.get("mopName") or "").strip()
+        seconds = max(0, parse_number(raw_entry.get("seconds")))
+        if mop_name and seconds > 0:
+            entries.append(TargetAfterMeetingEntry(event_date, mop_name, seconds))
+    return entries
+
+
+def merge_target_after_meeting_entries(
+    historical_entries: list[TargetAfterMeetingEntry],
+    live_entries: list[TargetAfterMeetingEntry],
+    current_date: date,
+) -> list[TargetAfterMeetingEntry]:
+    current_month_start = current_date.replace(day=1)
+    merged = {
+        (entry.event_date, normalize_key(entry.mop_name)): entry
+        for entry in historical_entries
+        if entry.event_date < current_month_start
+    }
+    for entry in live_entries:
+        merged[(entry.event_date, normalize_key(entry.mop_name))] = entry
+    return sorted(
+        merged.values(),
+        key=lambda entry: (entry.event_date, normalize_key(entry.mop_name)),
+    )
+
+
+def write_target_after_meeting_history(
+    path: Path,
+    entries: list[TargetAfterMeetingEntry],
+) -> None:
+    serialized_entries = [
+        {
+            "date": entry.event_date.isoformat(),
+            "mopName": entry.mop_name,
+            "seconds": entry.seconds,
+        }
+        for entry in entries
+    ]
+    if path.exists():
+        try:
+            current_payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            current_payload = None
+        if isinstance(current_payload, dict) and current_payload.get("entries") == serialized_entries:
+            return
+    payload = {
+        "schemaVersion": 1,
+        "updatedAt": datetime.now(tz=ZoneInfo("UTC")).isoformat(timespec="seconds"),
+        "entries": serialized_entries,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(text, encoding="utf-8")
+    temporary_path.replace(path)
+
+
 def iterate_report_dates(window: ReportWindow) -> list[date]:
     days: list[date] = []
     current = window.start.date()
@@ -3244,30 +3338,45 @@ def build_target_after_meeting_facts(
 ) -> None:
     if not settings.google_target_after_meeting_sheet_id:
         return
-    if service is None:
-        data.warnings.append(
-            "Эфир после встречи не посчитан: "
-            "не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON."
-        )
-        return
+    history_path = target_after_meeting_history_path()
+    historical_entries = load_target_after_meeting_history(history_path, data.warnings)
+    source_loaded = False
+    entries: list[TargetAfterMeetingEntry] = []
 
-    try:
-        entry_warnings: list[str] = []
-        entries = build_target_after_meeting_entries(service, settings, entry_warnings)
-    except ConfigError as exc:
-        data.warnings.append(f"Эфир после встречи не посчитан: {safe_error_text(exc)}")
-        return
-    except Exception as exc:
+    if service is None:
         try:
             entries = build_target_after_meeting_public_entries(settings)
-        except Exception as public_exc:
+            source_loaded = True
+        except Exception as exc:
             data.warnings.append(
-                "Эфир после встречи не посчитан: "
-                f"Google API: {safe_error_text(exc)}; публичный CSV: {safe_error_text(public_exc)}"
+                "Эфир после встречи: свежий источник недоступен, используется сохраненный архив: "
+                f"{safe_error_text(exc)}"
             )
-            return
-    for warning in entry_warnings:
-        data.warnings.append(warning)
+    else:
+        entry_warnings: list[str] = []
+        try:
+            entries = build_target_after_meeting_entries(service, settings, entry_warnings)
+            source_loaded = True
+        except Exception as exc:
+            try:
+                entries = build_target_after_meeting_public_entries(settings)
+                source_loaded = True
+            except Exception as public_exc:
+                data.warnings.append(
+                    "Эфир после встречи: свежий источник недоступен, используется сохраненный архив: "
+                    f"Google API: {safe_error_text(exc)}; публичный CSV: {safe_error_text(public_exc)}"
+                )
+        for warning in entry_warnings:
+            if historical_entries and "не найден в таблице" in warning:
+                continue
+            data.warnings.append(warning)
+
+    if source_loaded:
+        current_date = datetime.now(tz=ZoneInfo(settings.report_timezone)).date()
+        entries = merge_target_after_meeting_entries(historical_entries, entries, current_date)
+        write_target_after_meeting_history(history_path, entries)
+    else:
+        entries = historical_entries
 
     skipped_names: dict[str, int] = defaultdict(int)
     imported_count = 0
