@@ -32089,7 +32089,11 @@
       "previousDate": "2026-10-06"
     },
     "2026-10-08": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6564",
+        "6581",
+        "6639"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-08",
@@ -32622,23 +32626,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-22",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 16,
-          "dealId": "6581",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6581/",
-          "lastCallAttemptDate": "2026-10-06",
-          "lastSuccessfulCommunicationDate": "2026-09-22",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Яна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-08",
           "daysWithoutAttempt": 3,
           "daysWithoutCall": 16,
@@ -32687,23 +32674,6 @@
           "stageId": "",
           "stageName": "Согласовать объект",
           "title": "Юлия",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-22",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 16,
-          "dealId": "6564",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6564/",
-          "lastCallAttemptDate": "2026-10-07",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Ольга",
           "utmSource": "leadit"
         },
         {
@@ -32759,11 +32729,11 @@
         },
         {
           "dateCreate": "2026-09-25",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 9,
           "dealId": "6639",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6639/",
-          "lastCallAttemptDate": "2026-10-06",
+          "lastCallAttemptDate": "2026-10-08",
           "lastSuccessfulCommunicationDate": "2026-09-29",
           "meetingHeld": true,
           "mopId": "",
@@ -32862,9 +32832,7 @@
         "6439",
         "6450",
         "6559",
-        "6564",
         "6571",
-        "6581",
         "6639",
         "6677"
       ],

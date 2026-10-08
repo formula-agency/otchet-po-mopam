@@ -17993,9 +17993,39 @@
     {
       "_id": {
         "day": "2026-10-08",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 549,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 165,
+      "airSeconds": 780,
+      "calls": 7,
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 791,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 132,
       "calls": 2,
       "successfulTargetCalls": 1,
       "targetCalls": 1
@@ -18003,7 +18033,7 @@
     {
       "_id": {
         "day": "2026-10-08",
-        "mopName": "Гавриленко Елена"
+        "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
       "calls": 0,
@@ -18016,7 +18046,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 852,
-      "calls": 5,
+      "calls": 8,
       "successfulTargetCalls": 3,
       "targetCalls": 3
     },
@@ -18036,7 +18066,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18045,12 +18075,22 @@
         "day": "2026-10-08",
         "mopName": "Тончу Ростислав"
       },
+      "airSeconds": 494,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-08",
+        "mopName": "Ядрышникова Кристина"
+      },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T06:55:13+00:00"
+  "updatedAt": "2026-10-08T08:16:09+00:00"
 }
