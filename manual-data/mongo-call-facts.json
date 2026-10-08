@@ -17383,6 +17383,16 @@
     {
       "_id": {
         "day": "2026-10-02",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 710,
+      "calls": 7,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-02",
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 0,
@@ -17613,6 +17623,16 @@
     {
       "_id": {
         "day": "2026-10-04",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-04",
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 182,
@@ -17649,6 +17669,16 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-05",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 421,
+      "calls": 14,
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -17773,6 +17803,16 @@
     {
       "_id": {
         "day": "2026-10-06",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-06",
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 777,
@@ -17879,6 +17919,16 @@
       "calls": 16,
       "successfulTargetCalls": 2,
       "targetCalls": 5
+    },
+    {
+      "_id": {
+        "day": "2026-10-07",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -17996,7 +18046,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 57,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18015,10 +18065,10 @@
         "day": "2026-10-08",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 780,
-      "calls": 7,
+      "airSeconds": 1435,
+      "calls": 8,
       "successfulTargetCalls": 2,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -18046,7 +18096,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 200,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18056,7 +18106,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 1110,
-      "calls": 15,
+      "calls": 16,
       "successfulTargetCalls": 3,
       "targetCalls": 4
     },
@@ -18086,7 +18136,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 163,
-      "calls": 8,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18122,5 +18172,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-08T17:16:02+00:00"
+  "updatedAt": "2026-10-08T23:02:12+00:00"
 }
