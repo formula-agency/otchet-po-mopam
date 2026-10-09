@@ -18176,11 +18176,31 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-09",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 344,
+      "calls": 2,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-09",
+        "mopName": "Черткова Ирина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-09T04:31:33+00:00"
+  "updatedAt": "2026-10-09T04:57:38+00:00"
 }
