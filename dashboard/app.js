@@ -165,6 +165,7 @@ const SCOREBOARD_METRICS = [
 const SCOREBOARD_EXCLUDED_MOP_NAMES = [
   'Губайдулина Заррина',
   'Камболин Александр',
+  'Парфенов Владислав',
   'Попова Юлия',
 ];
 const ACTIVE_ACTIVITY_LABELS = {
