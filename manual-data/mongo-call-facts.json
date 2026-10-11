@@ -18366,7 +18366,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 135,
-      "calls": 5,
+      "calls": 7,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18379,6 +18379,16 @@
       "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-11",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -18432,5 +18442,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-11T12:15:54+00:00"
+  "updatedAt": "2026-10-11T18:41:12+00:00"
 }
