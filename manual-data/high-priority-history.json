@@ -34160,7 +34160,9 @@
       "previousDate": "2026-10-09"
     },
     "2026-10-11": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4168"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-11",
@@ -34506,23 +34508,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-02-27",
-          "daysWithoutAttempt": 24,
-          "daysWithoutCall": 24,
-          "dealId": "4168",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4168/",
-          "lastCallAttemptDate": "2026-09-17",
-          "lastSuccessfulCommunicationDate": "2026-09-17",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Алексей",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 24,
@@ -34851,7 +34836,6 @@
         "3850",
         "3970",
         "4064",
-        "4168",
         "5253",
         "5293",
         "5538",
