@@ -18446,7 +18446,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18466,7 +18466,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 539,
-      "calls": 5,
+      "calls": 7,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -18486,7 +18486,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 746,
-      "calls": 9,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -18496,7 +18496,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18522,5 +18522,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-12T06:38:16+00:00"
+  "updatedAt": "2026-10-12T06:57:02+00:00"
 }
