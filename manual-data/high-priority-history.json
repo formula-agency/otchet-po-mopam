@@ -35581,26 +35581,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-10-02",
-          "daysWithoutAttempt": 10,
-          "daysWithoutCall": 10,
-          "dealId": "6739",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6739/",
-          "lastCallAttemptDate": "2026-10-02",
-          "lastSuccessfulCommunicationDate": "2026-10-02",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "offerCallsByDate": {
-            "2026-10-02": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Александр",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-30",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 9,
@@ -35675,7 +35655,6 @@
         "6639",
         "6710",
         "6722",
-        "6739",
         "6761"
       ],
       "newOverdueDealIds": [],

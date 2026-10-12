@@ -18476,7 +18476,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18486,7 +18486,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 746,
-      "calls": 16,
+      "calls": 17,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -18523,14 +18523,24 @@
     {
       "_id": {
         "day": "2026-10-12",
+        "mopName": "Черткова Ирина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-12",
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-12T08:49:27+00:00"
+  "updatedAt": "2026-10-12T09:07:13+00:00"
 }
