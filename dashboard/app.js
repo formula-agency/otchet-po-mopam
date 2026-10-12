@@ -90,12 +90,6 @@ const els = {
   priorityStatusBody: document.getElementById('priority-status-body'),
   priorityDealsCaption: document.getElementById('priority-deals-caption'),
   priorityDealsBody: document.getElementById('priority-deals-body'),
-  efficiencyFreshness: document.getElementById('efficiency-freshness'),
-  efficiencySheetTitle: document.getElementById('efficiency-sheet-title'),
-  efficiencyCaption: document.getElementById('efficiency-caption'),
-  efficiencyTable: document.getElementById('efficiency-table'),
-  efficiencyHead: document.getElementById('efficiency-head'),
-  efficiencyBody: document.getElementById('efficiency-body'),
   airtimeMonth: document.getElementById('airtime-month'),
   airtimeSprint: document.getElementById('airtime-sprint'),
   airtimeDateFrom: document.getElementById('airtime-date-from'),
@@ -146,7 +140,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261012-1';
+const DASHBOARD_DATA_VERSION = '20260826-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1994,73 +1988,6 @@ function renderWarnings() {
   els.warningsList.innerHTML = warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('');
 }
 
-function formatEfficiencyTimestamp(value) {
-  if (!value) return '';
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) return '';
-  return timestamp.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function efficiencyCellClass(value) {
-  const text = String(value || '').trim().replace(/\s/g, '').replace(',', '.');
-  return /^[-+]?\d+(?:\.\d+)?(?:%|₽|р\.?|руб\.?)?$/i.test(text) ? 'is-numeric' : '';
-}
-
-function renderEfficiency() {
-  if (!els.efficiencyBody || !els.efficiencyHead) return;
-  const efficiency = data.efficiency || {};
-  const rows = Array.isArray(efficiency.rows)
-    ? efficiency.rows.filter((row) => Array.isArray(row))
-    : [];
-  const width = Math.max(1, ...rows.map((row) => row.length));
-  const updatedAt = formatEfficiencyTimestamp(efficiency.updatedAt);
-
-  els.efficiencySheetTitle.textContent = efficiency.sheetTitle || 'Расчет по МОПам';
-  els.efficiencyFreshness.textContent = updatedAt
-    ? `Данные обновлены ${updatedAt}${efficiency.stale ? ' · показана последняя сохраненная версия' : ''}`
-    : 'Данные еще не загружены';
-
-  if (!rows.length) {
-    els.efficiencyCaption.textContent = 'Таблица станет доступна после первой успешной синхронизации';
-    els.efficiencyHead.innerHTML = '';
-    els.efficiencyBody.innerHTML = `<tr class="empty-row"><td colspan="${width}">Нет данных из Google Sheets</td></tr>`;
-    return;
-  }
-
-  const rawHeaderIndex = Number(efficiency.headerRowIndex || 0);
-  const headerIndex = Math.min(Math.max(0, rawHeaderIndex), rows.length - 1);
-  const titleRows = rows.slice(0, headerIndex);
-  const headerRow = rows[headerIndex] || [];
-  const bodyRows = rows.slice(headerIndex + 1);
-
-  const preambleHtml = titleRows.map((row) => {
-    const populated = row.filter((cell) => String(cell || '').trim());
-    if (populated.length <= 1) {
-      return `<tr class="efficiency-title-row"><th colspan="${width}">${escapeHtml(populated[0] || '')}</th></tr>`;
-    }
-    return `<tr class="efficiency-preamble-row">${Array.from({ length: width }, (_, index) => `<th>${escapeHtml(row[index] || '')}</th>`).join('')}</tr>`;
-  }).join('');
-  const headerHtml = `<tr>${Array.from({ length: width }, (_, index) => `<th>${escapeHtml(headerRow[index] || '')}</th>`).join('')}</tr>`;
-  els.efficiencyHead.innerHTML = `${preambleHtml}${headerHtml}`;
-
-  els.efficiencyBody.innerHTML = bodyRows.map((row) => {
-    const isBlank = !row.some((cell) => String(cell || '').trim());
-    if (isBlank) return `<tr class="efficiency-spacer-row"><td colspan="${width}"></td></tr>`;
-    return `<tr>${Array.from({ length: width }, (_, index) => {
-      const value = row[index] || '';
-      return `<td class="${efficiencyCellClass(value)}">${escapeHtml(value)}</td>`;
-    }).join('')}</tr>`;
-  }).join('') || `<tr class="empty-row"><td colspan="${width}">В листе нет строк с данными</td></tr>`;
-
-  els.efficiencyCaption.textContent = `${bodyRows.filter((row) => row.some((cell) => String(cell || '').trim())).length} строк · ${width} столбцов`;
-}
-
 function exportCsv(rows) {
   const header = ['Период', 'МОП', 'Продажи план', 'Продажи факт', 'Встречи план', 'Встречи факт', 'Брони план', 'Брони факт', 'Ипотеки план', 'Ипотеки факт', 'Звонки факт', 'Эфир план', 'Эфир факт', 'Эфир после встречи план', 'Эфир после встречи факт'];
   const body = rows.map((row) => [
@@ -2099,12 +2026,11 @@ function render() {
   renderCharts(rows);
   renderActiveDeals();
   renderHighPriority();
-  renderEfficiency();
   if (state.view === 'airtime') renderAirTimePlanFact();
 }
 
 function setView(view, updateHash = true) {
-  state.view = ['summary', 'deals', 'priority', 'efficiency', 'airtime'].includes(view) ? view : 'summary';
+  state.view = ['summary', 'deals', 'priority', 'airtime'].includes(view) ? view : 'summary';
   for (const panel of els.viewPanels) {
     const isActive = panel.dataset.viewPanel === state.view;
     panel.hidden = !isActive;
@@ -2118,7 +2044,6 @@ function setView(view, updateHash = true) {
   }
   if (state.view === 'airtime') renderAirTimePlanFact();
   if (state.view === 'priority') renderHighPriority();
-  if (state.view === 'efficiency') renderEfficiency();
 }
 
 function bindHeaderState() {
@@ -2156,7 +2081,6 @@ function bindViewNavigation() {
 function viewFromHash() {
   if (location.hash === '#deals' || location.hash === '#active-deals') return 'deals';
   if (location.hash === '#priority' || location.hash === '#high-priority') return 'priority';
-  if (location.hash === '#efficiency') return 'efficiency';
   if (location.hash === '#airtime') return 'airtime';
   return 'summary';
 }
@@ -2369,7 +2293,6 @@ function dashboardDataVersion(payload) {
   return [
     payload?.generatedAt,
     payload?.sharedPlans?.updatedAt,
-    payload?.efficiency?.updatedAt,
   ].map((value) => String(value || '')).join('|');
 }
 

@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20261012-1">
+  <link rel="stylesheet" href="./styles.css?v=20260911-1">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260811-1"></script>
-  <script defer src="./app.js?v=20261012-1"></script>
+  <script defer src="./app.js?v=20260911-2"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -17,7 +17,6 @@
         <button class="side-nav__item is-active" type="button" data-view-link="summary">План-факт</button>
         <button class="side-nav__item" type="button" data-view-link="deals">Сделки</button>
         <button class="side-nav__item" type="button" data-view-link="priority">Высокий приоритет</button>
-        <button class="side-nav__item" type="button" data-view-link="efficiency">Коэффициент эффективности</button>
         <button class="side-nav__item" type="button" data-view-link="airtime">Табло</button>
       </nav>
     </aside>
@@ -293,33 +292,6 @@
                   </tr>
                 </thead>
                 <tbody id="priority-deals-body"></tbody>
-              </table>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <div class="view efficiency-view" data-view-panel="efficiency" hidden>
-        <section class="summary-band section-anchor efficiency-summary" aria-labelledby="efficiency-title">
-          <div class="summary-band__head">
-            <div>
-              <p class="eyebrow">Ежедневный срез</p>
-              <h1 id="efficiency-title">Коэффициент эффективности</h1>
-            </div>
-            <p id="efficiency-freshness" class="efficiency-freshness">Данные еще не загружены</p>
-          </div>
-        </section>
-
-        <div class="page-shell efficiency-shell">
-          <section class="panel panel-wide efficiency-panel">
-            <div class="panel-head">
-              <h2 id="efficiency-sheet-title">Расчет по МОПам</h2>
-              <p id="efficiency-caption">Ожидание данных из Google Sheets</p>
-            </div>
-            <div class="table-wrap efficiency-table-wrap">
-              <table class="data-table efficiency-table" id="efficiency-table">
-                <thead id="efficiency-head"></thead>
-                <tbody id="efficiency-body"></tbody>
               </table>
             </div>
           </section>
