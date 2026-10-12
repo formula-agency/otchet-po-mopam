@@ -1304,9 +1304,13 @@ select {
   min-width: 1080px;
 }
 
-.data-table.priority-status-table,
-.data-table.priority-deals-table {
+.data-table.priority-status-table {
   min-width: 0;
+  table-layout: fixed;
+}
+
+.data-table.priority-deals-table {
+  min-width: 1280px;
   table-layout: fixed;
 }
 
@@ -1340,16 +1344,24 @@ select {
   text-align: center;
 }
 
-.data-table.priority-deals-table th:nth-child(1) { width: 18%; }
+.data-table.priority-deals-table th:nth-child(1) { width: 16%; }
 .data-table.priority-deals-table th:nth-child(2) { width: 9%; }
-.data-table.priority-deals-table th:nth-child(3) { width: 10%; }
-.data-table.priority-deals-table th:nth-child(4) { width: 21%; }
+.data-table.priority-deals-table th:nth-child(3) { width: 11%; }
+.data-table.priority-deals-table th:nth-child(4) { width: 24%; }
 .data-table.priority-deals-table th:nth-child(5),
 .data-table.priority-deals-table th:nth-child(6),
 .data-table.priority-deals-table th:nth-child(7),
-.data-table.priority-deals-table th:nth-child(8),
+.data-table.priority-deals-table th:nth-child(8) { width: 7%; }
 .data-table.priority-deals-table th:nth-child(9),
-.data-table.priority-deals-table th:nth-child(10) { width: 7%; }
+.data-table.priority-deals-table th:nth-child(10) { width: 6%; }
+
+.data-table.priority-deals-table th,
+.data-table.priority-deals-table td {
+  font-size: 13px;
+  line-height: 1.35;
+  overflow-wrap: normal;
+  word-break: normal;
+}
 
 .data-table.priority-deals-table td:nth-child(n+2) {
   text-align: left;
@@ -1372,16 +1384,29 @@ select {
 }
 
 .priority-error-reason strong {
-  color: #a33e37;
-  font-size: 12px;
-  line-height: 1.25;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .priority-error-reason span {
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.35;
+}
+
+.priority-deals-table .priority-days,
+.priority-deals-table .priority-days--critical {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.priority-deals-table .priority-meeting,
+.priority-deals-table .priority-meeting.is-held {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .priority-meeting {
@@ -1632,7 +1657,7 @@ select {
   }
 
   .data-table.priority-deals-table {
-    min-width: 980px;
+    min-width: 1280px;
   }
 
   .contest-banner,

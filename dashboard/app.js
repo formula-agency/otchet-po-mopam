@@ -143,7 +143,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261012-3';
+const DASHBOARD_DATA_VERSION = '20261012-4';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';

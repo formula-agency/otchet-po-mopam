@@ -4355,23 +4355,15 @@ def high_priority_error_details(
         error_type = "no_successful_call_after_meeting"
         error_title = "Нет связи после встречи"
         reason = (
-            f"После проведенной встречи нет успешного звонка {call_days} дн. "
-            f"Порог просрочки: {overdue_from_days} дн."
+            f"Нет успешного звонка {call_days} дн.; "
+            f"порог — {overdue_from_days} дн."
         )
     else:
         error_type = "no_successful_call_without_meeting"
         error_title = "Нет связи, встреча не проведена"
         reason = (
-            f"Встреча не проведена, успешного звонка нет {call_days} дн. "
-            f"Порог просрочки: более {no_meeting_days_without_call} дн."
-        )
-
-    if isinstance(days_without_attempt, (int, float)) and not isinstance(days_without_attempt, bool):
-        attempt_days = max(0, int(days_without_attempt))
-        reason += (
-            " Попытка звонка была сегодня."
-            if attempt_days == 0
-            else f" Последней попытки звонка не было {attempt_days} дн."
+            f"Нет успешного звонка {call_days} дн.; "
+            f"порог — {no_meeting_days_without_call + 1} дн."
         )
     return {
         "errorType": error_type,
