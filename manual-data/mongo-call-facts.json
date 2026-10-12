@@ -18476,7 +18476,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18486,7 +18486,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 746,
-      "calls": 13,
+      "calls": 14,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -18503,10 +18503,20 @@
     {
       "_id": {
         "day": "2026-10-12",
-        "mopName": "Султанов Есен"
+        "mopName": "Попова Олеся"
       },
       "airSeconds": 0,
       "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-12",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18522,5 +18532,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-12T07:05:30+00:00"
+  "updatedAt": "2026-10-12T08:28:22+00:00"
 }
