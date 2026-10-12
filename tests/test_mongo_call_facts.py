@@ -93,6 +93,8 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("CRM_ENTITY_ID", serialized)
         self.assertIn("presentation", serialized)
         self.assertIn("transcriptionCandidateUids", serialized)
+        self.assertIn("transcriptionCandidateCalls", serialized)
+        self.assertIn("offerCallDates", serialized)
         self.assertNotIn("call_transcriptions", serialized)
         self.assertIn("offerCallsCount", serialized)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
@@ -131,6 +133,10 @@ class MongoCallAggregateTests(unittest.TestCase):
                 "_id": "501",
                 "offerCallsCount": 1,
                 "transcriptionCandidateUids": ["call-1", "call-2"],
+                "transcriptionCandidateCalls": [
+                    {"uuid": "call-1", "day": "2026-08-25"},
+                    {"uuid": "call-2", "day": "2026-08-25"},
+                ],
             },
             {
                 "_id": "502",
@@ -161,6 +167,7 @@ class MongoCallAggregateTests(unittest.TestCase):
 
         self.assertEqual(added, 1)
         self.assertEqual(rows[0]["offerCallsCount"], 2)
+        self.assertEqual(rows[0]["offerCallDates"], ["2026-08-25"])
         self.assertEqual(rows[1]["offerCallsCount"], 0)
 
     def test_loads_distinct_call_dates_by_deal(self) -> None:
@@ -174,6 +181,7 @@ class MongoCallAggregateTests(unittest.TestCase):
                     "attemptDates": ["2026-08-24", "2026-08-25", "2026-08-25"],
                     "successfulDates": ["2026-08-24"],
                     "offerCallsCount": 3,
+                    "offerCallDates": ["2026-08-24", "2026-08-25", "2026-08-25"],
                 },
                 {"_id": "", "attemptDates": ["2026-08-25"]},
             ],
@@ -189,14 +197,24 @@ class MongoCallAggregateTests(unittest.TestCase):
             [date(2026, 8, 24), date(2026, 8, 25)],
         )
         self.assertEqual(data.offer_calls_by_deal["501"], 3)
+        self.assertEqual(
+            data.offer_call_counts_by_deal_date["501"],
+            {"2026-08-24": 1, "2026-08-25": 2},
+        )
 
     def test_applies_offer_counts_to_active_deals(self) -> None:
         payload = {"rows": [{"dealId": "501"}, {"dealId": "502"}]}
 
-        apply_mongo_offer_counts_to_active_deals(payload, {"501": 4})
+        apply_mongo_offer_counts_to_active_deals(
+            payload,
+            {"501": 4},
+            {"501": {"2026-08-25": 2}},
+        )
 
         self.assertEqual(payload["rows"][0]["offerCallsCount"], 4)
+        self.assertEqual(payload["rows"][0]["offerCallsByDate"], {"2026-08-25": 2})
         self.assertEqual(payload["rows"][1]["offerCallsCount"], 0)
+        self.assertEqual(payload["rows"][1]["offerCallsByDate"], {})
 
     def test_maps_formula_manager_name_to_existing_bitrix_identity(self) -> None:
         data = MopReportData()

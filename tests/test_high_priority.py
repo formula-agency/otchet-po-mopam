@@ -229,6 +229,36 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
         self.assertFalse(row["isStop"])
         self.assertEqual(row["stopDays"], 0)
 
+    def test_counts_offer_calls_for_each_snapshot_day(self) -> None:
+        snapshots = {
+            "2026-08-24": {
+                "deals": [deal(1, "МОП")],
+                "previousDate": "",
+                "calledFromPreviousDealIds": [],
+                "flowedFromPreviousDealIds": [],
+                "newOverdueDealIds": ["1"],
+            },
+            "2026-08-25": {
+                "deals": [deal(1, "МОП"), deal(2, "МОП")],
+                "previousDate": "2026-08-24",
+                "calledFromPreviousDealIds": ["1"],
+                "flowedFromPreviousDealIds": ["1"],
+                "newOverdueDealIds": ["2"],
+            },
+        }
+
+        [row] = high_priority_snapshot_mops(
+            snapshots,
+            "2026-08-25",
+            10,
+            offer_call_counts_by_deal_date={
+                "1": {"2026-08-24": 3, "2026-08-25": 2},
+                "2": {"2026-08-25": 1},
+            },
+        )
+
+        self.assertEqual(row["offerCallsCount"], 3)
+
     def test_stop_days_reset_at_start_of_calendar_month(self) -> None:
         stopped_deals = [deal(index, "МОП") for index in range(1, 12)]
         snapshots = {

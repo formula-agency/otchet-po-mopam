@@ -583,6 +583,7 @@ class MopReportData:
         default_factory=lambda: defaultdict(list)
     )
     offer_calls_by_deal: dict[str, int] = field(default_factory=dict)
+    offer_call_counts_by_deal_date: dict[str, dict[str, int]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -2916,6 +2917,15 @@ def build_mongo_deal_call_pipeline(
                         ]
                     }
                 },
+                "offerCallDates": {
+                    "$push": {
+                        "$cond": [
+                            mongo_offer_text_expression("$presentation"),
+                            "$day",
+                            "$$REMOVE",
+                        ]
+                    }
+                },
                 "transcriptionCandidateUids": {
                     "$addToSet": {
                         "$cond": [
@@ -2934,6 +2944,24 @@ def build_mongo_deal_call_pipeline(
                         ]
                     }
                 },
+                "transcriptionCandidateCalls": {
+                    "$addToSet": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$ne": ["$callUid", ""]},
+                                    {
+                                        "$not": [
+                                            mongo_offer_text_expression("$presentation")
+                                        ]
+                                    },
+                                ]
+                            },
+                            {"uuid": "$callUid", "day": "$day"},
+                            "$$REMOVE",
+                        ]
+                    }
+                },
             }
         },
     ]
@@ -2943,25 +2971,35 @@ def apply_transcription_offer_fallbacks(
     rows: list[dict[str, Any]],
     transcription_documents: list[dict[str, Any]],
 ) -> int:
-    rows_by_call_uid: dict[str, dict[str, Any]] = {}
+    rows_by_call_uid: dict[str, tuple[dict[str, Any], str]] = {}
     for row in rows:
+        for candidate in row.get("transcriptionCandidateCalls", []):
+            if not isinstance(candidate, dict):
+                continue
+            call_uid = str(candidate.get("uuid") or "").strip()
+            call_day = str(candidate.get("day") or "").strip()
+            if call_uid:
+                rows_by_call_uid[call_uid] = (row, call_day)
         for raw_uid in row.get("transcriptionCandidateUids", []):
             call_uid = str(raw_uid or "").strip()
             if call_uid:
-                rows_by_call_uid[call_uid] = row
+                rows_by_call_uid.setdefault(call_uid, (row, ""))
 
     matched_uids: set[str] = set()
     for document in transcription_documents:
         call_uid = str(document.get("uuid") or "").strip()
-        row = rows_by_call_uid.get(call_uid)
-        if row is None or call_uid in matched_uids:
+        match = rows_by_call_uid.get(call_uid)
+        if match is None or call_uid in matched_uids:
             continue
         if not presentation_contains_offer(document.get("transcription")):
             continue
+        row, call_day = match
         row["offerCallsCount"] = max(
             0,
             parse_number(row.get("offerCallsCount")),
         ) + 1
+        if call_day:
+            row.setdefault("offerCallDates", []).append(call_day)
         matched_uids.add(call_uid)
     return len(matched_uids)
 
@@ -2994,6 +3032,16 @@ def apply_mongo_deal_call_dates(
         data.offer_calls_by_deal[deal_id] = max(
             0,
             parse_number(row.get("offerCallsCount")),
+        )
+        offer_counts_by_date: dict[str, int] = defaultdict(int)
+        for raw_date in row.get("offerCallDates", []):
+            try:
+                offer_date = date.fromisoformat(str(raw_date))
+            except ValueError:
+                continue
+            offer_counts_by_date[offer_date.isoformat()] += 1
+        data.offer_call_counts_by_deal_date[deal_id] = dict(
+            sorted(offer_counts_by_date.items())
         )
         linked_calls += len(attempt_dates)
     return linked_calls
@@ -3029,7 +3077,14 @@ def build_mongo_deal_call_facts(
             candidate_uids = sorted({
                 str(raw_uid).strip()
                 for row in rows
-                for raw_uid in row.get("transcriptionCandidateUids", [])
+                for raw_uid in [
+                    *row.get("transcriptionCandidateUids", []),
+                    *[
+                        candidate.get("uuid")
+                        for candidate in row.get("transcriptionCandidateCalls", [])
+                        if isinstance(candidate, dict)
+                    ],
+                ]
                 if str(raw_uid or "").strip()
             })
             if candidate_uids:
@@ -4252,6 +4307,11 @@ def high_priority_row(deal: dict[str, Any]) -> dict[str, Any]:
         "daysWithoutCall": deal.get("daysWithoutCall"),
         "meetingHeld": bool(deal.get("meetingHeld")),
         "offerCallsCount": max(0, parse_number(deal.get("offerCallsCount"))),
+        "offerCallsByDate": {
+            str(day): max(0, parse_number(count))
+            for day, count in (deal.get("offerCallsByDate") or {}).items()
+            if str(day)
+        },
         "utmSource": str(deal.get("utmSource") or ""),
     }
 
@@ -4344,12 +4404,16 @@ def apply_mongo_call_recency_to_active_deals(
 def apply_mongo_offer_counts_to_active_deals(
     active_deals_payload: dict[str, Any],
     offer_calls_by_deal: dict[str, int],
+    offer_call_counts_by_deal_date: dict[str, dict[str, int]] | None = None,
 ) -> None:
     for row in active_deals_payload.get("rows", []):
         if not isinstance(row, dict):
             continue
         deal_id = str(row.get("dealId") or "")
         row["offerCallsCount"] = max(0, offer_calls_by_deal.get(deal_id, 0))
+        row["offerCallsByDate"] = dict(
+            (offer_call_counts_by_deal_date or {}).get(deal_id, {})
+        )
 
 
 def high_priority_snapshot_mops(
@@ -4358,6 +4422,7 @@ def high_priority_snapshot_mops(
     stop_threshold: int,
     all_mop_names: tuple[str, ...] = (),
     overdue_from_days: int = DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
+    offer_call_counts_by_deal_date: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
     current = snapshots.get(snapshot_date, {})
     current_deals = current.get("deals", []) if isinstance(current, dict) else []
@@ -4439,19 +4504,30 @@ def high_priority_snapshot_mops(
             for deal_id in new_ids
             if str(current_by_id.get(deal_id, {}).get("mopName") or "") == mop_name
         )
-        rows.append(
-            {
-                "mopName": mop_name,
-                "overdueCount": overdue_count,
-                "calledFromPreviousCount": called_count,
-                "flowedFromPreviousCount": flowed_count,
-                "newOverdueCount": new_count,
-                "withoutCallCount": without_call_count,
-                "withoutAttemptCount": without_attempt_count,
-                "isStop": overdue_count > stop_threshold,
-                "stopDays": stop_days.get(mop_name, 0),
-            }
-        )
+        result_row = {
+            "mopName": mop_name,
+            "overdueCount": overdue_count,
+            "calledFromPreviousCount": called_count,
+            "flowedFromPreviousCount": flowed_count,
+            "newOverdueCount": new_count,
+            "withoutCallCount": without_call_count,
+            "withoutAttemptCount": without_attempt_count,
+            "isStop": overdue_count > stop_threshold,
+            "stopDays": stop_days.get(mop_name, 0),
+        }
+        if offer_call_counts_by_deal_date is not None:
+            relevant_deals = {**previous_by_id, **current_by_id}
+            result_row["offerCallsCount"] = sum(
+                max(
+                    0,
+                    parse_number(
+                        offer_call_counts_by_deal_date.get(deal_id, {}).get(snapshot_date)
+                    ),
+                )
+                for deal_id, deal_row in relevant_deals.items()
+                if str(deal_row.get("mopName") or "") == mop_name
+            )
+        rows.append(result_row)
     return rows
 
 
@@ -4461,6 +4537,7 @@ def build_high_priority_payload(
     call_data_available: bool,
     window: ReportWindow,
     warnings: list[str],
+    offer_call_counts_by_deal_date: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     overdue_from_days = read_non_negative_int_env(
         "MOP_HIGH_PRIORITY_OVERDUE_FROM_DAYS",
@@ -4686,6 +4763,7 @@ def build_high_priority_payload(
             stop_threshold,
             visible_mop_names,
             overdue_from_days,
+            offer_call_counts_by_deal_date,
         )
         dashboard_snapshots.append(
             {
@@ -4698,6 +4776,10 @@ def build_high_priority_payload(
                 ),
                 "flowedFromPreviousCount": len(flowed_snapshot_ids),
                 "newOverdueCount": len(new_snapshot_ids),
+                "offerCallsCount": sum(
+                    max(0, parse_number(row.get("offerCallsCount")))
+                    for row in mop_rows
+                ),
                 "stopMopCount": sum(1 for row in mop_rows if row["isStop"]),
                 "mops": mop_rows,
                 "rows": display_rows,
@@ -5137,6 +5219,7 @@ def main() -> int:
             apply_mongo_offer_counts_to_active_deals(
                 priority_active_deals_payload,
                 data.offer_calls_by_deal,
+                data.offer_call_counts_by_deal_date,
             )
         high_priority_payload = build_high_priority_payload(
             priority_active_deals_payload,
@@ -5144,6 +5227,7 @@ def main() -> int:
             data.call_deal_link_available,
             window,
             data.warnings,
+            data.offer_call_counts_by_deal_date,
         )
         built_report = build_report_rows(data, mop_settings)
         payload = build_dashboard_payload(

@@ -81,10 +81,13 @@ const els = {
   priorityDateFrom: document.getElementById('priority-date-from'),
   priorityDateTo: document.getElementById('priority-date-to'),
   priorityMop: document.getElementById('priority-mop'),
+  priorityPeriodButtons: [...document.querySelectorAll('[data-priority-period]')],
   priorityCaption: document.getElementById('priority-caption'),
   priorityRule: document.getElementById('priority-rule'),
+  priorityNewErrorCount: document.getElementById('priority-new-error-count'),
   priorityOverdueCount: document.getElementById('priority-overdue-count'),
   priorityCalledCount: document.getElementById('priority-called-count'),
+  priorityOfferCount: document.getElementById('priority-offer-count'),
   priorityFlowedCount: document.getElementById('priority-flowed-count'),
   priorityStopCount: document.getElementById('priority-stop-count'),
   priorityStatusBody: document.getElementById('priority-status-body'),
@@ -140,7 +143,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20260826-1';
+const DASHBOARD_DATA_VERSION = '20261012-2';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1463,6 +1466,48 @@ function prioritySourceLabel(row) {
   return labels.join(' · ') || 'Добавлена сегодня';
 }
 
+function priorityOffersInRange(row, fromValue, toValue) {
+  const counts = row?.offerCallsByDate;
+  if (!counts || typeof counts !== 'object') return null;
+  return Object.entries(counts).reduce((total, [day, count]) => (
+    dateInRange(day, fromValue, toValue) ? total + Number(count || 0) : total
+  ), 0);
+}
+
+function setPriorityPeriodPreset(period) {
+  const priorityData = highPriorityData();
+  const today = priorityData.currentDate || priorityData.maxDate || '';
+  if (!today) return;
+  let from = today;
+  let to = today;
+  if (period === 'yesterday') {
+    from = offsetIsoDate(today, -1);
+    to = from;
+  } else if (period === '7days') {
+    from = offsetIsoDate(today, -6);
+  }
+  if (priorityData.minDate && from < priorityData.minDate) from = priorityData.minDate;
+  state.priorityDateFrom = from;
+  state.priorityDateTo = to;
+  els.priorityDateFrom.value = from;
+  els.priorityDateTo.value = to;
+  renderHighPriority();
+}
+
+function syncPriorityPeriodButtons(fromValue, toValue) {
+  const today = highPriorityData().currentDate || highPriorityData().maxDate || '';
+  const yesterday = offsetIsoDate(today, -1);
+  const sevenDaysFrom = offsetIsoDate(today, -6);
+  for (const button of els.priorityPeriodButtons) {
+    const isActive = (
+      (button.dataset.priorityPeriod === 'today' && fromValue === today && toValue === today)
+      || (button.dataset.priorityPeriod === 'yesterday' && fromValue === yesterday && toValue === yesterday)
+      || (button.dataset.priorityPeriod === '7days' && fromValue === sevenDaysFrom && toValue === today)
+    );
+    button.classList.toggle('is-active', isActive);
+  }
+}
+
 function renderHighPriority() {
   const priorityData = highPriorityData();
   const range = normalizedDateRange(state.priorityDateFrom, state.priorityDateTo);
@@ -1487,7 +1532,9 @@ function renderHighPriority() {
     els.priorityDealsCaption.textContent = '0 сделок';
     for (const element of [
       els.priorityOverdueCount,
+      els.priorityNewErrorCount,
       els.priorityCalledCount,
+      els.priorityOfferCount,
       els.priorityFlowedCount,
       els.priorityStopCount,
     ]) element.textContent = '0';
@@ -1502,6 +1549,7 @@ function renderHighPriority() {
   state.priorityDateTo = selectedTo;
   els.priorityDateFrom.value = selectedFrom;
   els.priorityDateTo.value = selectedTo;
+  syncPriorityPeriodButtons(selectedFrom, selectedTo);
   const selectedMop = state.priorityMopName || 'all';
   const snapshotRows = (snapshot.rows || [])
     .filter((row) => selectedMop === 'all' || row.mopName === selectedMop);
@@ -1510,11 +1558,29 @@ function renderHighPriority() {
   );
   const movementByMop = new Map();
   for (const movementSnapshot of movementSnapshots) {
+    for (const row of movementSnapshot.mops || []) {
+      const totals = movementByMop.get(row.mopName) || {
+        called: 0,
+        flowed: 0,
+        offers: 0,
+        newErrors: 0,
+      };
+      if (movementSnapshot.calledFromPreviousAvailable) {
+        totals.called += Number(row.calledFromPreviousCount || 0);
+      }
+      totals.flowed += Number(row.flowedFromPreviousCount || 0);
+      totals.offers += Number(row.offerCallsCount || 0);
+      movementByMop.set(row.mopName, totals);
+    }
     for (const row of movementSnapshot.rows || []) {
-      if (priorityOverrideIsSet(movementSnapshot.date, row.dealId)) continue;
-      const totals = movementByMop.get(row.mopName) || { called: 0, flowed: 0 };
-      if (movementSnapshot.calledFromPreviousAvailable && row.calledFromPrevious) totals.called += 1;
-      if (row.flowedFromPrevious) totals.flowed += 1;
+      if (!row.newOverdue || priorityOverrideIsSet(movementSnapshot.date, row.dealId)) continue;
+      const totals = movementByMop.get(row.mopName) || {
+        called: 0,
+        flowed: 0,
+        offers: 0,
+        newErrors: 0,
+      };
+      totals.newErrors += 1;
       movementByMop.set(row.mopName, totals);
     }
   }
@@ -1536,7 +1602,9 @@ function renderHighPriority() {
       return {
         ...row,
         overdueCount: currentErrors.length,
+        newOverdueCount: movementByMop.get(row.mopName)?.newErrors || 0,
         calledFromPreviousCount: movementByMop.get(row.mopName)?.called || 0,
+        offerCallsCount: movementByMop.get(row.mopName)?.offers || 0,
         flowedFromPreviousCount: movementByMop.get(row.mopName)?.flowed || 0,
         withoutCallCount: currentErrors.filter((item) => Number.isFinite(Number(item.daysWithoutCall))).length,
         withoutAttemptCount: currentErrors.filter(
@@ -1559,23 +1627,27 @@ function renderHighPriority() {
     ));
   const totals = mopRows.reduce((acc, row) => {
     acc.overdue += Number(row.overdueCount || 0);
+    acc.newErrors += Number(row.newOverdueCount || 0);
     acc.called += Number(row.calledFromPreviousCount || 0);
+    acc.offers += Number(row.offerCallsCount || 0);
     acc.flowed += Number(row.flowedFromPreviousCount || 0);
     acc.stop += row.isStop ? 1 : 0;
     return acc;
-  }, { overdue: 0, called: 0, flowed: 0, stop: 0 });
+  }, { overdue: 0, newErrors: 0, called: 0, offers: 0, flowed: 0, stop: 0 });
 
   els.priorityOverdueCount.textContent = formatNumber(totals.overdue);
+  els.priorityNewErrorCount.textContent = formatNumber(totals.newErrors);
   const movementAvailable = movementSnapshots.some((item) => item.calledFromPreviousAvailable);
   els.priorityCalledCount.textContent = movementAvailable
     ? formatNumber(totals.called)
     : '—';
+  els.priorityOfferCount.textContent = formatNumber(totals.offers);
   els.priorityFlowedCount.textContent = formatNumber(totals.flowed);
   els.priorityStopCount.textContent = formatNumber(totals.stop);
   const movementFrom = movementSnapshots[0]?.date || snapshot.date;
   els.priorityCaption.textContent = movementFrom === snapshot.date
-    ? `Срез на ${formatDate(snapshot.date)}`
-    : `Срез на ${formatDate(snapshot.date)} · Движение за ${formatDate(movementFrom)}-${formatDate(snapshot.date)}`;
+    ? `Результаты за ${formatDate(snapshot.date)} · состояние на конец дня`
+    : `Результаты за ${formatDate(movementFrom)}-${formatDate(snapshot.date)} · состояние на конец периода`;
   const excludedCount = dealRows.length - errorRows.length;
   els.priorityDealsCaption.textContent = excludedCount
     ? `${formatNumber(errorRows.length)} ошибок · ${formatNumber(excludedCount)} исключено`
@@ -1585,22 +1657,25 @@ function renderHighPriority() {
     ? mopRows.map((row) => `
       <tr class="${row.isStop ? 'priority-row--stop' : 'priority-row--work'}">
         <td><strong>${escapeHtml(row.mopName)}</strong></td>
-        <td>${formatNumber(row.overdueCount)}</td>
+        <td>${formatNumber(row.newOverdueCount)}</td>
         <td>${movementAvailable ? formatNumber(row.calledFromPreviousCount) : '—'}</td>
+        <td>${formatNumber(row.offerCallsCount)}</td>
         <td>${formatNumber(row.flowedFromPreviousCount)}</td>
+        <td>${formatNumber(row.overdueCount)}</td>
         <td class="priority-days priority-days--critical">${formatNumber(row.withoutCallCount)}</td>
         <td class="priority-days">${formatNumber(row.withoutAttemptCount)}</td>
         <td><span class="priority-status ${row.isStop ? 'is-stop' : 'is-work'}">${row.isStop ? 'СТОП' : 'В работе'}</span></td>
         <td>${formatNumber(row.stopDays)}</td>
       </tr>
     `).join('')
-    : '<tr class="empty-row"><td colspan="8">Нет данных по выбранному МОПу</td></tr>';
+    : '<tr class="empty-row"><td colspan="10">Нет данных по выбранному МОПу</td></tr>';
 
   els.priorityDealsBody.innerHTML = dealRows.length
     ? dealRows.map((row) => {
       const title = `#${row.dealId} ${row.title || 'Без названия'}`;
       const excluded = priorityOverrideIsSet(snapshot.date, row.dealId);
       const excludedYesterday = priorityOverrideIsSet(offsetIsoDate(snapshot.date, -1), row.dealId);
+      const offerCalls = priorityOffersInRange(row, selectedFrom, selectedTo);
       const rowClass = excludedYesterday
         ? 'priority-deal--previous-exception'
         : excluded
@@ -1612,7 +1687,7 @@ function renderHighPriority() {
           <td>${escapeHtml(row.mopName || '—')}</td>
           <td>${escapeHtml(row.stageName || row.stageId || '—')}</td>
           <td class="priority-meeting ${row.meetingHeld ? 'is-held' : ''}">${row.meetingHeld ? 'Да' : 'Нет'}</td>
-          <td class="priority-offers">${formatOptionalNumber(row.offerCallsCount)}</td>
+          <td class="priority-offers">${formatOptionalNumber(offerCalls)}</td>
           <td class="priority-days">${formatOptionalNumber(row.daysWithoutAttempt)}</td>
           <td class="priority-days priority-days--critical">${formatOptionalNumber(row.daysWithoutCall)}</td>
           <td>${escapeHtml(prioritySourceLabel(row))}</td>
@@ -2185,6 +2260,9 @@ function bindControls() {
     state.priorityMopName = els.priorityMop.value;
     renderHighPriority();
   });
+  for (const button of els.priorityPeriodButtons) {
+    button.addEventListener('click', () => setPriorityPeriodPreset(button.dataset.priorityPeriod));
+  }
   els.airtimeMonth.addEventListener('change', () => {
     state.airtimeMonth = els.airtimeMonth.value;
     syncAirTimeSprintSelect(false);

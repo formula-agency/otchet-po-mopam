@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20260911-1">
+  <link rel="stylesheet" href="./styles.css?v=20261012-2">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260811-1"></script>
-  <script defer src="./app.js?v=20260911-2"></script>
+  <script defer src="./app.js?v=20261012-2"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -231,12 +231,19 @@
                 <span>МОП</span>
                 <select id="priority-mop"></select>
               </label>
+              <div class="priority-date-presets" role="group" aria-label="Быстрый выбор периода">
+                <button type="button" data-priority-period="today">Сегодня</button>
+                <button type="button" data-priority-period="yesterday">Вчера</button>
+                <button type="button" data-priority-period="7days">7 дней</button>
+              </div>
             </div>
           </div>
           <div class="summary-band__stats priority-summary__stats" aria-label="Сводка высокого приоритета">
-            <article><span>Сделок с ошибкой</span><strong id="priority-overdue-count">0</strong></article>
-            <article><span>Прозвонили из прошлых</span><strong id="priority-called-count">0</strong></article>
-            <article><span>Перетекло из прошлых</span><strong id="priority-flowed-count">0</strong></article>
+            <article><span>Новые ошибки</span><strong id="priority-new-error-count">0</strong></article>
+            <article><span>Прозвонили</span><strong id="priority-called-count">0</strong></article>
+            <article><span>Звонки с оффером</span><strong id="priority-offer-count">0</strong></article>
+            <article><span>Перетекло</span><strong id="priority-flowed-count">0</strong></article>
+            <article><span>Ошибок на конец периода</span><strong id="priority-overdue-count">0</strong></article>
             <article><span>МОПов в СТОПе</span><strong id="priority-stop-count">0</strong></article>
           </div>
         </section>
@@ -255,9 +262,11 @@
                 <thead>
                   <tr>
                     <th>МОП</th>
-                    <th>Сделок с ошибкой</th>
-                    <th>Прозвонили из прошлых дней</th>
-                    <th>Перетекло из прошлых дней</th>
+                    <th>Новые ошибки</th>
+                    <th>Прозвонили</th>
+                    <th>Офферные звонки</th>
+                    <th>Перетекло</th>
+                    <th>Ошибок на конец</th>
                     <th>Лидов без звонка</th>
                     <th>Лидов без попытки</th>
                     <th>Статус</th>
@@ -284,7 +293,7 @@
                     <th>МОП</th>
                     <th>Стадия</th>
                     <th>Проведена встреча</th>
-                    <th title="Звонки, в которых TempLab зафиксировал презентацию оффера">Звонки с оффером</th>
+                    <th title="Звонки, в которых TempLab зафиксировал презентацию оффера за выбранный период">Звонки с оффером</th>
                     <th>Дней без попытки</th>
                     <th>Дней без звонка</th>
                     <th>Движение</th>

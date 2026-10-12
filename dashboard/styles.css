@@ -554,8 +554,36 @@ select {
   width: min(660px, 100%);
 }
 
+.priority-date-presets {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #f4f6f8;
+}
+
+.priority-date-presets button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.priority-date-presets button:hover,
+.priority-date-presets button.is-active {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 1px 4px rgba(22, 20, 20, 0.12);
+}
+
 .priority-summary__stats {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .priority-summary__stats article:first-child strong,
@@ -1293,17 +1321,19 @@ select {
 
 .data-table.priority-status-table th:first-child,
 .data-table.priority-status-table td:first-child {
-  width: 18%;
+  width: 15%;
   text-align: left;
 }
 
-.data-table.priority-status-table th:nth-child(2) { width: 10%; }
+.data-table.priority-status-table th:nth-child(2),
 .data-table.priority-status-table th:nth-child(3),
-.data-table.priority-status-table th:nth-child(4) { width: 14%; }
-.data-table.priority-status-table th:nth-child(5),
-.data-table.priority-status-table th:nth-child(6) { width: 11%; }
-.data-table.priority-status-table th:nth-child(7) { width: 12%; }
-.data-table.priority-status-table th:nth-child(8) { width: 10%; }
+.data-table.priority-status-table th:nth-child(4),
+.data-table.priority-status-table th:nth-child(5) { width: 9%; }
+.data-table.priority-status-table th:nth-child(6) { width: 10%; }
+.data-table.priority-status-table th:nth-child(7),
+.data-table.priority-status-table th:nth-child(8) { width: 9%; }
+.data-table.priority-status-table th:nth-child(9) { width: 10%; }
+.data-table.priority-status-table th:nth-child(10) { width: 11%; }
 
 .data-table.priority-status-table th:nth-child(n+2),
 .data-table.priority-status-table td:nth-child(n+2) {
