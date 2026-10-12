@@ -91,6 +91,8 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("bitrix_deal_id", serialized)
         self.assertIn("CRM_ENTITY_ID", serialized)
         self.assertIn("presentation", serialized)
+        self.assertIn("call_transcriptions", serialized)
+        self.assertIn("transcription", serialized)
         self.assertIn("offerCallsCount", serialized)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
@@ -101,11 +103,23 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertTrue(presentation_contains_offer(
             "Варианты квартир с ремонтом по субсидированным ставкам."
         ))
+        self.assertTrue(presentation_contains_offer(
+            "Я предлагаю нашу квартиру поставить в бронь, пусть студия в брони стоит."
+        ))
+        self.assertTrue(presentation_contains_offer(
+            "Мы этот вариант ранее обсуждали: квартира 65 квадратов, евротрешка."
+        ))
+        self.assertTrue(presentation_contains_offer(
+            "Появилась евродвушка 38 квадратов по цене 4,89 млн со скидкой."
+        ))
         self.assertFalse(presentation_contains_offer(
             "Менеджер предложил клиенту прислать документы и затем перезвонить."
         ))
         self.assertFalse(presentation_contains_offer(
             "Менеджер не предлагала квартиру во время разговора."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Менеджер подтвердил режим работы и готовность провести экскурсию по ЖК."
         ))
 
 

@@ -46,13 +46,20 @@ MONGO_TARGET_CALL_CLASSIFICATIONS = (
     "Целевой нерезультативный",
     "Целевой звонок",
 )
-MONGO_OFFER_PRESENTATION_PATTERN = (
-    r"квартир|апартамент|объект|вариант|\bжк\b|жил(?:ой|ого|ому|ом|ая|ую)\s+комплекс|"
-    r"новостро|ипотек|рассроч|первоначальн(?:ый|ого|ому|ом)\s+взнос|ставк|"
-    r"застройщик|проект|студи"
+MONGO_OFFER_PROPERTY_PATTERN = (
+    r"квартир|апартамент|недвижим|\bобъект|\bжк\b|"
+    r"жил(?:ой|ого|ому|ом|ая|ую)\s+комплекс|новостро|застройщик|"
+    r"студи|евро(?:дв|тр)|таунхаус|коттедж"
+)
+MONGO_OFFER_SUBSTANCE_PATTERN = (
+    r"предлаг|презент|подобр|рекоменд|рассмотр|\bвариант|появил(?:ся|ась|ось)|"
+    r"цен|стоим|скид|бонус|планиров|площад|квадрат|этаж|ремонт|"
+    r"ипотек|рассроч|первоначальн(?:ый|ого|ому|ом)\s+взнос|ставк|"
+    r"плат[её]ж|брон|инвест|доход|сдач"
 )
 MONGO_NEGATED_OFFER_PRESENTATION_PATTERN = (
-    r"не\s+(?:предлагал[аи]?|предложил[аи]?|презентовал[аи]?|делал[аи]?|проводил[аи]?)"
+    r"^\s*(?:менеджер\s+)?не\s+"
+    r"(?:предлагал[аи]?|предложил[аи]?|презентовал[аи]?|делал[аи]?|проводил[аи]?)"
     r".{0,40}(?:квартир|объект|вариант|\bжк\b|ипотек|рассроч|презентац)"
 )
 DEFAULT_DEAL_APPROVED_MORTGAGE_FIELD = "UF_DEAL_MORTGAGE_APPROVED"
@@ -2720,7 +2727,8 @@ def presentation_contains_offer(value: Any) -> bool:
     presentation = str(value or "").strip()
     return bool(
         presentation
-        and re.search(MONGO_OFFER_PRESENTATION_PATTERN, presentation, re.IGNORECASE)
+        and re.search(MONGO_OFFER_PROPERTY_PATTERN, presentation, re.IGNORECASE)
+        and re.search(MONGO_OFFER_SUBSTANCE_PATTERN, presentation, re.IGNORECASE)
         and not re.search(
             MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
             presentation,
@@ -2729,14 +2737,21 @@ def presentation_contains_offer(value: Any) -> bool:
     )
 
 
-def mongo_offer_presentation_expression(field_name: str) -> dict[str, Any]:
-    presentation = {"$ifNull": [field_name, ""]}
+def mongo_offer_text_expression(field_name: str) -> dict[str, Any]:
+    offer_text = {"$ifNull": [field_name, ""]}
     return {
         "$and": [
             {
                 "$regexMatch": {
-                    "input": presentation,
-                    "regex": MONGO_OFFER_PRESENTATION_PATTERN,
+                    "input": offer_text,
+                    "regex": MONGO_OFFER_PROPERTY_PATTERN,
+                    "options": "i",
+                }
+            },
+            {
+                "$regexMatch": {
+                    "input": offer_text,
+                    "regex": MONGO_OFFER_SUBSTANCE_PATTERN,
                     "options": "i",
                 }
             },
@@ -2744,7 +2759,7 @@ def mongo_offer_presentation_expression(field_name: str) -> dict[str, Any]:
                 "$not": [
                     {
                         "$regexMatch": {
-                            "input": presentation,
+                            "input": offer_text,
                             "regex": MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
                             "options": "i",
                         }
@@ -2835,6 +2850,14 @@ def build_mongo_deal_call_pipeline(
             }
         },
         {
+            "$lookup": {
+                "from": "call_transcriptions",
+                "localField": "call_uid",
+                "foreignField": "uuid",
+                "as": "transcriptionDocs",
+            }
+        },
+        {
             "$addFields": {
                 "classification": {
                     "$cond": [
@@ -2844,6 +2867,9 @@ def build_mongo_deal_call_pipeline(
                     ]
                 },
                 "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
+                "transcription": {
+                    "$arrayElemAt": ["$transcriptionDocs.transcription", 0]
+                },
             }
         },
         {
@@ -2852,6 +2878,7 @@ def build_mongo_deal_call_pipeline(
                 "day": 1,
                 "classification": 1,
                 "presentation": 1,
+                "transcription": 1,
                 "dealId": {
                     "$cond": [
                         {"$ne": ["$directDealId", ""]},
@@ -2875,6 +2902,7 @@ def build_mongo_deal_call_pipeline(
                 "dealId": {"$first": "$dealId"},
                 "classification": {"$first": "$classification"},
                 "presentation": {"$first": "$presentation"},
+                "transcription": {"$first": "$transcription"},
             }
         },
         {
@@ -2893,7 +2921,12 @@ def build_mongo_deal_call_pipeline(
                 "offerCallsCount": {
                     "$sum": {
                         "$cond": [
-                            mongo_offer_presentation_expression("$presentation"),
+                            {
+                                "$or": [
+                                    mongo_offer_text_expression("$presentation"),
+                                    mongo_offer_text_expression("$transcription"),
+                                ]
+                            },
                             1,
                             0,
                         ]
