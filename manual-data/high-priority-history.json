@@ -34882,6 +34882,7 @@
         "6059",
         "6171",
         "6250",
+        "6258",
         "6277",
         "6739"
       ],
@@ -34889,6 +34890,24 @@
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-12",
       "deals": [
+        {
+          "dateCreate": "2026-03-21",
+          "daysWithoutAttempt": 7,
+          "daysWithoutCall": 205,
+          "dealId": "4381",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4381/",
+          "lastCallAttemptDate": "2026-10-05",
+          "lastSuccessfulCommunicationDate": "",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Абоскалова Анна",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Татьяна",
+          "utmSource": "leadit"
+        },
         {
           "dateCreate": "2026-05-19",
           "daysWithoutAttempt": 59,
@@ -34983,24 +35002,6 @@
           "stageName": "Дожать на встречу",
           "title": "Рузиля",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 47,
-          "daysWithoutCall": 47,
-          "dealId": "6038",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6038/",
-          "lastCallAttemptDate": "2026-08-26",
-          "lastSuccessfulCommunicationDate": "2026-08-26",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Сергей",
-          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-02-06",
@@ -35517,25 +35518,24 @@
           "utmSource": ""
         },
         {
-          "dateCreate": "2026-09-08",
+          "dateCreate": "2026-05-25",
           "daysWithoutAttempt": 12,
           "daysWithoutCall": 12,
-          "dealId": "6258",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6258/",
+          "dealId": "5310",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5310/",
           "lastCallAttemptDate": "2026-09-30",
           "lastSuccessfulCommunicationDate": "2026-09-30",
           "meetingHeld": true,
           "mopId": "",
-          "mopName": "Тончу Ростислав",
+          "mopName": "Абоскалова Анна",
           "offerCallsByDate": {
-            "2026-09-09": 1,
-            "2026-09-17": 1,
-            "2026-09-25": 1
+            "2026-05-25": 1,
+            "2026-05-27": 1
           },
-          "offerCallsCount": 3,
+          "offerCallsCount": 2,
           "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Алишер Хайруллоев",
+          "stageName": "Дожать на встречу",
+          "title": "Евгения",
           "utmSource": "leadit"
         },
         {
@@ -35629,7 +35629,6 @@
         "5538",
         "5660",
         "5973",
-        "6038",
         "6052",
         "6059",
         "6082",
@@ -35639,7 +35638,6 @@
         "6182",
         "6193",
         "6238",
-        "6258",
         "6267",
         "6277",
         "6389",
@@ -35657,7 +35655,10 @@
         "6722",
         "6761"
       ],
-      "newOverdueDealIds": [],
+      "newOverdueDealIds": [
+        "4381",
+        "5310"
+      ],
       "previousDate": "2026-10-11"
     }
   }
