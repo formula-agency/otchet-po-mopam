@@ -46,6 +46,11 @@ MONGO_TARGET_CALL_CLASSIFICATIONS = (
     "Целевой нерезультативный",
     "Целевой звонок",
 )
+MONGO_COMPLETED_CALL_CLASSIFICATIONS = (
+    "Сервисный звонок",
+    "Нецелевой звонок",
+    *MONGO_TARGET_CALL_CLASSIFICATIONS,
+)
 MONGO_OFFER_PROPERTY_PATTERN = (
     r"квартир|апартамент|недвижим|\bобъект|\bжк\b|"
     r"жил(?:ой|ого|ому|ом|ая|ую)\s+комплекс|новостро|застройщик|"
@@ -108,6 +113,7 @@ DEFAULT_INCLUDED_MOPS = (
     "Ядрышникова Кристина",
     "Васильев Владимир",
     "Марина Данчук",
+    "Абоскалова Анна",
 )
 DEFAULT_MOP_NAMES_BY_ID = {
     "39": "Погребинский Артем",
@@ -126,6 +132,7 @@ DEFAULT_MOP_NAMES_BY_ID = {
     "207": "Ядрышникова Кристина",
     "208": "Васильев Владимир",
     "209": "Марина Данчук",
+    "216": "Абоскалова Анна",
 }
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 MANUAL_SALES_DATE_OVERRIDES = {
@@ -322,6 +329,7 @@ PLAN_MOP_NAME_ALIASES = {
     "ядрышникова": "Ядрышникова Кристина",
     "васильев": "Васильев Владимир",
     "данчук": "Марина Данчук",
+    "абоскалова": "Абоскалова Анна",
 }
 
 RUSSIAN_MONTHS = {
@@ -2661,7 +2669,7 @@ def build_mongo_call_aggregation_pipeline(
                 "calls": {
                     "$sum": {
                         "$cond": [
-                            {"$ne": ["$classification", MONGO_FAILED_CALL_CLASSIFICATION]},
+                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
                             1,
                             0,
                         ]
@@ -2904,7 +2912,7 @@ def build_mongo_deal_call_pipeline(
                 "successfulDates": {
                     "$addToSet": {
                         "$cond": [
-                            {"$ne": ["$classification", MONGO_FAILED_CALL_CLASSIFICATION]},
+                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
                             "$day",
                             "$$REMOVE",
                         ]

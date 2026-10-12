@@ -283,7 +283,7 @@
     },
     "2026-10": {
       "fileName": "План на октябрь 2026 (скриншот)",
-      "publishedAt": "2026-10-07T12:01:33Z",
+      "publishedAt": "2026-10-12T11:45:00Z",
       "managerCount": 12,
       "hasAggregatePlan": false,
       "skippedNames": [],
@@ -291,7 +291,7 @@
         {
           "mopName": "Черткова Ирина",
           "aggregatePlan": false,
-          "salesPlan": 2,
+          "salesPlan": 1,
           "meetingsPlan": 12,
           "reservationsPlan": 9,
           "approvedMortgagesPlan": 7,
@@ -309,7 +309,7 @@
         {
           "mopName": "Тончу Ростислав",
           "aggregatePlan": false,
-          "salesPlan": 4,
+          "salesPlan": 2,
           "meetingsPlan": 12,
           "reservationsPlan": 9,
           "approvedMortgagesPlan": 7,
@@ -327,7 +327,7 @@
         {
           "mopName": "Жуков Лев",
           "aggregatePlan": false,
-          "salesPlan": 3,
+          "salesPlan": 2,
           "meetingsPlan": 12,
           "reservationsPlan": 9,
           "approvedMortgagesPlan": 7,
@@ -345,7 +345,7 @@
         {
           "mopName": "Войнов Данил",
           "aggregatePlan": false,
-          "salesPlan": 2,
+          "salesPlan": 1,
           "meetingsPlan": 12,
           "reservationsPlan": 9,
           "approvedMortgagesPlan": 7,
@@ -354,14 +354,14 @@
         {
           "mopName": "Султанов Есен",
           "aggregatePlan": false,
-          "salesPlan": 1,
-          "meetingsPlan": 8,
-          "reservationsPlan": 6,
-          "approvedMortgagesPlan": 3,
-          "airTimePlanSeconds": 9000
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
         },
         {
-          "mopName": "Парфенов Владислав",
+          "mopName": "Абоскалова Анна",
           "aggregatePlan": false,
           "salesPlan": 1,
           "meetingsPlan": 8,
@@ -372,11 +372,11 @@
         {
           "mopName": "Ядрышникова Кристина",
           "aggregatePlan": false,
-          "salesPlan": 1,
-          "meetingsPlan": 8,
-          "reservationsPlan": 6,
-          "approvedMortgagesPlan": 3,
-          "airTimePlanSeconds": 9000
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
         },
         {
           "mopName": "Васильев Владимир",

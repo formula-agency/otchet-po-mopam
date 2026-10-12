@@ -9,6 +9,7 @@ from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from scripts.sync_mop_report import (
+    MONGO_COMPLETED_CALL_CLASSIFICATIONS,
     MopReportData,
     MopSettings,
     ReportWindow,
@@ -74,6 +75,12 @@ class MongoCallPipelineTests(unittest.TestCase):
         )
         self.assertIn("targetCalls", pipeline[6]["$group"])
         self.assertIn("successfulTargetCalls", pipeline[6]["$group"])
+        calls_condition = pipeline[6]["$group"]["calls"]["$sum"]["$cond"][0]
+        self.assertEqual(
+            calls_condition,
+            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+        )
+        self.assertNotIn("Автоответчик", MONGO_COMPLETED_CALL_CLASSIFICATIONS)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
     def test_deal_pipeline_supports_direct_and_crm_entity_ids(self) -> None:
@@ -97,6 +104,8 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("offerCallDates", serialized)
         self.assertNotIn("call_transcriptions", serialized)
         self.assertIn("offerCallsCount", serialized)
+        self.assertIn("Сервисный звонок", serialized)
+        self.assertIn("Нецелевой звонок", serialized)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
     def test_offer_detection_uses_real_estate_presentations_only(self) -> None:
