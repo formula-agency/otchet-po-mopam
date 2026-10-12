@@ -138,6 +138,8 @@ MANUAL_SALES_DATE_OVERRIDES = {
     "5377": date(2026, 8, 31),
     "5891": date(2026, 8, 31),
     "5974": date(2026, 8, 31),
+    "6276": date(2026, 9, 30),
+    "6580": date(2026, 9, 30),
 }
 MANUAL_MONTHLY_MOP_PLANS = (
     {
