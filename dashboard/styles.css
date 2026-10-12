@@ -636,6 +636,113 @@ select {
   color: #a33e37;
 }
 
+.efficiency-view {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+.efficiency-summary {
+  border-top: 4px solid var(--green);
+}
+
+.efficiency-freshness {
+  max-width: 420px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.efficiency-shell {
+  min-width: 0;
+}
+
+.efficiency-panel {
+  min-width: 0;
+}
+
+.efficiency-table-wrap {
+  max-height: calc(100vh - 245px);
+  border: 1px solid var(--line);
+}
+
+.data-table.efficiency-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.efficiency-table th,
+.efficiency-table td {
+  min-width: 130px;
+  max-width: 320px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.efficiency-table th:first-child,
+.efficiency-table td:first-child {
+  min-width: 190px;
+}
+
+.efficiency-table thead tr:not(:last-child) th {
+  position: static;
+  background: #fff;
+}
+
+.efficiency-table thead tr:last-child th {
+  z-index: 3;
+  border-bottom-color: rgba(22, 20, 20, 0.22);
+  background: #edf5ff;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.efficiency-table tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  font-weight: 700;
+}
+
+.efficiency-table tbody tr:nth-child(even) td,
+.efficiency-table tbody tr:nth-child(even) td:first-child {
+  background: #fafbfc;
+}
+
+.efficiency-table tbody tr:hover td,
+.efficiency-table tbody tr:hover td:first-child {
+  background: #f2f7fd;
+}
+
+.efficiency-table td.is-numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.efficiency-title-row th {
+  padding: 14px 12px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.efficiency-preamble-row th {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.efficiency-spacer-row td {
+  height: 12px;
+  padding: 0;
+  border-bottom: 0;
+  background: #f5f7fa;
+}
+
 .chart-frame {
   position: relative;
   width: 100%;
@@ -1581,6 +1688,15 @@ select {
 
   .data-table.priority-deals-table {
     min-width: 980px;
+  }
+
+  .efficiency-freshness {
+    max-width: none;
+    text-align: left;
+  }
+
+  .efficiency-table-wrap {
+    max-height: none;
   }
 
   .contest-banner,

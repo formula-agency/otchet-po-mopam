@@ -33,6 +33,9 @@ DEFAULT_MEETING_LOG_SHEET_NAME = "Meetings"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_ID = "1hvLyXXBQEwAeDFAKITr_lTE8pBHX8RLTy_S_0OECsjk"
 DEFAULT_TARGET_AFTER_MEETING_SHEET_GID = "0"
 DEFAULT_TARGET_AFTER_MEETING_ARCHIVE_SHEET_NAME = "Архив"
+DEFAULT_EFFICIENCY_SHEET_ID = "1qKa3v37_iRB4PhGK905t5ZBlEVXKuyI2Ub1hSYXHF4"
+DEFAULT_EFFICIENCY_SHEET_GID = "1669159874"
+DEFAULT_EFFICIENCY_CACHE_PATH = "manual-data/efficiency-sheet.json"
 DEFAULT_CONTEST_MONTH = "2026-07"
 DEFAULT_CONTEST_FIRST_MEETING_FIELD = "UF_DEAL_SHOW"
 DEFAULT_CONTEST_FIRST_MEETING_DATE_FIELD = "UF_DEAL_DATE_FIRST_SUCCESSFUL_COMMUNICATION"
@@ -993,6 +996,116 @@ def resolve_sheet_title(service: Any, spreadsheet_id: str, requested_title: str,
         available = ", ".join(sheet["properties"]["title"] for sheet in sheets)
         raise ConfigError(f"Sheet '{requested_title}' not found. Available sheets: {available}")
     return selected_sheet["properties"]["title"]
+
+
+def trim_efficiency_matrix(values: list[list[Any]]) -> list[list[str]]:
+    normalized = [
+        [str(value) if value is not None else "" for value in row]
+        for row in values
+        if isinstance(row, list)
+    ]
+    while normalized and not any(cell.strip() for cell in normalized[-1]):
+        normalized.pop()
+    if not normalized:
+        return []
+
+    width = max(
+        (
+            index + 1
+            for row in normalized
+            for index, cell in enumerate(row)
+            if cell.strip()
+        ),
+        default=0,
+    )
+    if width == 0:
+        return []
+    return [(row + [""] * width)[:width] for row in normalized]
+
+
+def efficiency_header_row_index(rows: list[list[str]]) -> int:
+    candidates = rows[:20]
+    if not candidates:
+        return 0
+    populated_counts = [sum(bool(cell.strip()) for cell in row) for row in candidates]
+    maximum = max(populated_counts, default=0)
+    if maximum <= 1:
+        return 0
+    return populated_counts.index(maximum)
+
+
+def read_efficiency_cache(path: Path) -> dict[str, Any] | None:
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict) or not isinstance(payload.get("rows"), list):
+        return None
+    return {**payload, "stale": True}
+
+
+def write_efficiency_cache(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+    if path.exists() and path.read_text(encoding="utf-8") == text:
+        return
+    temporary_path = path.with_suffix(f"{path.suffix}.tmp")
+    temporary_path.write_text(text, encoding="utf-8")
+    temporary_path.replace(path)
+
+
+def load_efficiency_sheet_payload(
+    service: Any,
+    timezone_name: str,
+    warnings: list[str],
+) -> dict[str, Any]:
+    spreadsheet_id = (
+        os.getenv("GOOGLE_EFFICIENCY_SHEET_ID", DEFAULT_EFFICIENCY_SHEET_ID).strip()
+        or DEFAULT_EFFICIENCY_SHEET_ID
+    )
+    sheet_gid = (
+        os.getenv("GOOGLE_EFFICIENCY_SHEET_GID", DEFAULT_EFFICIENCY_SHEET_GID).strip()
+        or DEFAULT_EFFICIENCY_SHEET_GID
+    )
+    cache_path = Path(
+        os.getenv("MOP_EFFICIENCY_CACHE_PATH", DEFAULT_EFFICIENCY_CACHE_PATH).strip()
+        or DEFAULT_EFFICIENCY_CACHE_PATH
+    )
+    cached = read_efficiency_cache(cache_path)
+    if service is None:
+        warnings.append("Коэффициент эффективности не обновлен: не настроен доступ к Google Sheets.")
+        return cached or {"sheetTitle": "", "updatedAt": "", "stale": True, "headerRowIndex": 0, "rows": []}
+
+    try:
+        sheet_title = resolve_sheet_title(service, spreadsheet_id, "", sheet_gid)
+        response = execute_google_request(
+            service.spreadsheets()
+            .values()
+            .get(
+                spreadsheetId=spreadsheet_id,
+                range=f"{quote_sheet_title(sheet_title)}!A1:ZZ2000",
+                valueRenderOption="FORMATTED_VALUE",
+                dateTimeRenderOption="FORMATTED_STRING",
+            )
+        )
+        rows = trim_efficiency_matrix(response.get("values", []))
+        payload = {
+            "sheetTitle": sheet_title,
+            "updatedAt": datetime.now(ZoneInfo(timezone_name)).isoformat(),
+            "stale": False,
+            "headerRowIndex": efficiency_header_row_index(rows),
+            "rows": rows,
+        }
+        write_efficiency_cache(cache_path, payload)
+        return payload
+    except Exception as exc:
+        warnings.append(
+            "Коэффициент эффективности не обновлен из Google Sheets: "
+            + safe_error_text(exc)
+        )
+        return cached or {"sheetTitle": "", "updatedAt": "", "stale": True, "headerRowIndex": 0, "rows": []}
 
 
 def resolve_plan_sheet_titles(
@@ -4915,6 +5028,7 @@ def build_dashboard_payload(
     window: ReportWindow,
     active_deals_payload: dict[str, Any] | None = None,
     high_priority_payload: dict[str, Any] | None = None,
+    efficiency_payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -5010,6 +5124,13 @@ def build_dashboard_payload(
             "maxDate": window.end.date().isoformat(),
             "mopNames": [],
             "snapshots": [],
+        },
+        "efficiency": efficiency_payload or {
+            "sheetTitle": "",
+            "updatedAt": "",
+            "stale": True,
+            "headerRowIndex": 0,
+            "rows": [],
         },
         "warnings": data.warnings,
         "baseRows": rows,
@@ -5145,6 +5266,11 @@ def main() -> int:
             window,
             data.warnings,
         )
+        efficiency_payload = load_efficiency_sheet_payload(
+            service,
+            settings.report_timezone,
+            data.warnings,
+        )
         built_report = build_report_rows(data, mop_settings)
         payload = build_dashboard_payload(
             data,
@@ -5153,6 +5279,7 @@ def main() -> int:
             window,
             active_deals_payload,
             high_priority_payload,
+            efficiency_payload,
         )
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
