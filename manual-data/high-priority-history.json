@@ -34880,8 +34880,10 @@
       "calledFromPreviousDealIds": [
         "6020",
         "6059",
+        "6171",
         "6250",
-        "6277"
+        "6277",
+        "6739"
       ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
@@ -35063,11 +35065,11 @@
         },
         {
           "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 11,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 38,
           "dealId": "6171",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6171/",
-          "lastCallAttemptDate": "2026-10-01",
+          "lastCallAttemptDate": "2026-10-12",
           "lastSuccessfulCommunicationDate": "2026-09-04",
           "meetingHeld": false,
           "mopId": "",
