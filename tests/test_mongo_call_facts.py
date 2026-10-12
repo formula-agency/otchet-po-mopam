@@ -16,6 +16,7 @@ from scripts.sync_mop_report import (
     apply_mongo_call_aggregates,
     apply_mongo_deal_call_dates,
     apply_mongo_offer_counts_to_active_deals,
+    apply_transcription_offer_fallbacks,
     build_mongo_call_facts,
     build_mongo_call_aggregation_pipeline,
     build_mongo_deal_call_pipeline,
@@ -91,8 +92,8 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("bitrix_deal_id", serialized)
         self.assertIn("CRM_ENTITY_ID", serialized)
         self.assertIn("presentation", serialized)
-        self.assertIn("call_transcriptions", serialized)
-        self.assertIn("transcription", serialized)
+        self.assertIn("transcriptionCandidateUids", serialized)
+        self.assertNotIn("call_transcriptions", serialized)
         self.assertIn("offerCallsCount", serialized)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
@@ -124,6 +125,44 @@ class MongoCallPipelineTests(unittest.TestCase):
 
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_transcription_fallback_counts_each_offer_call_once(self) -> None:
+        rows = [
+            {
+                "_id": "501",
+                "offerCallsCount": 1,
+                "transcriptionCandidateUids": ["call-1", "call-2"],
+            },
+            {
+                "_id": "502",
+                "offerCallsCount": 0,
+                "transcriptionCandidateUids": ["call-3"],
+            },
+        ]
+        documents = [
+            {
+                "uuid": "call-1",
+                "transcription": "Предлагаю квартиру 38 квадратов по цене 4,89 млн.",
+            },
+            {
+                "uuid": "call-1",
+                "transcription": "Дубликат: предлагаю квартиру по той же цене.",
+            },
+            {
+                "uuid": "call-2",
+                "transcription": "Уточнили время следующего звонка.",
+            },
+            {
+                "uuid": "call-3",
+                "transcription": "Обсудили отправку документов без презентации.",
+            },
+        ]
+
+        added = apply_transcription_offer_fallbacks(rows, documents)
+
+        self.assertEqual(added, 1)
+        self.assertEqual(rows[0]["offerCallsCount"], 2)
+        self.assertEqual(rows[1]["offerCallsCount"], 0)
+
     def test_loads_distinct_call_dates_by_deal(self) -> None:
         data = MopReportData()
 

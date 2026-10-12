@@ -2850,14 +2850,6 @@ def build_mongo_deal_call_pipeline(
             }
         },
         {
-            "$lookup": {
-                "from": "call_transcriptions",
-                "localField": "call_uid",
-                "foreignField": "uuid",
-                "as": "transcriptionDocs",
-            }
-        },
-        {
             "$addFields": {
                 "classification": {
                     "$cond": [
@@ -2867,9 +2859,6 @@ def build_mongo_deal_call_pipeline(
                     ]
                 },
                 "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
-                "transcription": {
-                    "$arrayElemAt": ["$transcriptionDocs.transcription", 0]
-                },
             }
         },
         {
@@ -2878,7 +2867,7 @@ def build_mongo_deal_call_pipeline(
                 "day": 1,
                 "classification": 1,
                 "presentation": 1,
-                "transcription": 1,
+                "call_uid": 1,
                 "dealId": {
                     "$cond": [
                         {"$ne": ["$directDealId", ""]},
@@ -2902,7 +2891,7 @@ def build_mongo_deal_call_pipeline(
                 "dealId": {"$first": "$dealId"},
                 "classification": {"$first": "$classification"},
                 "presentation": {"$first": "$presentation"},
-                "transcription": {"$first": "$transcription"},
+                "callUid": {"$first": "$call_uid"},
             }
         },
         {
@@ -2921,20 +2910,60 @@ def build_mongo_deal_call_pipeline(
                 "offerCallsCount": {
                     "$sum": {
                         "$cond": [
-                            {
-                                "$or": [
-                                    mongo_offer_text_expression("$presentation"),
-                                    mongo_offer_text_expression("$transcription"),
-                                ]
-                            },
+                            mongo_offer_text_expression("$presentation"),
                             1,
                             0,
+                        ]
+                    }
+                },
+                "transcriptionCandidateUids": {
+                    "$addToSet": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$ne": ["$callUid", ""]},
+                                    {
+                                        "$not": [
+                                            mongo_offer_text_expression("$presentation")
+                                        ]
+                                    },
+                                ]
+                            },
+                            "$callUid",
+                            "$$REMOVE",
                         ]
                     }
                 },
             }
         },
     ]
+
+
+def apply_transcription_offer_fallbacks(
+    rows: list[dict[str, Any]],
+    transcription_documents: list[dict[str, Any]],
+) -> int:
+    rows_by_call_uid: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        for raw_uid in row.get("transcriptionCandidateUids", []):
+            call_uid = str(raw_uid or "").strip()
+            if call_uid:
+                rows_by_call_uid[call_uid] = row
+
+    matched_uids: set[str] = set()
+    for document in transcription_documents:
+        call_uid = str(document.get("uuid") or "").strip()
+        row = rows_by_call_uid.get(call_uid)
+        if row is None or call_uid in matched_uids:
+            continue
+        if not presentation_contains_offer(document.get("transcription")):
+            continue
+        row["offerCallsCount"] = max(
+            0,
+            parse_number(row.get("offerCallsCount")),
+        ) + 1
+        matched_uids.add(call_uid)
+    return len(matched_uids)
 
 
 def apply_mongo_deal_call_dates(
@@ -2997,6 +3026,34 @@ def build_mongo_deal_call_facts(
                     maxTimeMS=timeout_ms,
                 )
             )
+            candidate_uids = sorted({
+                str(raw_uid).strip()
+                for row in rows
+                for raw_uid in row.get("transcriptionCandidateUids", [])
+                if str(raw_uid or "").strip()
+            })
+            if candidate_uids:
+                try:
+                    transcription_documents = list(
+                        reader.collection("call_transcriptions").find(
+                            {"uuid": {"$in": candidate_uids}},
+                            {"_id": 0, "uuid": 1, "transcription": 1},
+                            max_time_ms=timeout_ms,
+                        )
+                    )
+                    fallback_offers = apply_transcription_offer_fallbacks(
+                        rows,
+                        transcription_documents,
+                    )
+                    print(
+                        "MongoDB transcription offer fallback: "
+                        f"{fallback_offers} calls"
+                    )
+                except Exception as exc:
+                    data.warnings.append(
+                        "Транскрипции TempLab для офферов не загружены: "
+                        + safe_error_text(exc)
+                    )
             linked_deal_days = apply_mongo_deal_call_dates(data, rows)
             data.call_deal_link_available = linked_deal_days > 0
             print(f"MongoDB deal calls loaded: {linked_deal_days} linked deal-days")
