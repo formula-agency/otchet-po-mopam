@@ -143,7 +143,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261012-2';
+const DASHBOARD_DATA_VERSION = '20261012-3';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1525,7 +1525,7 @@ function renderHighPriority() {
     : priorityData.source === 'templab-history'
       ? 'ручной Excel-архив'
       : 'резервный источник';
-  els.priorityRule.textContent = `Источник: ${prioritySource} · После встречи: от ${formatNumber(overdueFromDays)} дней · Без встречи: более ${formatNumber(noMeetingDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок`;
+  els.priorityRule.textContent = `Просрочка успешной коммуникации: после встречи от ${formatNumber(overdueFromDays)} дней, без проведенной встречи более ${formatNumber(noMeetingDays)} дней · СТОП: больше ${formatNumber(stopThreshold)} сделок · Источник: ${prioritySource}`;
 
   if (!snapshot) {
     els.priorityCaption.textContent = 'Нет снимков';
@@ -1539,7 +1539,7 @@ function renderHighPriority() {
       els.priorityStopCount,
     ]) element.textContent = '0';
     els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
-    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="9">Нет данных</td></tr>';
+    els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="10">Нет данных</td></tr>';
     return;
   }
 
@@ -1650,8 +1650,8 @@ function renderHighPriority() {
     : `Результаты за ${formatDate(movementFrom)}-${formatDate(snapshot.date)} · состояние на конец периода`;
   const excludedCount = dealRows.length - errorRows.length;
   els.priorityDealsCaption.textContent = excludedCount
-    ? `${formatNumber(errorRows.length)} ошибок · ${formatNumber(excludedCount)} исключено`
-    : `${formatNumber(errorRows.length)} ошибок`;
+    ? `Просрочек: ${formatNumber(errorRows.length)} · исключено: ${formatNumber(excludedCount)}`
+    : `Просрочек: ${formatNumber(errorRows.length)}`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
     ? mopRows.map((row) => `
@@ -1686,6 +1686,10 @@ function renderHighPriority() {
           <td class="deal-cell"><a class="deal-link" href="${escapeHtml(row.dealUrl)}" target="_blank" rel="noreferrer">${escapeHtml(title)}</a></td>
           <td>${escapeHtml(row.mopName || '—')}</td>
           <td>${escapeHtml(row.stageName || row.stageId || '—')}</td>
+          <td class="priority-error-reason">
+            <strong>${escapeHtml(row.errorTitle || 'Просрочка коммуникации')}</strong>
+            <span>${escapeHtml(row.errorReason || 'Причина не определена')}</span>
+          </td>
           <td class="priority-meeting ${row.meetingHeld ? 'is-held' : ''}">${row.meetingHeld ? 'Да' : 'Нет'}</td>
           <td class="priority-offers">${formatOptionalNumber(offerCalls)}</td>
           <td class="priority-days">${formatOptionalNumber(row.daysWithoutAttempt)}</td>
@@ -1704,7 +1708,7 @@ function renderHighPriority() {
         </tr>
       `;
     }).join('')
-    : '<tr class="empty-row"><td colspan="9">Нет просроченных сделок</td></tr>';
+    : '<tr class="empty-row"><td colspan="10">Нет просроченных сделок</td></tr>';
 
   for (const input of els.priorityDealsBody.querySelectorAll('.priority-exception-toggle')) {
     input.addEventListener('change', () => {

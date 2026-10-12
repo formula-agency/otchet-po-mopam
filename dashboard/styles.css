@@ -1340,26 +1340,48 @@ select {
   text-align: center;
 }
 
-.data-table.priority-deals-table th:nth-child(1) { width: 20%; }
-.data-table.priority-deals-table th:nth-child(2) { width: 11%; }
-.data-table.priority-deals-table th:nth-child(3) { width: 12%; }
-.data-table.priority-deals-table th:nth-child(4) { width: 8%; }
-.data-table.priority-deals-table th:nth-child(5) { width: 9%; }
+.data-table.priority-deals-table th:nth-child(1) { width: 18%; }
+.data-table.priority-deals-table th:nth-child(2) { width: 9%; }
+.data-table.priority-deals-table th:nth-child(3) { width: 10%; }
+.data-table.priority-deals-table th:nth-child(4) { width: 21%; }
+.data-table.priority-deals-table th:nth-child(5),
 .data-table.priority-deals-table th:nth-child(6),
-.data-table.priority-deals-table th:nth-child(7) { width: 8%; }
-.data-table.priority-deals-table th:nth-child(8) { width: 10%; }
-.data-table.priority-deals-table th:nth-child(9) { width: 14%; }
+.data-table.priority-deals-table th:nth-child(7),
+.data-table.priority-deals-table th:nth-child(8),
+.data-table.priority-deals-table th:nth-child(9),
+.data-table.priority-deals-table th:nth-child(10) { width: 7%; }
 
 .data-table.priority-deals-table td:nth-child(n+2) {
   text-align: left;
 }
 
-.data-table.priority-deals-table td:nth-child(4),
 .data-table.priority-deals-table td:nth-child(5),
 .data-table.priority-deals-table td:nth-child(6),
 .data-table.priority-deals-table td:nth-child(7),
-.data-table.priority-deals-table td:nth-child(9) {
+.data-table.priority-deals-table td:nth-child(8),
+.data-table.priority-deals-table td:nth-child(10) {
   text-align: center;
+}
+
+.priority-error-reason strong,
+.priority-error-reason span {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.priority-error-reason strong {
+  color: #a33e37;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.priority-error-reason span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 .priority-meeting {

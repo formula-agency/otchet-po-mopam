@@ -4,10 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Отчет по МОПам</title>
-  <link rel="stylesheet" href="./styles.css?v=20261012-2">
+  <link rel="stylesheet" href="./styles.css?v=20261012-3">
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="./data/mop-report-data.js?v=20260811-1"></script>
-  <script defer src="./app.js?v=20261012-2"></script>
+  <script defer src="./app.js?v=20261012-3"></script>
 </head>
 <body>
   <div class="app-frame">
@@ -239,11 +239,11 @@
             </div>
           </div>
           <div class="summary-band__stats priority-summary__stats" aria-label="Сводка высокого приоритета">
-            <article><span>Новые ошибки</span><strong id="priority-new-error-count">0</strong></article>
+            <article title="Сделки, которые впервые попали в просрочку коммуникации за выбранный период"><span>Новые просрочки</span><strong id="priority-new-error-count">0</strong></article>
             <article><span>Прозвонили</span><strong id="priority-called-count">0</strong></article>
             <article><span>Звонки с оффером</span><strong id="priority-offer-count">0</strong></article>
             <article><span>Перетекло</span><strong id="priority-flowed-count">0</strong></article>
-            <article><span>Ошибок на конец периода</span><strong id="priority-overdue-count">0</strong></article>
+            <article title="Все сделки, которые остаются в просрочке коммуникации на конец выбранного периода"><span>Просрочек на конец периода</span><strong id="priority-overdue-count">0</strong></article>
             <article><span>МОПов в СТОПе</span><strong id="priority-stop-count">0</strong></article>
           </div>
         </section>
@@ -262,11 +262,11 @@
                 <thead>
                   <tr>
                     <th>МОП</th>
-                    <th>Новые ошибки</th>
+                    <th>Новые просрочки</th>
                     <th>Прозвонили</th>
                     <th>Офферные звонки</th>
                     <th>Перетекло</th>
-                    <th>Ошибок на конец</th>
+                    <th>Просрочек на конец</th>
                     <th>Лидов без звонка</th>
                     <th>Лидов без попытки</th>
                     <th>Статус</th>
@@ -281,7 +281,7 @@
           <section class="panel panel-wide priority-deals-panel">
             <div class="panel-head panel-head-inline">
               <div>
-                <h2>Сделки с ошибкой</h2>
+                <h2>Сделки с просрочкой коммуникации</h2>
                 <p id="priority-deals-caption">0 сделок</p>
               </div>
             </div>
@@ -292,6 +292,7 @@
                     <th>Сделка</th>
                     <th>МОП</th>
                     <th>Стадия</th>
+                    <th>Причина просрочки</th>
                     <th>Проведена встреча</th>
                     <th title="Звонки, в которых TempLab зафиксировал презентацию оффера за выбранный период">Звонки с оффером</th>
                     <th>Дней без попытки</th>

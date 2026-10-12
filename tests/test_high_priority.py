@@ -14,6 +14,7 @@ from scripts.sync_mop_report import (
     build_high_priority_payload,
     deal_is_high_priority,
     high_priority_called_deal_ids,
+    high_priority_error_details,
     high_priority_row,
     high_priority_snapshot_mops,
 )
@@ -157,6 +158,25 @@ class HighPrioritySnapshotMopsTest(unittest.TestCase):
             allowed_stages,
             set(),
         ))
+
+    def test_explains_error_trigger_and_call_attempt_gap(self) -> None:
+        after_meeting = high_priority_error_details(
+            {"meetingHeld": True, "daysWithoutCall": 12, "daysWithoutAttempt": 3},
+            8,
+            14,
+        )
+        without_meeting = high_priority_error_details(
+            {"meetingHeld": False, "daysWithoutCall": 20, "daysWithoutAttempt": 0},
+            8,
+            14,
+        )
+
+        self.assertEqual(after_meeting["errorType"], "no_successful_call_after_meeting")
+        self.assertIn("12 дн.", after_meeting["errorReason"])
+        self.assertIn("3 дн.", after_meeting["errorReason"])
+        self.assertEqual(without_meeting["errorType"], "no_successful_call_without_meeting")
+        self.assertIn("Встреча не проведена", without_meeting["errorReason"])
+        self.assertIn("сегодня", without_meeting["errorReason"])
 
     def test_counts_stop_days_and_daily_flow_by_manager(self) -> None:
         first_day = [deal(index, "МОП 1") for index in range(1, 12)]

@@ -4336,6 +4336,50 @@ def deal_is_high_priority(
     )
 
 
+def high_priority_error_details(
+    deal: dict[str, Any],
+    overdue_from_days: int,
+    no_meeting_days_without_call: int,
+) -> dict[str, str]:
+    days_without_call = deal.get("daysWithoutCall")
+    days_without_attempt = deal.get("daysWithoutAttempt")
+    if not isinstance(days_without_call, (int, float)) or isinstance(days_without_call, bool):
+        return {
+            "errorType": "unknown_communication_gap",
+            "errorTitle": "Нет данных о коммуникации",
+            "errorReason": "Не удалось определить дату последнего успешного звонка.",
+        }
+
+    call_days = max(0, int(days_without_call))
+    if deal.get("meetingHeld"):
+        error_type = "no_successful_call_after_meeting"
+        error_title = "Нет связи после встречи"
+        reason = (
+            f"После проведенной встречи нет успешного звонка {call_days} дн. "
+            f"Порог просрочки: {overdue_from_days} дн."
+        )
+    else:
+        error_type = "no_successful_call_without_meeting"
+        error_title = "Нет связи, встреча не проведена"
+        reason = (
+            f"Встреча не проведена, успешного звонка нет {call_days} дн. "
+            f"Порог просрочки: более {no_meeting_days_without_call} дн."
+        )
+
+    if isinstance(days_without_attempt, (int, float)) and not isinstance(days_without_attempt, bool):
+        attempt_days = max(0, int(days_without_attempt))
+        reason += (
+            " Попытка звонка была сегодня."
+            if attempt_days == 0
+            else f" Последней попытки звонка не было {attempt_days} дн."
+        )
+    return {
+        "errorType": error_type,
+        "errorTitle": error_title,
+        "errorReason": reason,
+    }
+
+
 def high_priority_called_deal_ids(
     previous_deal_ids: set[str],
     call_dates_by_deal: dict[str, list[date]],
@@ -4752,6 +4796,11 @@ def build_high_priority_payload(
             display_rows.append(
                 {
                     **row,
+                    **high_priority_error_details(
+                        row,
+                        overdue_from_days,
+                        no_meeting_days_without_call,
+                    ),
                     "calledFromPrevious": deal_id in called_ids,
                     "flowedFromPrevious": deal_id in flowed_snapshot_ids,
                     "newOverdue": deal_id in new_snapshot_ids,
