@@ -18563,10 +18563,40 @@
     {
       "_id": {
         "day": "2026-10-13",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 453,
+      "calls": 1,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 876,
-      "calls": 2,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18576,7 +18606,17 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18616,11 +18656,41 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Черткова Ирина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-13",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-13T05:49:01+00:00"
+  "updatedAt": "2026-10-13T13:44:11+00:00"
 }
