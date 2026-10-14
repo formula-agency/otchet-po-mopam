@@ -19,6 +19,7 @@ from scripts.sync_mop_report import (
     apply_mongo_offer_counts_to_active_deals,
     apply_offer_call_details,
     apply_offer_deal_relations,
+    apply_offer_lead_deal_links,
     apply_offer_recording_urls,
     apply_transcription_offer_fallbacks,
     build_mongo_offer_call_pipeline,
@@ -252,6 +253,23 @@ class MongoCallAggregateTests(unittest.TestCase):
         self.assertEqual(details[0]["dealUrl"], "https://crm.example/crm/deal/details/501/")
         self.assertEqual(details[1]["dealId"], "502")
         self.assertEqual(details[2]["dealId"], "777")
+
+    def test_restores_offer_deal_link_from_bitrix_lead(self) -> None:
+        details = [
+            {"leadId": "91", "dealId": "", "dealUrl": ""},
+            {"leadId": "92", "dealId": "777", "dealUrl": "set"},
+        ]
+
+        applied = apply_offer_lead_deal_links(
+            details,
+            {"91": "501", "92": "999"},
+            SimpleNamespace(bitrix_webhook_url="https://crm.example/rest/1/token/"),  # type: ignore[arg-type]
+        )
+
+        self.assertEqual(applied, 1)
+        self.assertEqual(details[0]["dealId"], "501")
+        self.assertEqual(details[0]["dealUrl"], "https://crm.example/crm/deal/details/501/")
+        self.assertEqual(details[1]["dealId"], "777")
 
     def test_transcription_fallback_counts_each_offer_call_once(self) -> None:
         rows = [

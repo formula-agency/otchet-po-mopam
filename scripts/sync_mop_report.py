@@ -2075,6 +2075,11 @@ def bitrix_deal_url(settings: Settings, deal_id: str) -> str:
     return urlunparse(parsed._replace(path=f"/crm/deal/details/{deal_id}/", params="", query="", fragment=""))
 
 
+def bitrix_lead_url(settings: Settings, lead_id: str) -> str:
+    parsed = urlparse(normalize_webhook_base(settings.bitrix_webhook_url))
+    return urlunparse(parsed._replace(path=f"/crm/lead/details/{lead_id}/", params="", query="", fragment=""))
+
+
 def fetch_deal_stage_names(session: requests.Session, settings: Settings) -> dict[str, str]:
     try:
         payload = execute_bitrix_method(session, settings, "crm.status.list")
@@ -2244,6 +2249,49 @@ def fetch_deals_by_ids_batch(
             if deal_id and isinstance(record, dict):
                 deals_by_id[deal_id] = record
     return deals_by_id
+
+
+def fetch_latest_deal_ids_by_lead_ids_batch(
+    session: requests.Session,
+    settings: Settings,
+    lead_ids: list[str],
+) -> dict[str, str]:
+    deal_by_lead: dict[str, str] = {}
+    for offset in range(0, len(lead_ids), 50):
+        chunk = lead_ids[offset : offset + 50]
+        commands: dict[str, str] = {}
+        key_to_lead: dict[str, str] = {}
+        for index, lead_id in enumerate(chunk):
+            key = f"l{index}"
+            key_to_lead[key] = lead_id
+            commands[key] = bitrix_command(
+                "crm.deal.list",
+                [
+                    ("filter[LEAD_ID]", lead_id),
+                    ("order[ID]", "DESC"),
+                    ("select[]", "ID"),
+                    ("select[]", "LEAD_ID"),
+                ],
+            )
+        result, _, result_error = execute_bitrix_batch(session, settings, commands)
+        if result_error:
+            failed = ", ".join(str(key_to_lead.get(key, key)) for key in result_error)
+            raise RuntimeError(f"crm.deal.list batch failed for leads: {failed}")
+        for key, records in result.items():
+            lead_id = key_to_lead.get(key)
+            if not lead_id or not isinstance(records, list) or not records:
+                continue
+            deal_ids = [
+                str(record.get("ID") or "").strip()
+                for record in records
+                if isinstance(record, dict) and str(record.get("ID") or "").strip()
+            ]
+            if deal_ids:
+                deal_by_lead[lead_id] = max(
+                    deal_ids,
+                    key=lambda value: int(value) if value.isdigit() else -1,
+                )
+    return deal_by_lead
 
 
 def key_for_mop_id(mop_id: str) -> str:
@@ -2837,6 +2885,14 @@ def build_mongo_offer_call_pipeline(
                         "onNull": "",
                     }
                 },
+                "leadId": {
+                    "$convert": {
+                        "input": "$lead_id",
+                        "to": "string",
+                        "onError": "",
+                        "onNull": "",
+                    }
+                },
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2879,6 +2935,7 @@ def build_mongo_offer_call_pipeline(
                 "dedupeKey": 1,
                 "callUid": 1,
                 "callExtId": 1,
+                "leadId": 1,
                 "day": 1,
                 "dateTime": 1,
                 "mopName": 1,
@@ -2906,6 +2963,7 @@ def build_mongo_offer_call_pipeline(
                 "_id": "$dedupeKey",
                 "callUid": {"$first": "$callUid"},
                 "callExtId": {"$first": "$callExtId"},
+                "leadId": {"$first": "$leadId"},
                 "day": {"$first": "$day"},
                 "dateTime": {"$first": "$dateTime"},
                 "mopName": {"$first": "$mopName"},
@@ -2990,6 +3048,12 @@ def build_offer_call_details(
         details.append({
             "callUid": call_uid,
             "callExtId": str(row.get("callExtId") or ""),
+            "leadId": str(row.get("leadId") or ""),
+            "leadUrl": (
+                bitrix_lead_url(settings, str(row.get("leadId") or "").strip())
+                if str(row.get("leadId") or "").strip()
+                else ""
+            ),
             "date": str(row.get("day") or ""),
             "dateTime": str(row.get("dateTime") or ""),
             "mopName": mop_name,
@@ -3071,6 +3135,25 @@ def apply_offer_deal_relations(
         deal_id = deal_by_uid.get(str(detail.get("callUid") or "").strip())
         if not deal_id:
             deal_id = deal_by_ext_id.get(str(detail.get("callExtId") or "").strip())
+        if not deal_id:
+            continue
+        detail["dealId"] = deal_id
+        detail["dealUrl"] = bitrix_deal_url(settings, deal_id)
+        applied += 1
+    return applied
+
+
+def apply_offer_lead_deal_links(
+    details: list[dict[str, Any]],
+    deal_ids_by_lead: dict[str, str],
+    settings: Settings,
+) -> int:
+    applied = 0
+    for detail in details:
+        if str(detail.get("dealId") or "").strip():
+            continue
+        lead_id = str(detail.get("leadId") or "").strip()
+        deal_id = str(deal_ids_by_lead.get(lead_id) or "").strip()
         if not deal_id:
             continue
         detail["dealId"] = deal_id
@@ -3415,6 +3498,7 @@ def build_mongo_deal_call_facts(
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
+    session: requests.Session | None = None,
 ) -> bool:
     require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
     timeout_ms = read_positive_int_env(
@@ -3568,6 +3652,30 @@ def build_mongo_deal_call_facts(
                         "Связи офферных звонков со сделками TempLab не загружены: "
                         + safe_error_text(exc)
                     )
+            lead_relation_count = 0
+            unlinked_lead_ids = sorted({
+                str(detail.get("leadId") or "").strip()
+                for detail in offer_details
+                if not str(detail.get("dealId") or "").strip()
+                and str(detail.get("leadId") or "").strip()
+            })
+            if session is not None and unlinked_lead_ids:
+                try:
+                    deal_ids_by_lead = fetch_latest_deal_ids_by_lead_ids_batch(
+                        session,
+                        settings,
+                        unlinked_lead_ids,
+                    )
+                    lead_relation_count = apply_offer_lead_deal_links(
+                        offer_details,
+                        deal_ids_by_lead,
+                        settings,
+                    )
+                except Exception as exc:
+                    data.warnings.append(
+                        "Связи лидов офферных звонков со сделками Bitrix не загружены: "
+                        + safe_error_text(exc)
+                    )
             recent_offer_uids = [
                 str(detail.get("callUid") or "")
                 for detail in offer_details
@@ -3597,7 +3705,8 @@ def build_mongo_deal_call_facts(
             print(
                 "MongoDB deal calls loaded: "
                 f"{linked_deal_days} linked deal-days, {len(offer_details)} offer calls, "
-                f"{recording_count} recordings, {relation_count} restored deal links"
+                f"{recording_count} recordings, "
+                f"{relation_count + lead_relation_count} restored deal links"
             )
             if not data.call_deal_link_available:
                 data.warnings.append(
@@ -5684,7 +5793,7 @@ def main() -> int:
         mongo_calls_loaded = False
         if call_source == "mongodb":
             mongo_calls_loaded = build_mongo_call_facts(data, settings, mop_settings, window)
-            build_mongo_deal_call_facts(data, settings, mop_settings, window)
+            build_mongo_deal_call_facts(data, settings, mop_settings, window, session)
             if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
                 build_call_facts(data, session, settings, mop_settings, window)
             elif not mongo_calls_loaded and read_bool_env("MONGO_CALLS_REQUIRED", False):
@@ -5710,7 +5819,7 @@ def main() -> int:
             == "mongodb"
             and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
         ):
-            build_mongo_deal_call_facts(data, settings, mop_settings, window)
+            build_mongo_deal_call_facts(data, settings, mop_settings, window, session)
         apply_manual_fact_adjustments(data, window, include_call_metrics=True)
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
