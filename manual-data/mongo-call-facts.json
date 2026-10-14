@@ -18689,8 +18689,38 @@
       "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 277,
+      "calls": 1,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 151,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-14T00:57:02+00:00"
+  "updatedAt": "2026-10-14T05:09:06+00:00"
 }
