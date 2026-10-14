@@ -3294,6 +3294,21 @@ def build_mongo_deal_call_facts(
                         f"MongoDB {diagnostic_collection} fields: "
                         + ", ".join(sorted(diagnostic_sample))
                     )
+                grid_file_sample = reader.collection("fs.files").find_one({}) or {}
+                grid_metadata = grid_file_sample.get("metadata")
+                print("MongoDB fs.files fields: " + ", ".join(sorted(grid_file_sample)))
+                print(
+                    "MongoDB fs.files metadata fields: "
+                    + ", ".join(
+                        sorted(grid_metadata) if isinstance(grid_metadata, dict) else []
+                    )
+                )
+                print(
+                    "MongoDB fs.files sample type: "
+                    f"contentType={grid_file_sample.get('contentType', '')}, "
+                    f"filename={Path(str(grid_file_sample.get('filename') or '')).suffix}, "
+                    f"length={grid_file_sample.get('length', 0)}"
+                )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
