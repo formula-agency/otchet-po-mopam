@@ -3332,6 +3332,19 @@ def build_mongo_deal_call_facts(
                     f"filename={Path(str(grid_file_sample.get('filename') or '')).suffix}, "
                     f"length={grid_file_sample.get('length', 0)}"
                 )
+                request_sample = reader.collection("request_history").find_one(
+                    {"audio_url_masked": {"$nin": [None, ""]}},
+                    {"_id": 0, "audio_source_type": 1, "audio_url_masked": 1},
+                ) or {}
+                masked_audio_url = str(request_sample.get("audio_url_masked") or "")
+                parsed_audio_url = urlparse(masked_audio_url)
+                print(
+                    "MongoDB audio source sample: "
+                    f"type={request_sample.get('audio_source_type', '')}, "
+                    f"host={parsed_audio_url.hostname or ''}, "
+                    f"path={parsed_audio_url.path}, "
+                    f"masked={'*' in masked_audio_url}"
+                )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
