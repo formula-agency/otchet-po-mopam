@@ -2829,6 +2829,14 @@ def build_mongo_offer_call_pipeline(
                     ]
                 },
                 "callUid": "$call_uid",
+                "callExtId": {
+                    "$convert": {
+                        "input": "$call_ext_id",
+                        "to": "string",
+                        "onError": "",
+                        "onNull": "",
+                    }
+                },
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2870,6 +2878,7 @@ def build_mongo_offer_call_pipeline(
             "$project": {
                 "dedupeKey": 1,
                 "callUid": 1,
+                "callExtId": 1,
                 "day": 1,
                 "dateTime": 1,
                 "mopName": 1,
@@ -2896,6 +2905,7 @@ def build_mongo_offer_call_pipeline(
             "$group": {
                 "_id": "$dedupeKey",
                 "callUid": {"$first": "$callUid"},
+                "callExtId": {"$first": "$callExtId"},
                 "day": {"$first": "$day"},
                 "dateTime": {"$first": "$dateTime"},
                 "mopName": {"$first": "$mopName"},
@@ -2955,6 +2965,7 @@ def build_offer_call_details(
         )
         details.append({
             "callUid": call_uid,
+            "callExtId": str(row.get("callExtId") or ""),
             "date": str(row.get("day") or ""),
             "dateTime": str(row.get("dateTime") or ""),
             "mopName": mop_name,
@@ -3287,6 +3298,18 @@ def build_mongo_deal_call_facts(
                 print("MongoDB call fields: " + ", ".join(sorted(sample)))
                 print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
                 for diagnostic_collection in ("call_analysis", "call_transcriptions"):
+                    diagnostic_sample = reader.collection(diagnostic_collection).find_one(
+                        {}, {"_id": 0}
+                    ) or {}
+                    print(
+                        f"MongoDB {diagnostic_collection} fields: "
+                        + ", ".join(sorted(diagnostic_sample))
+                    )
+                for diagnostic_collection in (
+                    "call_summary",
+                    "request_history",
+                    "analysis_status_logs",
+                ):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
                         {}, {"_id": 0}
                     ) or {}
