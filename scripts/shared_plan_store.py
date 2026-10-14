@@ -73,6 +73,7 @@ PLAN_FIELDS = (
     "approvedMortgagesPlan",
     "airTimePlanSeconds",
 )
+FACT_FIELDS = tuple(field for field in METRIC_ZEROES if "Fact" in field)
 BASE_PLAN_FIELDS = {field: f"{field}BaseBeforeShared" for field in PLAN_FIELDS}
 PLAN_HEADER_ALIASES = {
     "mopName": {"моп", "менеджер"},
@@ -468,6 +469,49 @@ def clear_existing_shared_plans(rows: list[dict[str, Any]]) -> list[dict[str, An
     return cleaned
 
 
+def coalesce_mop_metric_rows(
+    rows: list[dict[str, Any]],
+    *,
+    include_date: bool = False,
+) -> list[dict[str, Any]]:
+    merged: dict[tuple[str, ...], dict[str, Any]] = {}
+    for source_row in rows:
+        key_parts = [
+            str(source_row.get("weekStart") or ""),
+            normalize_name(source_row.get("mopName")),
+        ]
+        if include_date:
+            key_parts.insert(0, str(source_row.get("date") or ""))
+        key = tuple(key_parts)
+        row = merged.get(key)
+        if row is None:
+            merged[key] = dict(source_row)
+            continue
+
+        for field in FACT_FIELDS:
+            row[field] = parse_int(row.get(field)) + parse_int(source_row.get(field))
+        for field in PLAN_FIELDS:
+            row[field] = max(parse_int(row.get(field)), parse_int(source_row.get(field)))
+        for field in ("mopId", "mopName", "weekEnd", "weekLabel", "dateLabel"):
+            if not row.get(field) and source_row.get(field):
+                row[field] = source_row[field]
+
+    result = list(merged.values())
+    for row in result:
+        row["airTimePlan"] = format_duration(parse_int(row.get("airTimePlanSeconds")))
+        row["airTimeFact"] = format_duration(parse_int(row.get("airTimeFactSeconds")))
+        row["targetMinutesAfterMeetingPlanSeconds"] = post_meeting_air_plan_seconds(
+            parse_int(row.get("airTimePlanSeconds"))
+        )
+        row["targetMinutesAfterMeetingPlan"] = format_duration(
+            row["targetMinutesAfterMeetingPlanSeconds"]
+        )
+        row["targetMinutesAfterMeetingFact"] = format_duration(
+            parse_int(row.get("targetMinutesAfterMeetingFactSeconds"))
+        )
+    return result
+
+
 def build_shared_plan_rows(store: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for month, month_plan in sorted(store.get("months", {}).items()):
@@ -503,7 +547,9 @@ def build_shared_plan_rows(store: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def merge_shared_plan_rows(payload: dict[str, Any], shared_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    base_rows = clear_existing_shared_plans(payload.get("baseRows", []))
+    base_rows = coalesce_mop_metric_rows(
+        clear_existing_shared_plans(payload.get("baseRows", []))
+    )
     rows_by_key = {
         (str(row.get("weekStart", "")), normalize_name(row.get("mopName"))): row
         for row in base_rows
@@ -533,7 +579,10 @@ def merge_shared_plan_rows(payload: dict[str, Any], shared_rows: list[dict[str, 
 
 
 def merge_shared_daily_plan_rows(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    daily_rows = clear_existing_shared_plans(payload.get("dailyRows", []))
+    daily_rows = coalesce_mop_metric_rows(
+        clear_existing_shared_plans(payload.get("dailyRows", [])),
+        include_date=True,
+    )
     rows_by_key = {
         (str(row.get("date", "")), str(row.get("weekStart", "")), normalize_name(row.get("mopName"))): row
         for row in daily_rows
@@ -634,6 +683,12 @@ def apply_store_to_dashboard(store_path: Path, data_path: Path) -> None:
     shared_rows = build_shared_plan_rows(store)
     rows = merge_shared_plan_rows(payload, shared_rows)
     merge_shared_daily_plan_rows(payload)
+    if shared_rows:
+        payload["warnings"] = [
+            warning
+            for warning in payload.get("warnings", [])
+            if not str(warning).startswith("Планы не загружены:")
+        ]
     payload["sharedPlans"] = shared_plan_metadata(store)
     payload["generatedAt"] = datetime.now().isoformat(timespec="seconds")
     update_filters(payload, rows)
