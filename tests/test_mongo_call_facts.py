@@ -18,6 +18,7 @@ from scripts.sync_mop_report import (
     apply_mongo_deal_call_dates,
     apply_mongo_offer_counts_to_active_deals,
     apply_offer_call_details,
+    apply_offer_recording_urls,
     apply_transcription_offer_fallbacks,
     build_mongo_offer_call_pipeline,
     build_offer_call_details,
@@ -155,6 +156,24 @@ class MongoCallPipelineTests(unittest.TestCase):
 
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_applies_recording_urls_by_call_uuid(self) -> None:
+        details = [
+            {"callUid": "call-1", "recordingUrl": ""},
+            {"callUid": "call-2", "recordingUrl": "https://existing.example/2.mp3"},
+        ]
+
+        applied = apply_offer_recording_urls(
+            details,
+            [
+                {"call_uuid": "call-1", "audio_url_masked": "https://records.example/1.mp3"},
+                {"call_uuid": "call-2", "audio_url_masked": "https://records.example/new-2.mp3"},
+            ],
+        )
+
+        self.assertEqual(applied, 1)
+        self.assertEqual(details[0]["recordingUrl"], "https://records.example/1.mp3")
+        self.assertEqual(details[1]["recordingUrl"], "https://existing.example/2.mp3")
+
     def test_builds_global_offer_details_from_analysis_and_transcription(self) -> None:
         rows = [
             {

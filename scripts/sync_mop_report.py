@@ -2875,14 +2875,6 @@ def build_mongo_offer_call_pipeline(
             }
         },
         {
-            "$lookup": {
-                "from": "request_history",
-                "localField": "callUid",
-                "foreignField": "call_uuid",
-                "as": "requestDocs",
-            }
-        },
-        {
             "$project": {
                 "dedupeKey": 1,
                 "callUid": 1,
@@ -2891,18 +2883,7 @@ def build_mongo_offer_call_pipeline(
                 "dateTime": 1,
                 "mopName": 1,
                 "durationSeconds": 1,
-                "recordingUrl": {
-                    "$cond": [
-                        {"$ne": ["$recordingUrl", ""]},
-                        "$recordingUrl",
-                        {
-                            "$ifNull": [
-                                {"$arrayElemAt": ["$requestDocs.audio_url_masked", 0]},
-                                "",
-                            ]
-                        },
-                    ]
-                },
+                "recordingUrl": 1,
                 "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
                 "dealId": {
                     "$cond": [
@@ -3027,6 +3008,31 @@ def apply_offer_call_details(data: MopReportData, details: list[dict[str, Any]])
         deal_id: dict(sorted(counts.items()))
         for deal_id, counts in calls_by_deal_date.items()
     }
+
+
+def apply_offer_recording_urls(
+    details: list[dict[str, Any]],
+    request_documents: list[dict[str, Any]],
+) -> int:
+    urls_by_uid: dict[str, str] = {}
+    for document in request_documents:
+        call_uid = str(document.get("call_uuid") or "").strip()
+        recording_url = str(document.get("audio_url_masked") or "").strip()
+        if (
+            call_uid
+            and recording_url.lower().startswith(("http://", "https://"))
+            and call_uid not in urls_by_uid
+        ):
+            urls_by_uid[call_uid] = recording_url
+    applied = 0
+    for detail in details:
+        if detail.get("recordingUrl"):
+            continue
+        recording_url = urls_by_uid.get(str(detail.get("callUid") or ""))
+        if recording_url:
+            detail["recordingUrl"] = recording_url
+            applied += 1
+    return applied
 
 
 def build_mongo_deal_call_pipeline(
@@ -3411,18 +3417,44 @@ def build_mongo_deal_call_facts(
                         + safe_error_text(exc)
                     )
             linked_deal_days = apply_mongo_deal_call_dates(data, rows)
+            recording_cutoff_date = window.end.date() - timedelta(days=13)
             offer_details = build_offer_call_details(
                 offer_rows,
                 transcription_documents,
                 settings,
                 mop_settings,
-                window.end.date() - timedelta(days=13),
+                recording_cutoff_date,
             )
+            recent_offer_uids = [
+                str(detail.get("callUid") or "")
+                for detail in offer_details
+                if str(detail.get("date") or "") >= recording_cutoff_date.isoformat()
+            ]
+            recording_count = 0
+            if recent_offer_uids:
+                try:
+                    request_documents = list(
+                        reader.collection("request_history").find(
+                            {"call_uuid": {"$in": recent_offer_uids}},
+                            {"_id": 0, "call_uuid": 1, "audio_url_masked": 1},
+                            max_time_ms=timeout_ms,
+                        )
+                    )
+                    recording_count = apply_offer_recording_urls(
+                        offer_details,
+                        request_documents,
+                    )
+                except Exception as exc:
+                    data.warnings.append(
+                        "Записи офферных звонков TempLab не загружены: "
+                        + safe_error_text(exc)
+                    )
             apply_offer_call_details(data, offer_details)
             data.call_deal_link_available = linked_deal_days > 0
             print(
                 "MongoDB deal calls loaded: "
-                f"{linked_deal_days} linked deal-days, {len(offer_details)} offer calls"
+                f"{linked_deal_days} linked deal-days, {len(offer_details)} offer calls, "
+                f"{recording_count} recordings"
             )
             if not data.call_deal_link_available:
                 data.warnings.append(
