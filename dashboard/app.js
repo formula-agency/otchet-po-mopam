@@ -145,7 +145,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261014-1';
+const DASHBOARD_DATA_VERSION = '20261014-2';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1700,12 +1700,15 @@ function renderHighPriority() {
       const recording = row.recordingUrl
         ? `<div class="priority-audio"><audio controls preload="none" src="${escapeHtml(row.recordingUrl)}"></audio><a href="${escapeHtml(row.recordingUrl)}" target="_blank" rel="noreferrer">Открыть</a></div>`
         : `<span class="priority-recording-missing">${row.date < offsetIsoDate(priorityData.currentDate, -13) ? 'Архив старше 14 дней' : 'Запись недоступна'}</span>`;
+      const transcript = row.transcript && row.transcript !== row.selectionReason
+        ? `<details class="priority-transcript"><summary>Расшифровка</summary><p>${escapeHtml(row.transcript)}</p></details>`
+        : '';
       return `
         <tr>
           <td>${escapeHtml(formatDateTime(row.dateTime || row.date))}</td>
           <td><strong>${escapeHtml(row.mopName || '—')}</strong></td>
           <td>${dealLink}</td>
-          <td class="priority-offer-reason"><strong>${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(row.selectionReason || 'Оффер найден по правилам TempLab')}</span></td>
+          <td class="priority-offer-reason"><strong>${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(row.selectionReason || 'Оффер найден по правилам TempLab')}</span>${transcript}</td>
           <td>${formatDuration(row.durationSeconds)}</td>
           <td>${recording}</td>
         </tr>

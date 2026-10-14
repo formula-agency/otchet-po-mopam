@@ -701,6 +701,31 @@ select {
   color: var(--muted);
 }
 
+.priority-transcript {
+  margin-top: 7px;
+}
+
+.priority-transcript summary {
+  width: fit-content;
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.priority-transcript p {
+  max-height: 180px;
+  margin: 7px 0 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border-left: 2px solid var(--line);
+  background: #f7f8fa;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
 .priority-audio {
   display: flex;
   align-items: center;

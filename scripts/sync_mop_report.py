@@ -2963,6 +2963,15 @@ def build_offer_call_details(
             call_date = date.fromisoformat(str(row.get("day") or ""))
         except ValueError:
             call_date = None
+        selection_text = presentation if source == "analysis" else transcription
+        transcript = (
+            offer_reason_excerpt(selection_text, 5000)
+            if (
+                recording_cutoff_date is None
+                or (call_date is not None and call_date >= recording_cutoff_date)
+            )
+            else ""
+        )
         recording_url = (
             recording_url_value
             if (
@@ -2986,6 +2995,7 @@ def build_offer_call_details(
             "recordingUrl": recording_url,
             "selectionSource": source,
             "selectionReason": reason,
+            "transcript": transcript,
         })
         seen_uids.add(call_uid)
     return sorted(details, key=lambda item: str(item.get("dateTime") or ""), reverse=True)
@@ -3022,7 +3032,7 @@ def apply_offer_recording_urls(
             return 3
         if host and host != "api.formula.templab.ru":
             return 2
-        return 1
+        return 0
 
     for document in request_documents:
         call_uid = str(document.get("call_uuid") or "").strip()
@@ -3030,6 +3040,7 @@ def apply_offer_recording_urls(
         if (
             call_uid
             and recording_url.lower().startswith(("http://", "https://"))
+            and recording_url_rank(recording_url) > 0
         ):
             current_url = urls_by_uid.get(call_uid, "")
             if not current_url or recording_url_rank(recording_url) > recording_url_rank(current_url):
