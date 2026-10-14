@@ -18706,7 +18706,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 277,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18723,6 +18723,16 @@
     {
       "_id": {
         "day": "2026-10-14",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 151,
@@ -18732,5 +18742,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-14T05:53:27+00:00"
+  "updatedAt": "2026-10-14T07:02:03+00:00"
 }
