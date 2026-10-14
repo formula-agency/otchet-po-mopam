@@ -18693,6 +18693,16 @@
     {
       "_id": {
         "day": "2026-10-14",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
         "mopName": "Войнов Данил"
       },
       "airSeconds": 277,
@@ -18705,10 +18715,10 @@
         "day": "2026-10-14",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 0,
-      "calls": 0,
+      "airSeconds": 648,
+      "calls": 1,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -18722,5 +18732,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-14T05:47:37+00:00"
+  "updatedAt": "2026-10-14T05:53:27+00:00"
 }
