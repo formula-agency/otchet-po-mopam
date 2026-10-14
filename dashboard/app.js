@@ -1699,7 +1699,7 @@ function renderHighPriority() {
         : '—';
       const recording = row.recordingUrl
         ? `<div class="priority-audio"><audio controls preload="none" src="${escapeHtml(row.recordingUrl)}"></audio><a href="${escapeHtml(row.recordingUrl)}" target="_blank" rel="noreferrer">Открыть</a></div>`
-        : '<span class="priority-recording-missing">Запись не передана</span>';
+        : `<span class="priority-recording-missing">${row.date < offsetIsoDate(priorityData.currentDate, -13) ? 'Архив старше 14 дней' : 'Запись недоступна'}</span>`;
       return `
         <tr>
           <td>${escapeHtml(formatDateTime(row.dateTime || row.date))}</td>

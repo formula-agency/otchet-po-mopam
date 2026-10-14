@@ -2875,6 +2875,14 @@ def build_mongo_offer_call_pipeline(
             }
         },
         {
+            "$lookup": {
+                "from": "request_history",
+                "localField": "callUid",
+                "foreignField": "call_uuid",
+                "as": "requestDocs",
+            }
+        },
+        {
             "$project": {
                 "dedupeKey": 1,
                 "callUid": 1,
@@ -2883,7 +2891,18 @@ def build_mongo_offer_call_pipeline(
                 "dateTime": 1,
                 "mopName": 1,
                 "durationSeconds": 1,
-                "recordingUrl": 1,
+                "recordingUrl": {
+                    "$cond": [
+                        {"$ne": ["$recordingUrl", ""]},
+                        "$recordingUrl",
+                        {
+                            "$ifNull": [
+                                {"$arrayElemAt": ["$requestDocs.audio_url_masked", 0]},
+                                "",
+                            ]
+                        },
+                    ]
+                },
                 "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
                 "dealId": {
                     "$cond": [
@@ -2931,6 +2950,7 @@ def build_offer_call_details(
     transcription_documents: list[dict[str, Any]],
     settings: Settings,
     mop_settings: MopSettings,
+    recording_cutoff_date: date | None = None,
 ) -> list[dict[str, Any]]:
     transcripts = {
         str(document.get("uuid") or "").strip(): document.get("transcription")
@@ -2958,9 +2978,19 @@ def build_offer_call_details(
             continue
         deal_id = str(row.get("dealId") or "").strip()
         recording_url_value = str(row.get("recordingUrl") or "").strip()
+        try:
+            call_date = date.fromisoformat(str(row.get("day") or ""))
+        except ValueError:
+            call_date = None
         recording_url = (
             recording_url_value
-            if recording_url_value.lower().startswith(("http://", "https://"))
+            if (
+                recording_url_value.lower().startswith(("http://", "https://"))
+                and (
+                    recording_cutoff_date is None
+                    or (call_date is not None and call_date >= recording_cutoff_date)
+                )
+            )
             else ""
         )
         details.append({
@@ -3386,6 +3416,7 @@ def build_mongo_deal_call_facts(
                 transcription_documents,
                 settings,
                 mop_settings,
+                window.end.date() - timedelta(days=13),
             )
             apply_offer_call_details(data, offer_details)
             data.call_deal_link_available = linked_deal_days > 0
