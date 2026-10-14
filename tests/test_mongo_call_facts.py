@@ -18,6 +18,7 @@ from scripts.sync_mop_report import (
     apply_mongo_deal_call_dates,
     apply_mongo_offer_counts_to_active_deals,
     apply_offer_call_details,
+    apply_offer_deal_relations,
     apply_offer_recording_urls,
     apply_transcription_offer_fallbacks,
     build_mongo_offer_call_pipeline,
@@ -200,6 +201,9 @@ class MongoCallAggregateTests(unittest.TestCase):
         transcripts = [{
             "uuid": "transcript-1",
             "transcription": "Появилась евродвушка 38 квадратов по цене 4,9 млн.",
+        }, {
+            "uuid": "analysis-1",
+            "transcription": "Полная расшифровка разговора без сокращения.\nВторая реплика.",
         }]
 
         details = build_offer_call_details(
@@ -215,11 +219,39 @@ class MongoCallAggregateTests(unittest.TestCase):
         self.assertEqual(details[0]["selectionSource"], "transcription")
         self.assertEqual(details[1]["mopName"], "Войнов Данил")
         self.assertEqual(details[1]["dealUrl"], "https://crm.example/crm/deal/details/501/")
+        self.assertEqual(
+            details[1]["transcript"],
+            "Полная расшифровка разговора без сокращения.\nВторая реплика.",
+        )
         self.assertEqual(data.offer_calls_by_deal, {"501": 1})
         self.assertEqual(
             data.offer_call_counts_by_deal_date,
             {"501": {"2026-10-13": 1}},
         )
+
+    def test_restores_offer_deal_links_from_templab_relations(self) -> None:
+        details = [
+            {"callUid": "call-1", "callExtId": "101", "dealId": "", "dealUrl": ""},
+            {"callUid": "call-2", "callExtId": "102", "dealId": "", "dealUrl": ""},
+            {"callUid": "call-3", "callExtId": "103", "dealId": "777", "dealUrl": "set"},
+        ]
+        relations = [
+            {"call_uuid": "call-1", "process_deal_id": 501},
+            {"call_ext_id": "102", "deal": {"id": "502"}},
+            {"call_uuid": "call-3", "deal_id": "999"},
+        ]
+
+        applied = apply_offer_deal_relations(
+            details,
+            relations,
+            SimpleNamespace(bitrix_webhook_url="https://crm.example/rest/1/token/"),  # type: ignore[arg-type]
+        )
+
+        self.assertEqual(applied, 2)
+        self.assertEqual(details[0]["dealId"], "501")
+        self.assertEqual(details[0]["dealUrl"], "https://crm.example/crm/deal/details/501/")
+        self.assertEqual(details[1]["dealId"], "502")
+        self.assertEqual(details[2]["dealId"], "777")
 
     def test_transcription_fallback_counts_each_offer_call_once(self) -> None:
         rows = [

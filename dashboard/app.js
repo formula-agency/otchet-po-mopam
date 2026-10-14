@@ -145,7 +145,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261014-2';
+const DASHBOARD_DATA_VERSION = '20261014-3';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1695,14 +1695,14 @@ function renderHighPriority() {
         ? 'Анализ TempLab'
         : 'Транскрибация';
       const dealLink = row.dealId && row.dealUrl
-        ? `<a class="deal-link" href="${escapeHtml(row.dealUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(row.dealId)}</a>`
-        : '—';
+        ? `<a class="deal-link" href="${escapeHtml(row.dealUrl)}" target="_blank" rel="noreferrer">Открыть #${escapeHtml(row.dealId)}</a>`
+        : '<span class="priority-recording-missing">Связь не найдена</span>';
       const recording = row.recordingUrl
         ? `<div class="priority-audio"><audio controls preload="none" src="${escapeHtml(row.recordingUrl)}"></audio><a href="${escapeHtml(row.recordingUrl)}" target="_blank" rel="noreferrer">Открыть</a></div>`
         : `<span class="priority-recording-missing">${row.date < offsetIsoDate(priorityData.currentDate, -13) ? 'Архив старше 14 дней' : 'Запись недоступна'}</span>`;
       const transcript = row.transcript && row.transcript !== row.selectionReason
         ? `<details class="priority-transcript"><summary>Расшифровка</summary><p>${escapeHtml(row.transcript)}</p></details>`
-        : '';
+        : '<span class="priority-transcript-missing">Полной расшифровки нет в TempLab</span>';
       return `
         <tr>
           <td>${escapeHtml(formatDateTime(row.dateTime || row.date))}</td>

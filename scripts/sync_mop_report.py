@@ -2926,6 +2926,10 @@ def offer_reason_excerpt(value: Any, limit: int = 220) -> str:
     return text[: max(0, limit - 1)].rstrip() + "…"
 
 
+def offer_transcript_text(value: Any) -> str:
+    return str(value or "").replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
 def build_offer_call_details(
     rows: list[dict[str, Any]],
     transcription_documents: list[dict[str, Any]],
@@ -2963,9 +2967,9 @@ def build_offer_call_details(
             call_date = date.fromisoformat(str(row.get("day") or ""))
         except ValueError:
             call_date = None
-        selection_text = presentation if source == "analysis" else transcription
+        selection_text = transcription or presentation
         transcript = (
-            offer_reason_excerpt(selection_text, 5000)
+            offer_transcript_text(selection_text)
             if (
                 recording_cutoff_date is None
                 or (call_date is not None and call_date >= recording_cutoff_date)
@@ -2999,6 +3003,80 @@ def build_offer_call_details(
         })
         seen_uids.add(call_uid)
     return sorted(details, key=lambda item: str(item.get("dateTime") or ""), reverse=True)
+
+
+def document_path_value(document: dict[str, Any], path: str) -> Any:
+    current: Any = document
+    for part in path.split("."):
+        if not isinstance(current, dict):
+            return None
+        current = current.get(part)
+    return current
+
+
+def first_document_value(document: dict[str, Any], paths: tuple[str, ...]) -> str:
+    for path in paths:
+        value = document_path_value(document, path)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def apply_offer_deal_relations(
+    details: list[dict[str, Any]],
+    relation_documents: list[dict[str, Any]],
+    settings: Settings,
+) -> int:
+    call_uid_paths = (
+        "call_uuid",
+        "call_uid",
+        "callUid",
+        "uuid",
+        "call.uuid",
+    )
+    call_ext_id_paths = (
+        "call_ext_id",
+        "callExtId",
+        "external_call_id",
+        "call_id",
+        "call.external_id",
+    )
+    deal_id_paths = (
+        "deal_id",
+        "dealId",
+        "b24_deal_id",
+        "bitrix_deal_id",
+        "crm_deal_id",
+        "process_deal_id",
+        "entity_id",
+        "deal.id",
+    )
+    deal_by_uid: dict[str, str] = {}
+    deal_by_ext_id: dict[str, str] = {}
+    for document in relation_documents:
+        deal_id = first_document_value(document, deal_id_paths)
+        if not deal_id:
+            continue
+        call_uid = first_document_value(document, call_uid_paths)
+        call_ext_id = first_document_value(document, call_ext_id_paths)
+        if call_uid:
+            deal_by_uid[call_uid] = deal_id
+        if call_ext_id:
+            deal_by_ext_id[call_ext_id] = deal_id
+
+    applied = 0
+    for detail in details:
+        if str(detail.get("dealId") or "").strip():
+            continue
+        deal_id = deal_by_uid.get(str(detail.get("callUid") or "").strip())
+        if not deal_id:
+            deal_id = deal_by_ext_id.get(str(detail.get("callExtId") or "").strip())
+        if not deal_id:
+            continue
+        detail["dealId"] = deal_id
+        detail["dealUrl"] = bitrix_deal_url(settings, deal_id)
+        applied += 1
+    return applied
 
 
 def apply_offer_call_details(data: MopReportData, details: list[dict[str, Any]]) -> None:
@@ -3366,6 +3444,7 @@ def build_mongo_deal_call_facts(
                     "call_summary",
                     "request_history",
                     "analysis_status_logs",
+                    "families_call_deal_relations",
                 ):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
                         {}, {"_id": 0}
@@ -3420,7 +3499,6 @@ def build_mongo_deal_call_facts(
                 str(row.get("callUid") or "").strip()
                 for row in offer_rows
                 if str(row.get("callUid") or "").strip()
-                and not presentation_contains_offer(row.get("presentation"))
             )
             transcription_documents: list[dict[str, Any]] = []
             if candidate_uids:
@@ -3446,6 +3524,50 @@ def build_mongo_deal_call_facts(
                 mop_settings,
                 recording_cutoff_date,
             )
+            unlinked_call_uids = sorted({
+                str(detail.get("callUid") or "").strip()
+                for detail in offer_details
+                if not str(detail.get("dealId") or "").strip()
+                and str(detail.get("callUid") or "").strip()
+            })
+            unlinked_call_ext_ids = sorted({
+                str(detail.get("callExtId") or "").strip()
+                for detail in offer_details
+                if not str(detail.get("dealId") or "").strip()
+                and str(detail.get("callExtId") or "").strip()
+            })
+            relation_count = 0
+            if unlinked_call_uids or unlinked_call_ext_ids:
+                relation_filters: list[dict[str, Any]] = []
+                for field_name in ("call_uuid", "call_uid", "callUid", "uuid"):
+                    if unlinked_call_uids:
+                        relation_filters.append({field_name: {"$in": unlinked_call_uids}})
+                for field_name in (
+                    "call_ext_id",
+                    "callExtId",
+                    "external_call_id",
+                    "call_id",
+                ):
+                    if unlinked_call_ext_ids:
+                        relation_filters.append({field_name: {"$in": unlinked_call_ext_ids}})
+                try:
+                    relation_documents = list(
+                        reader.collection("families_call_deal_relations").find(
+                            {"$or": relation_filters},
+                            {"_id": 0},
+                            max_time_ms=timeout_ms,
+                        )
+                    )
+                    relation_count = apply_offer_deal_relations(
+                        offer_details,
+                        relation_documents,
+                        settings,
+                    )
+                except Exception as exc:
+                    data.warnings.append(
+                        "Связи офферных звонков со сделками TempLab не загружены: "
+                        + safe_error_text(exc)
+                    )
             recent_offer_uids = [
                 str(detail.get("callUid") or "")
                 for detail in offer_details
@@ -3475,7 +3597,7 @@ def build_mongo_deal_call_facts(
             print(
                 "MongoDB deal calls loaded: "
                 f"{linked_deal_days} linked deal-days, {len(offer_details)} offer calls, "
-                f"{recording_count} recordings"
+                f"{recording_count} recordings, {relation_count} restored deal links"
             )
             if not data.call_deal_link_available:
                 data.warnings.append(

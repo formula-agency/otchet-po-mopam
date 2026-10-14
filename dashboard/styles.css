@@ -669,40 +669,55 @@ select {
   padding: 10px;
   font-size: 13px;
   line-height: 1.35;
-  vertical-align: middle;
+  vertical-align: top;
   white-space: normal;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .priority-offer-table th:nth-child(1) { width: 12%; }
-.priority-offer-table th:nth-child(2) { width: 14%; }
-.priority-offer-table th:nth-child(3) { width: 8%; }
-.priority-offer-table th:nth-child(4) { width: 31%; }
+.priority-offer-table th:nth-child(2) { width: 13%; }
+.priority-offer-table th:nth-child(3) { width: 11%; }
+.priority-offer-table th:nth-child(4) { width: 35%; }
 .priority-offer-table th:nth-child(5) { width: 9%; }
-.priority-offer-table th:nth-child(6) { width: 26%; }
+.priority-offer-table th:nth-child(6) { width: 20%; }
 
 .priority-offer-table td:nth-child(n+2) {
   text-align: left;
 }
 
-.priority-offer-reason strong,
-.priority-offer-reason span {
+.priority-offer-table .priority-offer-reason {
+  min-width: 0;
+}
+
+.priority-offer-table .priority-offer-reason > strong,
+.priority-offer-table .priority-offer-reason > span {
   display: block;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   margin: 0;
   text-align: left;
 }
 
-.priority-offer-reason strong {
+.priority-offer-table .priority-offer-reason > strong {
   font-size: 12px;
 }
 
-.priority-offer-reason span {
+.priority-offer-table .priority-offer-reason > span {
+  display: -webkit-box;
   margin-top: 3px;
+  overflow: hidden;
   color: var(--muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .priority-transcript {
+  width: 100%;
+  max-width: 100%;
   margin-top: 7px;
+  overflow: hidden;
 }
 
 .priority-transcript summary {
@@ -714,6 +729,9 @@ select {
 }
 
 .priority-transcript p {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   max-height: 180px;
   margin: 7px 0 0;
   padding: 8px 10px;
@@ -724,16 +742,20 @@ select {
   font-size: 12px;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .priority-audio {
   display: flex;
+  min-width: 0;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .priority-audio audio {
-  width: min(220px, 100%);
+  width: 100%;
+  min-width: 0;
   height: 34px;
 }
 
@@ -748,6 +770,17 @@ select {
   color: var(--muted);
   font-size: 12px;
   text-align: left !important;
+}
+
+.priority-offer-table .priority-transcript-missing {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  text-align: left;
 }
 
 .priority-days {
