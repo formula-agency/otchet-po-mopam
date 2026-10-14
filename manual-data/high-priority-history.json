@@ -36607,47 +36607,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-28",
-          "daysWithoutAttempt": 13,
-          "daysWithoutCall": 40,
-          "dealId": "6119",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6119/",
-          "lastCallAttemptDate": "2026-10-01",
-          "lastSuccessfulCommunicationDate": "2026-09-04",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "offerCallsByDate": {
-            "2026-09-04": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Фарид",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 40,
-          "dealId": "6171",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6171/",
-          "lastCallAttemptDate": "2026-10-12",
-          "lastSuccessfulCommunicationDate": "2026-09-04",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "offerCallsByDate": {
-            "2026-09-03": 2,
-            "2026-09-04": 1
-          },
-          "offerCallsCount": 3,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Эльвин",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-04",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 37,
@@ -36751,26 +36710,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-18",
-          "daysWithoutAttempt": 16,
-          "daysWithoutCall": 30,
-          "dealId": "5973",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5973/",
-          "lastCallAttemptDate": "2026-09-28",
-          "lastSuccessfulCommunicationDate": "2026-09-14",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Черткова Ирина",
-          "offerCallsByDate": {
-            "2026-08-24": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Гульнара",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 22,
           "daysWithoutCall": 30,
@@ -36855,27 +36794,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 11,
-          "daysWithoutCall": 27,
-          "dealId": "6439",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6439/",
-          "lastCallAttemptDate": "2026-10-03",
-          "lastSuccessfulCommunicationDate": "2026-09-17",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Попова Олеся",
-          "offerCallsByDate": {
-            "2026-09-14": 1,
-            "2026-09-17": 1
-          },
-          "offerCallsCount": 2,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Игорь",
           "utmSource": "leadit"
         },
         {
@@ -37068,7 +36986,7 @@
           "lastSuccessfulCommunicationDate": "2026-09-28",
           "meetingHeld": false,
           "mopId": "",
-          "mopName": "Черткова Ирина",
+          "mopName": "Жуков Лев",
           "offerCallsByDate": {
             "2026-09-02": 1,
             "2026-09-28": 1
@@ -37077,27 +36995,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Эльвира",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-08",
-          "daysWithoutAttempt": 16,
-          "daysWithoutCall": 16,
-          "dealId": "6257",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6257/",
-          "lastCallAttemptDate": "2026-09-28",
-          "lastSuccessfulCommunicationDate": "2026-09-28",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Черткова Ирина",
-          "offerCallsByDate": {
-            "2026-09-08": 1,
-            "2026-09-28": 1
-          },
-          "offerCallsCount": 2,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Наталья",
           "utmSource": "leadit"
         },
         {
@@ -37446,18 +37343,14 @@
         "5293",
         "5538",
         "5660",
-        "5973",
         "6052",
         "6059",
         "6073",
         "6082",
-        "6119",
-        "6171",
         "6172",
         "6193",
         "6205",
         "6238",
-        "6257",
         "6267",
         "6277",
         "6287",
@@ -37465,7 +37358,6 @@
         "6396",
         "6397",
         "6422",
-        "6439",
         "6473",
         "6515",
         "6571",

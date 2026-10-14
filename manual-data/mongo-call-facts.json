@@ -18749,8 +18749,18 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-14",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-14T07:18:29+00:00"
+  "updatedAt": "2026-10-14T11:06:32+00:00"
 }
