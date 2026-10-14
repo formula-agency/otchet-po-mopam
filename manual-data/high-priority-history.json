@@ -32089,15 +32089,8 @@
       "previousDate": "2026-10-06"
     },
     "2026-10-08": {
-      "calledFromPreviousDealIds": [
-        "3850",
-        "6125",
-        "6259",
-        "6564",
-        "6581",
-        "6639"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-08",
       "deals": [
@@ -32793,17 +32786,8 @@
       "previousDate": "2026-10-07"
     },
     "2026-10-09": {
-      "calledFromPreviousDealIds": [
-        "6057",
-        "6112",
-        "6237",
-        "6238",
-        "6250",
-        "6438",
-        "6450",
-        "6677"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-09",
       "deals": [
@@ -33464,7 +33448,7 @@
     },
     "2026-10-10": {
       "calledFromPreviousDealIds": [],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-10",
       "deals": [
@@ -34160,10 +34144,8 @@
       "previousDate": "2026-10-09"
     },
     "2026-10-11": {
-      "calledFromPreviousDealIds": [
-        "4168"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-11",
       "deals": [
@@ -34877,17 +34859,8 @@
       "previousDate": "2026-10-10"
     },
     "2026-10-12": {
-      "calledFromPreviousDealIds": [
-        "6020",
-        "6059",
-        "6171",
-        "6172",
-        "6250",
-        "6258",
-        "6277",
-        "6739"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-12",
       "deals": [
@@ -35622,12 +35595,8 @@
       "previousDate": "2026-10-11"
     },
     "2026-10-13": {
-      "calledFromPreviousDealIds": [
-        "3850",
-        "6571",
-        "6603"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-13",
       "deals": [
@@ -36448,13 +36417,8 @@
       "previousDate": "2026-10-12"
     },
     "2026-10-14": {
-      "calledFromPreviousDealIds": [
-        "6439",
-        "6573",
-        "6603",
-        "6639"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-14",
       "deals": [
@@ -36541,10 +36505,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-04-07": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Нэлли",
@@ -36561,10 +36523,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-26": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Рузиля",
@@ -36581,11 +36541,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-06-29": 2,
-            "2026-09-01": 1
-          },
-          "offerCallsCount": 3,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Светлана",
@@ -36602,10 +36559,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-09-03": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Никита",
@@ -36622,10 +36577,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Марина Данчук",
-          "offerCallsByDate": {
-            "2026-09-07": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Евгений",
@@ -36642,10 +36595,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {
-            "2026-09-07": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Александр",
@@ -36680,17 +36631,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-05-22": 1,
-            "2026-05-27": 1,
-            "2026-07-27": 1,
-            "2026-08-06": 1,
-            "2026-08-17": 1,
-            "2026-09-07": 1,
-            "2026-09-08": 1,
-            "2026-09-11": 1
-          },
-          "offerCallsCount": 8,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Гринь Олег Николаевич",
@@ -36743,12 +36685,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-05-07": 1,
-            "2026-08-26": 1,
-            "2026-09-15": 1
-          },
-          "offerCallsCount": 3,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Хуши",
@@ -36765,16 +36703,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-05-15": 1,
-            "2026-05-21": 1,
-            "2026-08-16": 1,
-            "2026-09-03": 1,
-            "2026-09-11": 1,
-            "2026-09-14": 1,
-            "2026-09-15": 1
-          },
-          "offerCallsCount": 7,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Рая",
@@ -36791,11 +36721,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-25": 2,
-            "2026-09-15": 2
-          },
-          "offerCallsCount": 4,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
@@ -36812,10 +36739,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-09-21": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Василий",
@@ -36832,10 +36757,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-09-22": 2
-          },
-          "offerCallsCount": 2,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Джавид",
@@ -36852,10 +36775,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-09-22": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Минатуллаева Марина Александровна",
@@ -36872,10 +36793,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Васильев Владимир",
-          "offerCallsByDate": {
-            "2026-09-17": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Людмила",
@@ -36892,10 +36811,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {
-            "2026-09-22": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Меньшикова Снежана Михайловна",
@@ -36912,10 +36829,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-09-21": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Бакыт",
@@ -36932,10 +36847,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-09-24": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Александр",
@@ -36952,10 +36865,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Султанов Есен",
-          "offerCallsByDate": {
-            "2026-09-24": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Ангелина",
@@ -36972,11 +36883,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Жуков Лев",
-          "offerCallsByDate": {
-            "2026-09-02": 1,
-            "2026-09-28": 1
-          },
-          "offerCallsCount": 2,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Эльвира",
@@ -37001,24 +36909,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-06-03",
-          "daysWithoutAttempt": 13,
-          "daysWithoutCall": 15,
-          "dealId": "5385",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5385/",
-          "lastCallAttemptDate": "2026-10-01",
-          "lastSuccessfulCommunicationDate": "2026-09-29",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Абоскалова Анна",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Константин",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-25",
           "daysWithoutAttempt": 15,
           "daysWithoutCall": 15,
@@ -37029,14 +36919,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-26": 1,
-            "2026-08-27": 1,
-            "2026-08-28": 1,
-            "2026-09-11": 1,
-            "2026-09-29": 1
-          },
-          "offerCallsCount": 5,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Ирина",
@@ -37053,13 +36937,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-09-07": 1,
-            "2026-09-09": 1,
-            "2026-09-14": 1,
-            "2026-09-24": 1
-          },
-          "offerCallsCount": 4,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Лейла",
@@ -37076,10 +36955,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Марина Данчук",
-          "offerCallsByDate": {
-            "2026-09-29": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Адеми",
@@ -37096,10 +36973,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Марина Данчук",
-          "offerCallsByDate": {
-            "2026-09-29": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Ниталья Михайловна",
@@ -37116,11 +36991,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Султанов Есен",
-          "offerCallsByDate": {
-            "2026-09-25": 1,
-            "2026-09-29": 2
-          },
-          "offerCallsCount": 3,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "3-7 звонков после показа",
           "title": "Светлана",
@@ -37137,11 +37009,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {
-            "2026-09-21": 1,
-            "2026-09-29": 1
-          },
-          "offerCallsCount": 2,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Иван",
@@ -37158,10 +37027,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {
-            "2026-09-29": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Василий Васильевич",
@@ -37196,16 +37063,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-24": 1,
-            "2026-08-25": 2,
-            "2026-08-26": 1,
-            "2026-08-27": 1,
-            "2026-09-02": 1,
-            "2026-09-03": 1,
-            "2026-09-08": 1
-          },
-          "offerCallsCount": 8,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "3-7 звонков после показа",
           "title": "Елена",
@@ -37222,10 +37081,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {
-            "2026-10-01": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "0-2 звонка после показа",
           "title": "Мельник Татьяна",
@@ -37260,15 +37117,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-09-18": 1,
-            "2026-09-21": 1,
-            "2026-09-22": 1,
-            "2026-09-25": 1,
-            "2026-09-28": 1,
-            "2026-10-01": 1
-          },
-          "offerCallsCount": 6,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Сергей",
@@ -37285,12 +37135,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-10-01": 1,
-            "2026-10-02": 1,
-            "2026-10-06": 1
-          },
-          "offerCallsCount": 3,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Юрий",
@@ -37307,11 +37153,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {
-            "2026-10-02": 1,
-            "2026-10-06": 1
-          },
-          "offerCallsCount": 2,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "0-2 звонка после показа",
           "title": "Фируза",
@@ -37354,7 +37197,6 @@
       ],
       "newOverdueDealIds": [
         "5314",
-        "5385",
         "6074",
         "6248",
         "6266",
