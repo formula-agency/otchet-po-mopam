@@ -594,6 +594,7 @@ class MopReportData:
     )
     offer_calls_by_deal: dict[str, int] = field(default_factory=dict)
     offer_call_counts_by_deal_date: dict[str, dict[str, int]] = field(default_factory=dict)
+    offer_calls: list[dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -2781,6 +2782,212 @@ def mongo_offer_text_expression(field_name: str) -> dict[str, Any]:
     }
 
 
+def build_mongo_offer_call_pipeline(
+    window: ReportWindow,
+    timezone_name: str,
+) -> list[dict[str, Any]]:
+    direct_deal_id = mongo_first_nonempty_string((
+        "b24_deal_id",
+        "deal_id",
+        "dealId",
+        "bitrix_deal_id",
+        "crm_deal_id",
+        "deal.id",
+        "crm.deal_id",
+    ))
+    crm_entity_id = mongo_first_nonempty_string(("CRM_ENTITY_ID", "crm_entity_id"))
+    crm_entity_type = {
+        "$toUpper": mongo_first_nonempty_string(("CRM_ENTITY_TYPE", "crm_entity_type"))
+    }
+    recording_url = mongo_first_nonempty_string((
+        "recording_url",
+        "record_url",
+        "recordingUrl",
+        "recordUrl",
+        "audio_url",
+        "audioUrl",
+        "recording_link",
+        "recordingLink",
+        "file_url",
+        "fileUrl",
+        "recording",
+    ))
+    return [
+        {"$match": {"call_date": {"$gte": window.start, "$lte": window.end}}},
+        {
+            "$project": {
+                "dedupeKey": {
+                    "$cond": [
+                        {
+                            "$and": [
+                                {"$eq": [{"$type": "$call_uid"}, "string"]},
+                                {"$ne": ["$call_uid", ""]},
+                            ]
+                        },
+                        "$call_uid",
+                        "$_id",
+                    ]
+                },
+                "callUid": "$call_uid",
+                "day": {
+                    "$dateToString": {
+                        "date": "$call_date",
+                        "format": "%Y-%m-%d",
+                        "timezone": timezone_name,
+                    }
+                },
+                "dateTime": {
+                    "$dateToString": {
+                        "date": "$call_date",
+                        "format": "%Y-%m-%dT%H:%M:%S",
+                        "timezone": timezone_name,
+                    }
+                },
+                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
+                "durationSeconds": {
+                    "$convert": {
+                        "input": "$call_duration",
+                        "to": "int",
+                        "onError": 0,
+                        "onNull": 0,
+                    }
+                },
+                "recordingUrl": recording_url,
+                "directDealId": direct_deal_id,
+                "crmEntityId": crm_entity_id,
+                "crmEntityType": crm_entity_type,
+            }
+        },
+        {
+            "$lookup": {
+                "from": "call_analysis",
+                "localField": "callUid",
+                "foreignField": "uuid",
+                "as": "analysisDocs",
+            }
+        },
+        {
+            "$project": {
+                "dedupeKey": 1,
+                "callUid": 1,
+                "day": 1,
+                "dateTime": 1,
+                "mopName": 1,
+                "durationSeconds": 1,
+                "recordingUrl": 1,
+                "presentation": {"$arrayElemAt": ["$analysisDocs.presentation", 0]},
+                "dealId": {
+                    "$cond": [
+                        {"$ne": ["$directDealId", ""]},
+                        "$directDealId",
+                        {
+                            "$cond": [
+                                {"$in": ["$crmEntityType", ["DEAL", "CRM_DEAL", "2"]]},
+                                "$crmEntityId",
+                                "",
+                            ]
+                        },
+                    ]
+                },
+            }
+        },
+        {"$match": {"mopName": {"$ne": ""}, "callUid": {"$ne": ""}}},
+        {
+            "$group": {
+                "_id": "$dedupeKey",
+                "callUid": {"$first": "$callUid"},
+                "day": {"$first": "$day"},
+                "dateTime": {"$first": "$dateTime"},
+                "mopName": {"$first": "$mopName"},
+                "durationSeconds": {"$first": "$durationSeconds"},
+                "recordingUrl": {"$first": "$recordingUrl"},
+                "dealId": {"$first": "$dealId"},
+                "presentation": {"$first": "$presentation"},
+            }
+        },
+        {"$sort": {"dateTime": -1}},
+    ]
+
+
+def offer_reason_excerpt(value: Any, limit: int = 220) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 1)].rstrip() + "…"
+
+
+def build_offer_call_details(
+    rows: list[dict[str, Any]],
+    transcription_documents: list[dict[str, Any]],
+    settings: Settings,
+    mop_settings: MopSettings,
+) -> list[dict[str, Any]]:
+    transcripts = {
+        str(document.get("uuid") or "").strip(): document.get("transcription")
+        for document in transcription_documents
+        if str(document.get("uuid") or "").strip()
+    }
+    details: list[dict[str, Any]] = []
+    seen_uids: set[str] = set()
+    for row in rows:
+        call_uid = str(row.get("callUid") or "").strip()
+        if not call_uid or call_uid in seen_uids:
+            continue
+        presentation = row.get("presentation")
+        transcription = transcripts.get(call_uid)
+        if presentation_contains_offer(presentation):
+            source = "analysis"
+            reason = offer_reason_excerpt(presentation)
+        elif presentation_contains_offer(transcription):
+            source = "transcription"
+            reason = offer_reason_excerpt(transcription)
+        else:
+            continue
+        mop_id, mop_name = mongo_mop_identity(row.get("mopName"), mop_settings)
+        if not mop_name or not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        deal_id = str(row.get("dealId") or "").strip()
+        recording_url_value = str(row.get("recordingUrl") or "").strip()
+        recording_url = (
+            recording_url_value
+            if recording_url_value.lower().startswith(("http://", "https://"))
+            else ""
+        )
+        details.append({
+            "callUid": call_uid,
+            "date": str(row.get("day") or ""),
+            "dateTime": str(row.get("dateTime") or ""),
+            "mopName": mop_name,
+            "dealId": deal_id,
+            "dealUrl": bitrix_deal_url(settings, deal_id) if deal_id else "",
+            "durationSeconds": max(0, parse_number(row.get("durationSeconds"))),
+            "recordingUrl": recording_url,
+            "selectionSource": source,
+            "selectionReason": reason,
+        })
+        seen_uids.add(call_uid)
+    return sorted(details, key=lambda item: str(item.get("dateTime") or ""), reverse=True)
+
+
+def apply_offer_call_details(data: MopReportData, details: list[dict[str, Any]]) -> None:
+    data.offer_calls = details
+    calls_by_deal: dict[str, int] = defaultdict(int)
+    calls_by_deal_date: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for detail in details:
+        deal_id = str(detail.get("dealId") or "").strip()
+        call_date = str(detail.get("date") or "").strip()
+        if not deal_id:
+            continue
+        calls_by_deal[deal_id] += 1
+        if call_date:
+            calls_by_deal_date[deal_id][call_date] += 1
+    data.offer_calls_by_deal = dict(calls_by_deal)
+    data.offer_call_counts_by_deal_date = {
+        deal_id: dict(sorted(counts.items()))
+        for deal_id, counts in calls_by_deal_date.items()
+    }
+
+
 def build_mongo_deal_call_pipeline(
     window: ReportWindow,
     timezone_name: str,
@@ -3060,6 +3267,7 @@ def apply_mongo_deal_call_dates(
 def build_mongo_deal_call_facts(
     data: MopReportData,
     settings: Settings,
+    mop_settings: MopSettings,
     window: ReportWindow,
 ) -> bool:
     require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
@@ -3077,6 +3285,15 @@ def build_mongo_deal_call_facts(
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
                 print("MongoDB call fields: " + ", ".join(sorted(sample)))
+                print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
+                for diagnostic_collection in ("call_analysis", "call_transcriptions"):
+                    diagnostic_sample = reader.collection(diagnostic_collection).find_one(
+                        {}, {"_id": 0}
+                    ) or {}
+                    print(
+                        f"MongoDB {diagnostic_collection} fields: "
+                        + ", ".join(sorted(diagnostic_sample))
+                    )
             rows = list(
                 collection.aggregate(
                     build_mongo_deal_call_pipeline(window, settings.report_timezone),
@@ -3084,19 +3301,20 @@ def build_mongo_deal_call_facts(
                     maxTimeMS=timeout_ms,
                 )
             )
-            candidate_uids = sorted({
-                str(raw_uid).strip()
-                for row in rows
-                for raw_uid in [
-                    *row.get("transcriptionCandidateUids", []),
-                    *[
-                        candidate.get("uuid")
-                        for candidate in row.get("transcriptionCandidateCalls", [])
-                        if isinstance(candidate, dict)
-                    ],
-                ]
-                if str(raw_uid or "").strip()
-            })
+            offer_rows = list(
+                collection.aggregate(
+                    build_mongo_offer_call_pipeline(window, settings.report_timezone),
+                    allowDiskUse=False,
+                    maxTimeMS=timeout_ms,
+                )
+            )
+            candidate_uids = sorted(
+                str(row.get("callUid") or "").strip()
+                for row in offer_rows
+                if str(row.get("callUid") or "").strip()
+                and not presentation_contains_offer(row.get("presentation"))
+            )
+            transcription_documents: list[dict[str, Any]] = []
             if candidate_uids:
                 try:
                     transcription_documents = list(
@@ -3106,22 +3324,24 @@ def build_mongo_deal_call_facts(
                             max_time_ms=timeout_ms,
                         )
                     )
-                    fallback_offers = apply_transcription_offer_fallbacks(
-                        rows,
-                        transcription_documents,
-                    )
-                    print(
-                        "MongoDB transcription offer fallback: "
-                        f"{fallback_offers} calls"
-                    )
                 except Exception as exc:
                     data.warnings.append(
                         "Транскрипции TempLab для офферов не загружены: "
                         + safe_error_text(exc)
                     )
             linked_deal_days = apply_mongo_deal_call_dates(data, rows)
+            offer_details = build_offer_call_details(
+                offer_rows,
+                transcription_documents,
+                settings,
+                mop_settings,
+            )
+            apply_offer_call_details(data, offer_details)
             data.call_deal_link_available = linked_deal_days > 0
-            print(f"MongoDB deal calls loaded: {linked_deal_days} linked deal-days")
+            print(
+                "MongoDB deal calls loaded: "
+                f"{linked_deal_days} linked deal-days, {len(offer_details)} offer calls"
+            )
             if not data.call_deal_link_available:
                 data.warnings.append(
                     "TempLab не вернул связь звонков со сделками; "
@@ -3414,15 +3634,6 @@ def build_mongo_call_facts(
                     maxTimeMS=timeout_ms,
                 )
             )
-            deal_call_rows = list(
-                collection.aggregate(
-                    build_mongo_deal_call_pipeline(window, settings.report_timezone),
-                    allowDiskUse=False,
-                    maxTimeMS=timeout_ms,
-                )
-            )
-            linked_deal_days = apply_mongo_deal_call_dates(data, deal_call_rows)
-            data.call_deal_link_available = True
             total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
                 data,
                 rows,
@@ -3433,8 +3644,7 @@ def build_mongo_call_facts(
             data.call_source_server_read_only = reader.server_read_only
             print(
                 "MongoDB calls loaded: "
-                f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs, "
-                f"{linked_deal_days} linked deal-days"
+                f"{total_calls} calls, {format_duration(total_air_seconds)}, {manager_count} MOPs"
             )
             return True
     except (FormulaMongoError, ConfigError) as exc:
@@ -4469,6 +4679,7 @@ def high_priority_snapshot_mops(
     all_mop_names: tuple[str, ...] = (),
     overdue_from_days: int = DEFAULT_HIGH_PRIORITY_MAX_DAYS_WITHOUT_CALL,
     offer_call_counts_by_deal_date: dict[str, dict[str, int]] | None = None,
+    offer_call_counts_by_mop_date: dict[str, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
     current = snapshots.get(snapshot_date, {})
     current_deals = current.get("deals", []) if isinstance(current, dict) else []
@@ -4561,7 +4772,14 @@ def high_priority_snapshot_mops(
             "isStop": overdue_count > stop_threshold,
             "stopDays": stop_days.get(mop_name, 0),
         }
-        if offer_call_counts_by_deal_date is not None:
+        if offer_call_counts_by_mop_date is not None:
+            result_row["offerCallsCount"] = max(
+                0,
+                parse_number(
+                    offer_call_counts_by_mop_date.get(mop_name, {}).get(snapshot_date)
+                ),
+            )
+        elif offer_call_counts_by_deal_date is not None:
             relevant_deals = {**previous_by_id, **current_by_id}
             result_row["offerCallsCount"] = sum(
                 max(
@@ -4584,6 +4802,7 @@ def build_high_priority_payload(
     window: ReportWindow,
     warnings: list[str],
     offer_call_counts_by_deal_date: dict[str, dict[str, int]] | None = None,
+    offer_calls: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     overdue_from_days = read_non_negative_int_env(
         "MOP_HIGH_PRIORITY_OVERDUE_FROM_DAYS",
@@ -4607,6 +4826,20 @@ def build_high_priority_payload(
             DEFAULT_HIGH_PRIORITY_EXCLUDED_MOPS,
         )
     }
+    visible_offer_calls = [
+        row
+        for row in (offer_calls or [])
+        if isinstance(row, dict)
+        and normalize_key(row.get("mopName")) not in excluded_mop_names
+    ]
+    offer_call_counts_by_mop_date: dict[str, dict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+    for offer_call in visible_offer_calls:
+        mop_name = str(offer_call.get("mopName") or "").strip()
+        call_date = str(offer_call.get("date") or "").strip()
+        if mop_name and call_date:
+            offer_call_counts_by_mop_date[mop_name][call_date] += 1
     source_mode = os.getenv("MOP_HIGH_PRIORITY_SOURCE", "templab-history").strip().lower()
     history_path = high_priority_history_path()
     history = load_high_priority_history(history_path, warnings)
@@ -4815,6 +5048,7 @@ def build_high_priority_payload(
             visible_mop_names,
             overdue_from_days,
             offer_call_counts_by_deal_date,
+            offer_call_counts_by_mop_date,
         )
         dashboard_snapshots.append(
             {
@@ -4872,6 +5106,7 @@ def build_high_priority_payload(
                 if str(row.get("mopName") or "")
             }
         ),
+        "offerCalls": visible_offer_calls,
         "snapshots": dashboard_snapshots,
     }
 
@@ -5192,7 +5427,7 @@ def main() -> int:
         mongo_calls_loaded = False
         if call_source == "mongodb":
             mongo_calls_loaded = build_mongo_call_facts(data, settings, mop_settings, window)
-            build_mongo_deal_call_facts(data, settings, window)
+            build_mongo_deal_call_facts(data, settings, mop_settings, window)
             if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
                 build_call_facts(data, session, settings, mop_settings, window)
             elif not mongo_calls_loaded and read_bool_env("MONGO_CALLS_REQUIRED", False):
@@ -5218,7 +5453,7 @@ def main() -> int:
             == "mongodb"
             and os.getenv("MONGO_CALLS_CONFIG_URI", "").strip()
         ):
-            build_mongo_deal_call_facts(data, settings, window)
+            build_mongo_deal_call_facts(data, settings, mop_settings, window)
         apply_manual_fact_adjustments(data, window, include_call_metrics=True)
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
@@ -5279,6 +5514,7 @@ def main() -> int:
             window,
             data.warnings,
             data.offer_call_counts_by_deal_date,
+            data.offer_calls,
         )
         built_report = build_report_rows(data, mop_settings)
         payload = build_dashboard_payload(

@@ -91,6 +91,8 @@ const els = {
   priorityFlowedCount: document.getElementById('priority-flowed-count'),
   priorityStopCount: document.getElementById('priority-stop-count'),
   priorityStatusBody: document.getElementById('priority-status-body'),
+  priorityOfferCaption: document.getElementById('priority-offer-caption'),
+  priorityOfferBody: document.getElementById('priority-offer-body'),
   priorityDealsCaption: document.getElementById('priority-deals-caption'),
   priorityDealsBody: document.getElementById('priority-deals-body'),
   airtimeMonth: document.getElementById('airtime-month'),
@@ -143,7 +145,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261012-4';
+const DASHBOARD_DATA_VERSION = '20261014-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -632,6 +634,12 @@ function setDefaultActiveDeals() {
 function formatDate(value) {
   const parsed = parseISODate(value);
   return parsed ? fullDate(parsed) : '—';
+}
+
+function formatDateTime(value) {
+  const [dateValue, timeValue = ''] = String(value || '').split('T');
+  const dateLabel = formatDate(dateValue);
+  return timeValue ? `${dateLabel} ${timeValue.slice(0, 5)}` : dateLabel;
 }
 
 function dateInRange(value, fromValue, toValue) {
@@ -1529,6 +1537,7 @@ function renderHighPriority() {
 
   if (!snapshot) {
     els.priorityCaption.textContent = 'Нет снимков';
+    els.priorityOfferCaption.textContent = '0 звонков';
     els.priorityDealsCaption.textContent = '0 сделок';
     for (const element of [
       els.priorityOverdueCount,
@@ -1539,6 +1548,7 @@ function renderHighPriority() {
       els.priorityStopCount,
     ]) element.textContent = '0';
     els.priorityStatusBody.innerHTML = '<tr class="empty-row"><td colspan="8">Нет данных</td></tr>';
+    els.priorityOfferBody.innerHTML = '<tr class="empty-row"><td colspan="6">Нет данных</td></tr>';
     els.priorityDealsBody.innerHTML = '<tr class="empty-row"><td colspan="10">Нет данных</td></tr>';
     return;
   }
@@ -1551,6 +1561,14 @@ function renderHighPriority() {
   els.priorityDateTo.value = selectedTo;
   syncPriorityPeriodButtons(selectedFrom, selectedTo);
   const selectedMop = state.priorityMopName || 'all';
+  const offerCallRows = (priorityData.offerCalls || [])
+    .filter((row) => dateInRange(row.date, selectedFrom, selectedTo))
+    .filter((row) => selectedMop === 'all' || row.mopName === selectedMop)
+    .sort((a, b) => String(b.dateTime || b.date || '').localeCompare(String(a.dateTime || a.date || '')));
+  const offerCountsByMop = offerCallRows.reduce((counts, row) => {
+    counts.set(row.mopName, Number(counts.get(row.mopName) || 0) + 1);
+    return counts;
+  }, new Map());
   const snapshotRows = (snapshot.rows || [])
     .filter((row) => selectedMop === 'all' || row.mopName === selectedMop);
   const errorRows = snapshotRows.filter(
@@ -1604,7 +1622,7 @@ function renderHighPriority() {
         overdueCount: currentErrors.length,
         newOverdueCount: movementByMop.get(row.mopName)?.newErrors || 0,
         calledFromPreviousCount: movementByMop.get(row.mopName)?.called || 0,
-        offerCallsCount: movementByMop.get(row.mopName)?.offers || 0,
+        offerCallsCount: offerCountsByMop.get(row.mopName) || 0,
         flowedFromPreviousCount: movementByMop.get(row.mopName)?.flowed || 0,
         withoutCallCount: currentErrors.filter((item) => Number.isFinite(Number(item.daysWithoutCall))).length,
         withoutAttemptCount: currentErrors.filter(
@@ -1652,6 +1670,7 @@ function renderHighPriority() {
   els.priorityDealsCaption.textContent = excludedCount
     ? `Просрочек: ${formatNumber(errorRows.length)} · исключено: ${formatNumber(excludedCount)}`
     : `Просрочек: ${formatNumber(errorRows.length)}`;
+  els.priorityOfferCaption.textContent = `${formatNumber(offerCallRows.length)} звонков за выбранный период`;
 
   els.priorityStatusBody.innerHTML = mopRows.length
     ? mopRows.map((row) => `
@@ -1669,6 +1688,30 @@ function renderHighPriority() {
       </tr>
     `).join('')
     : '<tr class="empty-row"><td colspan="10">Нет данных по выбранному МОПу</td></tr>';
+
+  els.priorityOfferBody.innerHTML = offerCallRows.length
+    ? offerCallRows.map((row) => {
+      const sourceLabel = row.selectionSource === 'analysis'
+        ? 'Анализ TempLab'
+        : 'Транскрибация';
+      const dealLink = row.dealId && row.dealUrl
+        ? `<a class="deal-link" href="${escapeHtml(row.dealUrl)}" target="_blank" rel="noreferrer">#${escapeHtml(row.dealId)}</a>`
+        : '—';
+      const recording = row.recordingUrl
+        ? `<div class="priority-audio"><audio controls preload="none" src="${escapeHtml(row.recordingUrl)}"></audio><a href="${escapeHtml(row.recordingUrl)}" target="_blank" rel="noreferrer">Открыть</a></div>`
+        : '<span class="priority-recording-missing">Запись не передана</span>';
+      return `
+        <tr>
+          <td>${escapeHtml(formatDateTime(row.dateTime || row.date))}</td>
+          <td><strong>${escapeHtml(row.mopName || '—')}</strong></td>
+          <td>${dealLink}</td>
+          <td class="priority-offer-reason"><strong>${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(row.selectionReason || 'Оффер найден по правилам TempLab')}</span></td>
+          <td>${formatDuration(row.durationSeconds)}</td>
+          <td>${recording}</td>
+        </tr>
+      `;
+    }).join('')
+    : '<tr class="empty-row"><td colspan="6">За выбранный период офферные звонки не найдены</td></tr>';
 
   els.priorityDealsBody.innerHTML = dealRows.length
     ? dealRows.map((row) => {

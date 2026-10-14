@@ -17,7 +17,10 @@ from scripts.sync_mop_report import (
     apply_mongo_call_aggregates,
     apply_mongo_deal_call_dates,
     apply_mongo_offer_counts_to_active_deals,
+    apply_offer_call_details,
     apply_transcription_offer_fallbacks,
+    build_mongo_offer_call_pipeline,
+    build_offer_call_details,
     build_mongo_call_facts,
     build_mongo_call_aggregation_pipeline,
     build_mongo_deal_call_pipeline,
@@ -134,8 +137,70 @@ class MongoCallPipelineTests(unittest.TestCase):
             "Менеджер подтвердил режим работы и готовность провести экскурсию по ЖК."
         ))
 
+    def test_offer_pipeline_keeps_recording_and_manager_fields(self) -> None:
+        tz = ZoneInfo("Asia/Yekaterinburg")
+        window = ReportWindow(
+            datetime(2026, 10, 1, tzinfo=tz),
+            datetime(2026, 10, 14, tzinfo=tz),
+        )
+
+        pipeline = build_mongo_offer_call_pipeline(window, "Asia/Yekaterinburg")
+        serialized = str(pipeline)
+
+        self.assertIn("recording_url", serialized)
+        self.assertIn("recordingUrl", serialized)
+        self.assertIn("mopName", serialized)
+        self.assertIn("dateTime", serialized)
+        self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
+
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_builds_global_offer_details_from_analysis_and_transcription(self) -> None:
+        rows = [
+            {
+                "callUid": "analysis-1",
+                "day": "2026-10-13",
+                "dateTime": "2026-10-13T10:30:00",
+                "mopName": "Данил Войнов",
+                "dealId": "501",
+                "durationSeconds": 95,
+                "recordingUrl": "https://records.example/call-1.mp3",
+                "presentation": "Предложил квартиру 40 квадратов за 5 млн рублей.",
+            },
+            {
+                "callUid": "transcript-1",
+                "day": "2026-10-14",
+                "dateTime": "2026-10-14T09:00:00",
+                "mopName": "Попова Олеся",
+                "dealId": "",
+                "durationSeconds": 60,
+                "presentation": "",
+            },
+        ]
+        transcripts = [{
+            "uuid": "transcript-1",
+            "transcription": "Появилась евродвушка 38 квадратов по цене 4,9 млн.",
+        }]
+
+        details = build_offer_call_details(
+            rows,
+            transcripts,
+            SimpleNamespace(bitrix_webhook_url="https://crm.example/rest/1/token/"),  # type: ignore[arg-type]
+            test_mop_settings(),
+        )
+        data = MopReportData()
+        apply_offer_call_details(data, details)
+
+        self.assertEqual(len(details), 2)
+        self.assertEqual(details[0]["selectionSource"], "transcription")
+        self.assertEqual(details[1]["mopName"], "Войнов Данил")
+        self.assertEqual(details[1]["dealUrl"], "https://crm.example/crm/deal/details/501/")
+        self.assertEqual(data.offer_calls_by_deal, {"501": 1})
+        self.assertEqual(
+            data.offer_call_counts_by_deal_date,
+            {"501": {"2026-10-13": 1}},
+        )
+
     def test_transcription_fallback_counts_each_offer_call_once(self) -> None:
         rows = [
             {

@@ -597,6 +597,7 @@ select {
 }
 
 .priority-status-panel,
+.priority-offer-panel,
 .priority-deals-panel {
   min-width: 0;
   box-shadow: var(--shadow);
@@ -652,6 +653,76 @@ select {
 
 .table-wrap--priority {
   max-height: 520px;
+}
+
+.table-wrap--offer-calls {
+  max-height: 420px;
+}
+
+.priority-offer-table {
+  min-width: 1040px;
+  table-layout: fixed;
+}
+
+.priority-offer-table th,
+.priority-offer-table td {
+  padding: 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  vertical-align: middle;
+  white-space: normal;
+}
+
+.priority-offer-table th:nth-child(1) { width: 12%; }
+.priority-offer-table th:nth-child(2) { width: 14%; }
+.priority-offer-table th:nth-child(3) { width: 8%; }
+.priority-offer-table th:nth-child(4) { width: 31%; }
+.priority-offer-table th:nth-child(5) { width: 9%; }
+.priority-offer-table th:nth-child(6) { width: 26%; }
+
+.priority-offer-table td:nth-child(n+2) {
+  text-align: left;
+}
+
+.priority-offer-reason strong,
+.priority-offer-reason span {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.priority-offer-reason strong {
+  font-size: 12px;
+}
+
+.priority-offer-reason span {
+  margin-top: 3px;
+  color: var(--muted);
+}
+
+.priority-audio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.priority-audio audio {
+  width: min(220px, 100%);
+  height: 34px;
+}
+
+.priority-audio a {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.priority-recording-missing {
+  margin: 0 !important;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: left !important;
 }
 
 .priority-days {
@@ -1658,6 +1729,10 @@ select {
 
   .data-table.priority-deals-table {
     min-width: 1280px;
+  }
+
+  .data-table.priority-offer-table {
+    min-width: 1040px;
   }
 
   .contest-banner,
