@@ -36448,7 +36448,12 @@
       "previousDate": "2026-10-12"
     },
     "2026-10-14": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6439",
+        "6573",
+        "6603",
+        "6639"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-14",
@@ -36917,32 +36922,12 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-23",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 20,
-          "dealId": "6603",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6603/",
-          "lastCallAttemptDate": "2026-10-13",
-          "lastSuccessfulCommunicationDate": "2026-09-24",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "offerCallsByDate": {
-            "2026-09-24": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Динара",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-22",
-          "daysWithoutAttempt": 8,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 20,
           "dealId": "6573",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6573/",
-          "lastCallAttemptDate": "2026-10-06",
+          "lastCallAttemptDate": "2026-10-14",
           "lastSuccessfulCommunicationDate": "2026-09-24",
           "meetingHeld": false,
           "mopId": "",
@@ -37122,11 +37107,11 @@
         },
         {
           "dateCreate": "2026-09-25",
-          "daysWithoutAttempt": 6,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "6639",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6639/",
-          "lastCallAttemptDate": "2026-10-08",
+          "lastCallAttemptDate": "2026-10-14",
           "lastSuccessfulCommunicationDate": "2026-09-29",
           "meetingHeld": true,
           "mopId": "",
@@ -37137,7 +37122,7 @@
           },
           "offerCallsCount": 3,
           "stageId": "",
-          "stageName": "0-2 звонка после показа",
+          "stageName": "3-7 звонков после показа",
           "title": "Светлана",
           "utmSource": ""
         },
@@ -37362,7 +37347,6 @@
         "6515",
         "6571",
         "6573",
-        "6603",
         "6639",
         "6710",
         "6722",
