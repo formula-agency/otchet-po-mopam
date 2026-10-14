@@ -3015,15 +3015,25 @@ def apply_offer_recording_urls(
     request_documents: list[dict[str, Any]],
 ) -> int:
     urls_by_uid: dict[str, str] = {}
+
+    def recording_url_rank(value: str) -> int:
+        host = (urlparse(value).hostname or "").lower()
+        if host == "cloudpbx.beeline.ru":
+            return 3
+        if host and host != "api.formula.templab.ru":
+            return 2
+        return 1
+
     for document in request_documents:
         call_uid = str(document.get("call_uuid") or "").strip()
         recording_url = str(document.get("audio_url_masked") or "").strip()
         if (
             call_uid
             and recording_url.lower().startswith(("http://", "https://"))
-            and call_uid not in urls_by_uid
         ):
-            urls_by_uid[call_uid] = recording_url
+            current_url = urls_by_uid.get(call_uid, "")
+            if not current_url or recording_url_rank(recording_url) > recording_url_rank(current_url):
+                urls_by_uid[call_uid] = recording_url
     applied = 0
     for detail in details:
         if detail.get("recordingUrl"):

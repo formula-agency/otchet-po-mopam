@@ -165,6 +165,7 @@ class MongoCallAggregateTests(unittest.TestCase):
         applied = apply_offer_recording_urls(
             details,
             [
+                {"call_uuid": "call-1", "audio_url_masked": "https://api.formula.templab.ru/storage/calls/1"},
                 {"call_uuid": "call-1", "audio_url_masked": "https://records.example/1.mp3"},
                 {"call_uuid": "call-2", "audio_url_masked": "https://records.example/new-2.mp3"},
             ],
