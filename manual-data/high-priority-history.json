@@ -37705,24 +37705,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-08-13",
-          "daysWithoutAttempt": 17,
-          "daysWithoutCall": 17,
-          "dealId": "5927",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5927/",
-          "lastCallAttemptDate": "2026-09-28",
-          "lastSuccessfulCommunicationDate": "2026-09-28",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Совершить первый контакт",
-          "title": "Ахметов Рустам Тимербаевич",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-05-25",
           "daysWithoutAttempt": 16,
           "daysWithoutCall": 16,
@@ -38137,7 +38119,6 @@
       "newOverdueDealIds": [
         "4251",
         "4337",
-        "5927",
         "6705",
         "6749",
         "6757"
