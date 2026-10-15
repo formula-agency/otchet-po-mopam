@@ -3088,6 +3088,64 @@ def build_mongo_snapshot_call_diagnostic_pipeline(
     ]
 
 
+def build_mongo_dashboard_call_diagnostic_pipeline(
+    window: ReportWindow,
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "$match": {
+                "call_date_key": {
+                    "$gte": window.start.date().isoformat(),
+                    "$lte": window.end.date().isoformat(),
+                }
+            }
+        },
+        {
+            "$project": {
+                "day": "$call_date_key",
+                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
+                "classification": "$call_classification",
+                "callStatus": "$call_status",
+                "telephonyCount": {
+                    "$convert": {
+                        "input": "$telephony_count",
+                        "to": "int",
+                        "onError": 0,
+                        "onNull": 0,
+                    }
+                },
+            }
+        },
+        {"$match": {"mopName": {"$ne": ""}}},
+        {
+            "$group": {
+                "_id": {"day": "$day", "mopName": "$mopName"},
+                "dashboardTelephonyCount": {"$sum": "$telephonyCount"},
+                "dashboardRows": {"$sum": 1},
+                "dashboardCompletedRows": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$callStatus", MONGO_SUCCESSFUL_CALL_STATUS]},
+                                    {
+                                        "$in": [
+                                            "$classification",
+                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                        ]
+                                    },
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+            }
+        },
+    ]
+
+
 def calculate_target_after_meeting_entries(
     call_rows: list[dict[str, Any]],
     meeting_documents: list[dict[str, Any]],
@@ -4922,6 +4980,32 @@ def build_mongo_call_facts(
                         "snapshotActiveCalls",
                     ):
                         target_row[field_name] = snapshot_row.get(field_name, 0)
+                dashboard_rows = list(
+                    reader.collection("dashboard_page_snapshot_formula").aggregate(
+                        build_mongo_dashboard_call_diagnostic_pipeline(window),
+                        allowDiskUse=False,
+                        maxTimeMS=timeout_ms,
+                    )
+                )
+                for dashboard_row in dashboard_rows:
+                    group = dashboard_row.get("_id")
+                    if not isinstance(group, dict):
+                        continue
+                    identity = (
+                        str(group.get("day") or ""),
+                        str(group.get("mopName") or ""),
+                    )
+                    target_row = rows_by_identity.get(identity)
+                    if target_row is None:
+                        target_row = {"_id": group}
+                        rows.append(target_row)
+                        rows_by_identity[identity] = target_row
+                    for field_name in (
+                        "dashboardTelephonyCount",
+                        "dashboardRows",
+                        "dashboardCompletedRows",
+                    ):
+                        target_row[field_name] = dashboard_row.get(field_name, 0)
             total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
                 data,
                 rows,
