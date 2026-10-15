@@ -38415,8 +38415,10 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
+          "offerCallsByDate": {
+            "2026-09-21": 1
+          },
+          "offerCallsCount": 1,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Василий",
@@ -38595,8 +38597,10 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
+          "offerCallsByDate": {
+            "2026-09-07": 1
+          },
+          "offerCallsCount": 1,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Лейла",
@@ -38830,9 +38834,10 @@
           "mopId": "",
           "mopName": "Гавриленко Елена",
           "offerCallsByDate": {
+            "2026-08-24": 1,
             "2026-08-25": 1
           },
-          "offerCallsCount": 1,
+          "offerCallsCount": 2,
           "stageId": "",
           "stageName": "3-7 звонков после показа",
           "title": "Елена",
@@ -38921,8 +38926,10 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Жуков Лев",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
+          "offerCallsByDate": {
+            "2026-10-07": 1
+          },
+          "offerCallsCount": 1,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Диана",
@@ -38939,8 +38946,10 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
+          "offerCallsByDate": {
+            "2026-10-05": 1
+          },
+          "offerCallsCount": 1,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Елена",
