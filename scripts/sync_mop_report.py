@@ -3704,34 +3704,6 @@ def build_mongo_deal_call_facts(
                     + json.dumps(meeting_statuses, ensure_ascii=False, sort_keys=True)
                 )
 
-                analytics_meetings: dict[str, int] = defaultdict(int)
-                analytics_meeting_ids: set[str] = set()
-                for document in reader.collection("analytics_page_snapshot").find(
-                    {"meeting_is_completed": True},
-                    {
-                        "_id": 0,
-                        "meeting_complete_datetime": 1,
-                        "meeting_id": 1,
-                        "user_name": 1,
-                    },
-                ):
-                    completed_at = parse_bitrix_datetime(
-                        document.get("meeting_complete_datetime"),
-                        settings.report_timezone,
-                    )
-                    if completed_at is None or (completed_at.year, completed_at.month) != (2026, 9):
-                        continue
-                    meeting_id = str(document.get("meeting_id") or "").strip()
-                    identity = meeting_id or json.dumps(document, default=str, sort_keys=True)
-                    if identity in analytics_meeting_ids:
-                        continue
-                    analytics_meeting_ids.add(identity)
-                    responsible = str(document.get("user_name") or "").strip() or "<empty>"
-                    analytics_meetings[responsible] += 1
-                print(
-                    "MongoDB September analytics meetings: "
-                    + json.dumps(analytics_meetings, ensure_ascii=False, sort_keys=True)
-                )
                 print(
                     "MongoDB fs.files sample type: "
                     f"contentType={grid_file_sample.get('contentType', '')}, "
