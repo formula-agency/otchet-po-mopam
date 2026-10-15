@@ -37249,6 +37249,8 @@
         "6052",
         "6172",
         "6473",
+        "6571",
+        "6710",
         "6726"
       ],
       "calledFromPreviousEvaluated": true,
@@ -37636,24 +37638,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-22",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 23,
-          "dealId": "6571",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6571/",
-          "lastCallAttemptDate": "2026-10-13",
-          "lastSuccessfulCommunicationDate": "2026-09-22",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Меньшикова Снежана Михайловна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-03",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 22,
@@ -37947,24 +37931,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 12,
-          "daysWithoutCall": 12,
-          "dealId": "6710",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6710/",
-          "lastCallAttemptDate": "2026-10-03",
-          "lastSuccessfulCommunicationDate": "2026-10-03",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Мельник Татьяна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-10-03",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 12,
@@ -38109,12 +38075,10 @@
         "6473",
         "6475",
         "6515",
-        "6571",
         "6573",
         "6601",
         "6639",
         "6678",
-        "6710",
         "6722",
         "6726",
         "6761"
