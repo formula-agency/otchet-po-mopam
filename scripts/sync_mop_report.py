@@ -3665,6 +3665,7 @@ def build_mongo_deal_call_facts(
                 meeting_diagnostics: dict[str, dict[str, Any]] = {}
                 meeting_statuses: dict[str, int] = defaultdict(int)
                 meeting_samples: dict[str, dict[str, Any]] = {}
+                completed_meeting_records: list[dict[str, str]] = []
                 meeting_ids: set[str] = set()
                 for document in reader.collection("okk_meetings_check").find(
                     {"meeting_complete_date": {"$ne": None}},
@@ -3694,6 +3695,14 @@ def build_mongo_deal_call_facts(
                     status = str(document.get("meeting_status") or "").strip()
                     meeting_statuses[status] += 1
                     meeting_samples.setdefault(status, document)
+                    if status in {"Проведена", "Прошла успешно"}:
+                        completed_meeting_records.append(
+                            {
+                                "id": meeting_id.translate(str.maketrans("0123456789", "abcdefghij")),
+                                "date": completed_at.date().isoformat(),
+                                "mop": str(document.get("responsible_name") or "").strip(),
+                            }
+                        )
                     responsible = str(document.get("responsible_name") or "").strip() or "<empty>"
                     summary = meeting_diagnostics.setdefault(
                         responsible,
@@ -3713,9 +3722,14 @@ def build_mongo_deal_call_facts(
                     "MongoDB September OKK meeting samples: "
                     + json.dumps(meeting_samples, ensure_ascii=False, default=str, sort_keys=True)
                 )
+                print(
+                    "MongoDB September OKK completed meeting records: "
+                    + json.dumps(completed_meeting_records, ensure_ascii=False, sort_keys=True)
+                )
 
                 analytics_diagnostics: dict[str, int] = defaultdict(int)
                 analytics_ids: set[str] = set()
+                analytics_records: list[dict[str, str]] = []
                 september_start = datetime(2026, 9, 1, tzinfo=ZoneInfo(settings.report_timezone))
                 october_start = datetime(2026, 10, 1, tzinfo=ZoneInfo(settings.report_timezone))
                 analytics_query = {
@@ -3752,9 +3766,24 @@ def build_mongo_deal_call_facts(
                     analytics_ids.add(identity)
                     responsible = str(document.get("user_name") or "").strip() or "<empty>"
                     analytics_diagnostics[responsible] += 1
+                    completed_at = parse_bitrix_datetime(
+                        document.get("meeting_complete_datetime"),
+                        settings.report_timezone,
+                    )
+                    analytics_records.append(
+                        {
+                            "id": meeting_id.translate(str.maketrans("0123456789", "abcdefghij")),
+                            "date": completed_at.date().isoformat() if completed_at else "",
+                            "mop": responsible,
+                        }
+                    )
                 print(
                     "MongoDB September analytics meetings: "
                     + json.dumps(analytics_diagnostics, ensure_ascii=False, sort_keys=True)
+                )
+                print(
+                    "MongoDB September analytics meeting records: "
+                    + json.dumps(analytics_records, ensure_ascii=False, sort_keys=True)
                 )
 
                 print(
