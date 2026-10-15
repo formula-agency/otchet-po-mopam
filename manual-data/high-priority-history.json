@@ -37869,24 +37869,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-03-18",
-          "daysWithoutAttempt": 15,
-          "daysWithoutCall": 15,
-          "dealId": "4337",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4337/",
-          "lastCallAttemptDate": "2026-09-30",
-          "lastSuccessfulCommunicationDate": "2026-09-30",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Абоскалова Анна",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Нелля Викторовна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-30",
           "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
@@ -38118,7 +38100,6 @@
       ],
       "newOverdueDealIds": [
         "4251",
-        "4337",
         "6705",
         "6749",
         "6757"
