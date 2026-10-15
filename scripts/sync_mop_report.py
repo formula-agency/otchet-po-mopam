@@ -171,7 +171,6 @@ MANUAL_SALES_DATE_OVERRIDES = {
     "5461": date(2026, 6, 30),
     "5497": date(2026, 6, 30),
     "5518": date(2026, 6, 30),
-    "5730": date(2026, 9, 1),
     "5824": date(2026, 8, 17),
     "5377": date(2026, 8, 31),
     "5891": date(2026, 8, 31),
@@ -3854,6 +3853,50 @@ def build_mongo_deal_call_facts(
                 print(
                     "MongoDB September family history states: "
                     + json.dumps(history_states, ensure_ascii=False, sort_keys=True)
+                )
+
+                october_after_meeting: dict[str, dict[str, int]] = {}
+                october_call_ids: set[str] = set()
+                october_start = datetime(2026, 10, 1, tzinfo=ZoneInfo(settings.report_timezone))
+                november_start = datetime(2026, 11, 1, tzinfo=ZoneInfo(settings.report_timezone))
+                for document in reader.collection("analytics_page_snapshot").find(
+                    {
+                        "is_after_meeting": True,
+                        "$or": [
+                            {"date": {"$gte": october_start, "$lt": november_start}},
+                            {"date": {"$gte": "2026-10-01", "$lt": "2026-11-01"}},
+                            {"call_date_key": {"$gte": "2026-10-01", "$lt": "2026-11-01"}},
+                        ],
+                    },
+                    {
+                        "_id": 0,
+                        "call_uid": 1,
+                        "call_duration": 1,
+                        "user_name": 1,
+                    },
+                    max_time_ms=timeout_ms,
+                ).limit(10000):
+                    call_uid = str(document.get("call_uid") or "").strip()
+                    if not call_uid or call_uid in october_call_ids:
+                        continue
+                    october_call_ids.add(call_uid)
+                    responsible = str(document.get("user_name") or "").strip() or "<empty>"
+                    summary = october_after_meeting.setdefault(
+                        responsible,
+                        {"calls": 0, "seconds": 0},
+                    )
+                    summary["calls"] += 1
+                    summary["seconds"] += max(0, parse_number(document.get("call_duration")))
+                print("MongoDB October after-meeting calls begin")
+                for responsible, summary in sorted(october_after_meeting.items()):
+                    print(
+                        "MongoDB October after-meeting MOP: "
+                        f"{responsible} | calls={summary['calls']} | seconds={summary['seconds']}"
+                    )
+                print(
+                    "MongoDB October after-meeting total: "
+                    f"calls={sum(item['calls'] for item in october_after_meeting.values())} | "
+                    f"seconds={sum(item['seconds'] for item in october_after_meeting.values())}"
                 )
 
                 print(
