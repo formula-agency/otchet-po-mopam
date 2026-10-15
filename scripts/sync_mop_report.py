@@ -3774,6 +3774,35 @@ def build_mongo_deal_call_facts(
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
                 print("MongoDB call fields: " + ", ".join(sorted(sample)))
+                diagnostic_fields = [
+                    field_name
+                    for field_name in sorted(sample)
+                    if any(
+                        marker in normalize_key(field_name)
+                        for marker in ("direction", "type", "status", "incoming", "outgoing")
+                    )
+                ]
+                for field_name in diagnostic_fields:
+                    value_counts = list(
+                        collection.aggregate(
+                            [
+                                {"$match": {"call_date": {"$gte": window.start, "$lte": window.end}}},
+                                {
+                                    "$group": {
+                                        "_id": f"${field_name}",
+                                        "count": {"$sum": 1},
+                                    }
+                                },
+                                {"$sort": {"count": -1}},
+                            ],
+                            allowDiskUse=False,
+                            maxTimeMS=timeout_ms,
+                        )
+                    )
+                    print(
+                        f"MongoDB call {field_name} values: "
+                        + json.dumps(value_counts, ensure_ascii=False, default=str)
+                    )
                 print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
                 for diagnostic_collection in ("call_analysis", "call_transcriptions"):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
