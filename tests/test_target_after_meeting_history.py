@@ -12,6 +12,18 @@ from scripts.sync_mop_report import (
 
 
 class TargetAfterMeetingHistoryTest(unittest.TestCase):
+    def test_closed_september_snapshot_matches_templab_total(self):
+        history_path = Path(__file__).resolve().parents[1] / "manual-data" / "target-after-meeting-history.json"
+        entries = load_target_after_meeting_history(history_path)
+
+        september_seconds = sum(
+            entry.seconds
+            for entry in entries
+            if entry.event_date.year == 2026 and entry.event_date.month == 9
+        )
+
+        self.assertEqual(september_seconds, 53_663)
+
     def test_keeps_closed_months_and_replaces_current_month_snapshot(self):
         historical = [
             TargetAfterMeetingEntry(date(2026, 9, 30), "Жуков Лев", 600),
