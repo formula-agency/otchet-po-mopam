@@ -2705,6 +2705,13 @@ def build_mongo_call_aggregation_pipeline(
                 "call_status": 1,
                 "callType": "$call_type",
                 "isInternal": "$is_internal",
+                "userDepartments": {
+                    "$cond": [
+                        {"$isArray": "$user_departments"},
+                        "$user_departments",
+                        [],
+                    ]
+                },
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2841,6 +2848,34 @@ def build_mongo_call_aggregation_pipeline(
                                 "$and": [
                                     {"$ne": ["$isInternal", True]},
                                     "$validCompletedCall",
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "departmentCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    "$validCompletedCall",
+                                    {"$gt": [{"$size": "$userDepartments"}, 0]},
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "departmentlessCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    "$validCompletedCall",
+                                    {"$eq": [{"$size": "$userDepartments"}, 0]},
                                 ]
                             },
                             1,
