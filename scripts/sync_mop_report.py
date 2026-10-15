@@ -171,6 +171,7 @@ MANUAL_SALES_DATE_OVERRIDES = {
     "5461": date(2026, 6, 30),
     "5497": date(2026, 6, 30),
     "5518": date(2026, 6, 30),
+    "5730": date(2026, 9, 1),
     "5824": date(2026, 8, 17),
     "5377": date(2026, 8, 31),
     "5891": date(2026, 8, 31),
@@ -3791,6 +3792,68 @@ def build_mongo_deal_call_facts(
                 print(
                     "MongoDB September analytics meeting records: "
                     + json.dumps(analytics_records, ensure_ascii=False, sort_keys=True)
+                )
+
+                history_meetings: dict[str, dict[str, int]] = {}
+                history_states: dict[str, int] = defaultdict(int)
+                history_families: set[str] = set()
+                for document in reader.collection(
+                    "formula_client_history_family_analytics_cache"
+                ).find(
+                    {"meeting_completed_at": {"$ne": None}},
+                    {
+                        "_id": 0,
+                        "family_cell_id": 1,
+                        "primary_deal_id": 1,
+                        "crm_responsible_manager_name": 1,
+                        "meeting_activity_count": 1,
+                        "meeting_completed_at": 1,
+                        "meeting_current_completed_at": 1,
+                        "meeting_current_state": 1,
+                        "meeting_status": 1,
+                    },
+                    max_time_ms=timeout_ms,
+                ):
+                    completed_at = parse_bitrix_datetime(
+                        document.get("meeting_current_completed_at")
+                        or document.get("meeting_completed_at"),
+                        settings.report_timezone,
+                    )
+                    if completed_at is None or (completed_at.year, completed_at.month) != (2026, 9):
+                        continue
+                    identity = str(
+                        document.get("family_cell_id")
+                        or document.get("primary_deal_id")
+                        or ""
+                    ).strip()
+                    if not identity or identity in history_families:
+                        continue
+                    history_families.add(identity)
+                    responsible = str(
+                        document.get("crm_responsible_manager_name") or ""
+                    ).strip() or "<empty>"
+                    summary = history_meetings.setdefault(
+                        responsible,
+                        {"families": 0, "activities": 0},
+                    )
+                    summary["families"] += 1
+                    summary["activities"] += max(
+                        0,
+                        parse_number(document.get("meeting_activity_count")),
+                    )
+                    state = str(
+                        document.get("meeting_current_state")
+                        or document.get("meeting_status")
+                        or ""
+                    ).strip()
+                    history_states[state] += 1
+                print(
+                    "MongoDB September family history meetings: "
+                    + json.dumps(history_meetings, ensure_ascii=False, sort_keys=True)
+                )
+                print(
+                    "MongoDB September family history states: "
+                    + json.dumps(history_states, ensure_ascii=False, sort_keys=True)
                 )
 
                 print(
