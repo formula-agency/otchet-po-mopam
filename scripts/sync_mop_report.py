@@ -3662,6 +3662,76 @@ def build_mongo_deal_call_facts(
                         sorted(grid_metadata) if isinstance(grid_metadata, dict) else []
                     )
                 )
+                meeting_diagnostics: dict[str, dict[str, Any]] = {}
+                meeting_statuses: dict[str, int] = defaultdict(int)
+                meeting_ids: set[str] = set()
+                for document in reader.collection("okk_meetings_check").find(
+                    {"meeting_complete_date": {"$ne": None}},
+                    {
+                        "_id": 0,
+                        "meeting_complete_date": 1,
+                        "meeting_id": 1,
+                        "meeting_status": 1,
+                        "responsible_name": 1,
+                    },
+                ):
+                    completed_at = parse_bitrix_datetime(
+                        document.get("meeting_complete_date"),
+                        settings.report_timezone,
+                    )
+                    if completed_at is None or (completed_at.year, completed_at.month) != (2026, 9):
+                        continue
+                    meeting_id = str(document.get("meeting_id") or "").strip()
+                    identity = meeting_id or json.dumps(document, default=str, sort_keys=True)
+                    if identity in meeting_ids:
+                        continue
+                    meeting_ids.add(identity)
+                    status = str(document.get("meeting_status") or "").strip()
+                    meeting_statuses[status] += 1
+                    responsible = str(document.get("responsible_name") or "").strip() or "<empty>"
+                    summary = meeting_diagnostics.setdefault(
+                        responsible,
+                        {"total": 0, "statuses": defaultdict(int)},
+                    )
+                    summary["total"] += 1
+                    summary["statuses"][status] += 1
+                print(
+                    "MongoDB September OKK meetings: "
+                    + json.dumps(meeting_diagnostics, ensure_ascii=False, default=dict, sort_keys=True)
+                )
+                print(
+                    "MongoDB September OKK meeting statuses: "
+                    + json.dumps(meeting_statuses, ensure_ascii=False, sort_keys=True)
+                )
+
+                analytics_meetings: dict[str, int] = defaultdict(int)
+                analytics_meeting_ids: set[str] = set()
+                for document in reader.collection("analytics_page_snapshot").find(
+                    {"meeting_is_completed": True},
+                    {
+                        "_id": 0,
+                        "meeting_complete_datetime": 1,
+                        "meeting_id": 1,
+                        "user_name": 1,
+                    },
+                ):
+                    completed_at = parse_bitrix_datetime(
+                        document.get("meeting_complete_datetime"),
+                        settings.report_timezone,
+                    )
+                    if completed_at is None or (completed_at.year, completed_at.month) != (2026, 9):
+                        continue
+                    meeting_id = str(document.get("meeting_id") or "").strip()
+                    identity = meeting_id or json.dumps(document, default=str, sort_keys=True)
+                    if identity in analytics_meeting_ids:
+                        continue
+                    analytics_meeting_ids.add(identity)
+                    responsible = str(document.get("user_name") or "").strip() or "<empty>"
+                    analytics_meetings[responsible] += 1
+                print(
+                    "MongoDB September analytics meetings: "
+                    + json.dumps(analytics_meetings, ensure_ascii=False, sort_keys=True)
+                )
                 print(
                     "MongoDB fs.files sample type: "
                     f"contentType={grid_file_sample.get('contentType', '')}, "
