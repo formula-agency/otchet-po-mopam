@@ -18779,8 +18779,48 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-15",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 215,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-15",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-15",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 352,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-15",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 344,
+      "calls": 4,
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-15T03:34:18+00:00"
+  "updatedAt": "2026-10-15T05:20:00+00:00"
 }
