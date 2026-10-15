@@ -2788,6 +2788,144 @@ def build_mongo_call_aggregation_pipeline(
     ]
 
 
+def build_mongo_target_after_meeting_pipeline(
+    start: datetime,
+    end: datetime,
+) -> list[dict[str, Any]]:
+    return [
+        {"$match": {"call_date": {"$gte": start, "$lte": end}}},
+        {
+            "$lookup": {
+                "from": "call_analysis",
+                "localField": "call_uid",
+                "foreignField": "uuid",
+                "as": "analysisDocs",
+            }
+        },
+        {
+            "$project": {
+                "callUid": "$call_uid",
+                "callAt": "$call_date",
+                "durationSeconds": {
+                    "$convert": {
+                        "input": "$call_duration",
+                        "to": "int",
+                        "onError": 0,
+                        "onNull": 0,
+                    }
+                },
+                "dealId": {
+                    "$convert": {
+                        "input": "$b24_deal_id",
+                        "to": "string",
+                        "onError": "",
+                        "onNull": "",
+                    }
+                },
+                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
+                "classification": {
+                    "$arrayElemAt": ["$analysisDocs.call_classification", 0]
+                },
+            }
+        },
+        {
+            "$match": {
+                "callUid": {"$nin": [None, ""]},
+                "dealId": {"$ne": ""},
+                "mopName": {"$ne": ""},
+                "durationSeconds": {"$gt": 0},
+                "classification": {"$in": list(MONGO_TARGET_CALL_CLASSIFICATIONS)},
+            }
+        },
+        {
+            "$group": {
+                "_id": "$callUid",
+                "callAt": {"$first": "$callAt"},
+                "durationSeconds": {"$first": "$durationSeconds"},
+                "dealId": {"$first": "$dealId"},
+                "mopName": {"$first": "$mopName"},
+            }
+        },
+    ]
+
+
+def calculate_target_after_meeting_entries(
+    call_rows: list[dict[str, Any]],
+    meeting_documents: list[dict[str, Any]],
+    timezone_name: str,
+) -> list[TargetAfterMeetingEntry]:
+    meetings_by_deal: dict[str, list[datetime]] = defaultdict(list)
+    for document in meeting_documents:
+        deal_id = str(document.get("deal_id") or "").strip()
+        completed_at = parse_bitrix_datetime(
+            document.get("meeting_complete_date"),
+            timezone_name,
+        )
+        if deal_id and completed_at is not None:
+            meetings_by_deal[deal_id].append(completed_at)
+
+    seconds_by_day_and_mop: dict[tuple[date, str], int] = defaultdict(int)
+    for row in call_rows:
+        deal_id = str(row.get("dealId") or "").strip()
+        mop_name = str(row.get("mopName") or "").strip()
+        call_at = parse_bitrix_datetime(row.get("callAt"), timezone_name)
+        duration_seconds = max(0, parse_number(row.get("durationSeconds")))
+        if not deal_id or not mop_name or call_at is None or not duration_seconds:
+            continue
+        if not any(meeting_at <= call_at for meeting_at in meetings_by_deal.get(deal_id, [])):
+            continue
+        seconds_by_day_and_mop[(call_at.date(), mop_name)] += duration_seconds
+
+    return [
+        TargetAfterMeetingEntry(event_date, mop_name, seconds)
+        for (event_date, mop_name), seconds in sorted(
+            seconds_by_day_and_mop.items(),
+            key=lambda item: (item[0][0], normalize_key(item[0][1])),
+        )
+    ]
+
+
+def replace_target_after_meeting_facts(
+    data: MopReportData,
+    entries: list[TargetAfterMeetingEntry],
+    mop_settings: MopSettings,
+    start_date: date,
+    end_date: date,
+) -> int:
+    for event_date, metrics_by_mop in data.daily_facts.items():
+        if start_date <= event_date <= end_date:
+            for metrics in metrics_by_mop.values():
+                metrics.target_minutes_after_meeting_seconds = 0
+
+    imported_seconds = 0
+    for entry in entries:
+        if entry.event_date < start_date or entry.event_date > end_date:
+            continue
+        mop_name = canonical_mop_label(entry.mop_name, mop_settings)
+        if not mop_name or not mop_is_allowed("", mop_name, mop_settings):
+            continue
+        add_fact(
+            data,
+            entry.event_date,
+            "",
+            "target_minutes_after_meeting_seconds",
+            entry.seconds,
+            mop_name=mop_name,
+        )
+        imported_seconds += entry.seconds
+
+    for metrics_by_mop in data.facts.values():
+        for metrics in metrics_by_mop.values():
+            metrics.target_minutes_after_meeting_seconds = 0
+    for event_date, metrics_by_mop in data.daily_facts.items():
+        week_start = week_start_for_date(event_date)
+        for key, metrics in metrics_by_mop.items():
+            data.facts[week_start][key].target_minutes_after_meeting_seconds += (
+                metrics.target_minutes_after_meeting_seconds
+            )
+    return imported_seconds
+
+
 def mongo_first_nonempty_string(field_paths: tuple[str, ...]) -> dict[str, Any]:
     candidates = [
         {
@@ -4469,9 +4607,6 @@ def build_mongo_call_facts(
         ) as reader:
             collection_name = reader.data_sources.get("calls_collection", "mongo_calls")
             collection = reader.collection(collection_name)
-            if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
-                sample = collection.find_one({}, {"_id": 0}) or {}
-                print("MongoDB call fields: " + ", ".join(sorted(sample)))
             pipeline = build_mongo_call_aggregation_pipeline(
                 window,
                 settings.report_timezone,
@@ -4490,6 +4625,79 @@ def build_mongo_call_facts(
                 mop_settings,
             )
             write_mongo_call_fact_cache(mongo_call_fact_cache_path(), rows)
+
+            now = datetime.now(tz=ZoneInfo(settings.report_timezone))
+            completed_through = min(window.end.date(), now.date() - timedelta(days=1))
+            current_month_start = now.date().replace(day=1)
+            target_start_date = max(window.start.date(), current_month_start)
+            if target_start_date <= completed_through:
+                target_start = datetime.combine(
+                    target_start_date,
+                    time.min,
+                    tzinfo=ZoneInfo(settings.report_timezone),
+                )
+                target_end = datetime.combine(
+                    completed_through,
+                    time.max,
+                    tzinfo=ZoneInfo(settings.report_timezone),
+                )
+                try:
+                    target_call_rows = list(
+                        collection.aggregate(
+                            build_mongo_target_after_meeting_pipeline(target_start, target_end),
+                            allowDiskUse=False,
+                            maxTimeMS=timeout_ms,
+                        )
+                    )
+                    meeting_documents = list(
+                        reader.collection("okk_meetings_check").find(
+                            {
+                                "meeting_status": {
+                                    "$in": ["Проведена", "Прошла успешно"]
+                                },
+                                "deal_id": {"$nin": [None, ""]},
+                                "meeting_complete_date": {"$ne": None},
+                            },
+                            {"_id": 0, "deal_id": 1, "meeting_complete_date": 1},
+                            max_time_ms=timeout_ms,
+                        )
+                    )
+                    target_entries = calculate_target_after_meeting_entries(
+                        target_call_rows,
+                        meeting_documents,
+                        settings.report_timezone,
+                    )
+                    target_seconds = replace_target_after_meeting_facts(
+                        data,
+                        target_entries,
+                        mop_settings,
+                        target_start_date,
+                        completed_through,
+                    )
+                    history_path = target_after_meeting_history_path()
+                    target_history = load_target_after_meeting_history(
+                        history_path,
+                        data.warnings,
+                    )
+                    write_target_after_meeting_history(
+                        history_path,
+                        merge_target_after_meeting_entries(
+                            target_history,
+                            target_entries,
+                            now.date(),
+                        ),
+                    )
+                    print(
+                        "MongoDB target airtime after meetings loaded: "
+                        f"{format_duration(target_seconds)} through "
+                        f"{completed_through.isoformat()}"
+                    )
+                except Exception as exc:
+                    data.warnings.append(
+                        "Эфир после встречи из TempLab не обновлен; "
+                        "используются данные Google: "
+                        + safe_error_text(exc)
+                    )
             data.call_source = f"mongodb:formula/{collection_name}"
             data.call_source_server_read_only = reader.server_read_only
             print(

@@ -26,9 +26,12 @@ from scripts.sync_mop_report import (
     build_offer_call_details,
     build_mongo_call_facts,
     build_mongo_call_aggregation_pipeline,
+    build_mongo_target_after_meeting_pipeline,
     build_mongo_deal_call_pipeline,
+    calculate_target_after_meeting_entries,
     key_for_mop_id,
     presentation_contains_offer,
+    replace_target_after_meeting_facts,
     week_start_for_date,
 )
 
@@ -114,6 +117,21 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("Нецелевой звонок", serialized)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
+    def test_target_after_meeting_pipeline_keeps_only_target_calls(self) -> None:
+        tz = ZoneInfo("Asia/Yekaterinburg")
+        start = datetime(2026, 10, 1, tzinfo=tz)
+        end = datetime(2026, 10, 14, 23, 59, 59, tzinfo=tz)
+
+        pipeline = build_mongo_target_after_meeting_pipeline(start, end)
+
+        self.assertEqual(pipeline[0]["$match"]["call_date"], {"$gte": start, "$lte": end})
+        self.assertEqual(pipeline[1]["$lookup"]["from"], "call_analysis")
+        self.assertEqual(
+            pipeline[3]["$match"]["classification"],
+            {"$in": ["Целевой результативный", "Целевой нерезультативный", "Целевой звонок"]},
+        )
+        self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
+
     def test_offer_detection_uses_real_estate_presentations_only(self) -> None:
         self.assertTrue(presentation_contains_offer(
             "Менеджер предложила двухкомнатную квартиру площадью 54 кв. м "
@@ -194,6 +212,60 @@ class MongoCallPipelineTests(unittest.TestCase):
 
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_replaces_rounded_google_airtime_with_exact_templab_seconds(self) -> None:
+        entries = calculate_target_after_meeting_entries(
+            [
+                {
+                    "callUid": "call-before",
+                    "callAt": datetime(2026, 10, 2, 9, 0, tzinfo=ZoneInfo("Asia/Yekaterinburg")),
+                    "durationSeconds": 50,
+                    "dealId": "501",
+                    "mopName": "Войнов Данил",
+                },
+                {
+                    "callUid": "call-after",
+                    "callAt": datetime(2026, 10, 2, 11, 0, tzinfo=ZoneInfo("Asia/Yekaterinburg")),
+                    "durationSeconds": 73,
+                    "dealId": "501",
+                    "mopName": "Войнов Данил",
+                },
+            ],
+            [{"deal_id": "501", "meeting_complete_date": "02.10.2026 10:00"}],
+            "Asia/Yekaterinburg",
+        )
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].seconds, 73)
+
+        data = MopReportData()
+        from scripts.sync_mop_report import add_fact
+
+        add_fact(
+            data,
+            date(2026, 10, 2),
+            "",
+            "target_minutes_after_meeting_seconds",
+            60,
+            mop_name="Войнов Данил",
+        )
+        imported = replace_target_after_meeting_facts(
+            data,
+            entries,
+            test_mop_settings(),
+            date(2026, 10, 1),
+            date(2026, 10, 14),
+        )
+
+        key = "name:войнов данил"
+        self.assertEqual(imported, 73)
+        self.assertEqual(
+            data.daily_facts[date(2026, 10, 2)][key].target_minutes_after_meeting_seconds,
+            73,
+        )
+        self.assertEqual(
+            data.facts[week_start_for_date(date(2026, 10, 2))][key].target_minutes_after_meeting_seconds,
+            73,
+        )
+
     def test_applies_recording_urls_by_call_uuid(self) -> None:
         details = [
             {"callUid": "call-1", "recordingUrl": ""},
