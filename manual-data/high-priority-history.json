@@ -37246,6 +37246,7 @@
     },
     "2026-10-15": {
       "calledFromPreviousDealIds": [
+        "6052",
         "6172",
         "6473"
       ],
@@ -37381,11 +37382,11 @@
         },
         {
           "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 42,
           "dealId": "6172",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6172/",
-          "lastCallAttemptDate": "2026-10-12",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-09-03",
           "meetingHeld": false,
           "mopId": "",
@@ -37907,11 +37908,11 @@
         },
         {
           "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 13,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 13,
           "dealId": "6052",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6052/",
-          "lastCallAttemptDate": "2026-10-02",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-10-02",
           "meetingHeld": true,
           "mopId": "",
@@ -37982,11 +37983,11 @@
         },
         {
           "dateCreate": "2026-10-01",
-          "daysWithoutAttempt": 9,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 9,
           "dealId": "6726",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6726/",
-          "lastCallAttemptDate": "2026-10-06",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-10-06",
           "meetingHeld": true,
           "mopId": "",
@@ -38038,11 +38039,11 @@
         },
         {
           "dateCreate": "2026-10-02",
-          "daysWithoutAttempt": 8,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 8,
           "dealId": "6749",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6749/",
-          "lastCallAttemptDate": "2026-10-07",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-10-07",
           "meetingHeld": true,
           "mopId": "",
