@@ -2883,6 +2883,35 @@ def build_mongo_call_aggregation_pipeline(
                         ]
                     }
                 },
+                "callsAtLeast30Seconds": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    "$validCompletedCall",
+                                    {"$gte": ["$duration", 30]},
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "callsFrom15To29Seconds": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    "$validCompletedCall",
+                                    {"$gte": ["$duration", 15]},
+                                    {"$lt": ["$duration", 30]},
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
                 "serviceCalls": {
                     "$sum": {
                         "$cond": [{"$eq": ["$classification", "Сервисный звонок"]}, 1, 0]
