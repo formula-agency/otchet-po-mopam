@@ -1782,8 +1782,9 @@ def merge_target_after_meeting_entries(
     historical_entries: list[TargetAfterMeetingEntry],
     live_entries: list[TargetAfterMeetingEntry],
     current_date: date,
+    replace_from_date: date | None = None,
 ) -> list[TargetAfterMeetingEntry]:
-    current_month_start = current_date.replace(day=1)
+    current_month_start = replace_from_date or current_date.replace(day=1)
     merged = {
         (entry.event_date, normalize_key(entry.mop_name)): entry
         for entry in historical_entries
@@ -2613,6 +2614,10 @@ def build_deal_metric_facts(
         add_fact(data, event.date, extract_assigned_user_id(deal, mop_settings), "reservations", 1)
 
 
+def meeting_fact_event_date(entry: MeetingLogEntry) -> date:
+    return entry.closed_date or entry.meeting_date
+
+
 def build_meeting_facts(
     data: MopReportData,
     service: Any,
@@ -2638,11 +2643,14 @@ def build_meeting_facts(
     for entry in meeting_entries:
         if not entry.successful:
             continue
-        if entry.meeting_date < window.start.date() or entry.meeting_date > window.end.date():
+        # CRM attributes a held meeting to the date when its successful result
+        # was recorded. This also handles meetings scheduled in an earlier month.
+        event_date = meeting_fact_event_date(entry)
+        if event_date < window.start.date() or event_date > window.end.date():
             continue
         entry_mop_name = canonical_mop_label(entry.mop_name, mop_settings)
         if entry_mop_name:
-            add_fact(data, entry.meeting_date, "", "meetings", 1, mop_name=entry_mop_name)
+            add_fact(data, event_date, "", "meetings", 1, mop_name=entry_mop_name)
             continue
         if not entry.deal_id:
             continue
@@ -2656,7 +2664,7 @@ def build_meeting_facts(
             deal_cache[entry.deal_id] = deal
         add_fact(
             data,
-            entry.meeting_date,
+            event_date,
             extract_assigned_user_id(deal, mop_settings),
             "meetings",
             1,
@@ -4629,7 +4637,9 @@ def build_mongo_call_facts(
             now = datetime.now(tz=ZoneInfo(settings.report_timezone))
             completed_through = min(window.end.date(), now.date() - timedelta(days=1))
             current_month_start = now.date().replace(day=1)
-            target_start_date = max(window.start.date(), current_month_start)
+            previous_month_end = current_month_start - timedelta(days=1)
+            previous_month_start = previous_month_end.replace(day=1)
+            target_start_date = max(window.start.date(), previous_month_start)
             if target_start_date <= completed_through:
                 target_start = datetime.combine(
                     target_start_date,
@@ -4685,6 +4695,7 @@ def build_mongo_call_facts(
                             target_history,
                             target_entries,
                             now.date(),
+                            target_start_date,
                         ),
                     )
                     print(

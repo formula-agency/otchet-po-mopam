@@ -34,6 +34,30 @@ class TargetAfterMeetingHistoryTest(unittest.TestCase):
 
             self.assertEqual(load_target_after_meeting_history(path), entries)
 
+    def test_can_replace_previous_and_current_months_from_templab(self):
+        historical = [
+            TargetAfterMeetingEntry(date(2026, 8, 31), "Жуков Лев", 600),
+            TargetAfterMeetingEntry(date(2026, 9, 10), "Жуков Лев", 300),
+            TargetAfterMeetingEntry(date(2026, 10, 2), "Жуков Лев", 420),
+        ]
+        live = [
+            TargetAfterMeetingEntry(date(2026, 9, 10), "Жуков Лев", 333),
+            TargetAfterMeetingEntry(date(2026, 10, 2), "Жуков Лев", 444),
+        ]
+
+        merged = merge_target_after_meeting_entries(
+            historical,
+            live,
+            date(2026, 10, 15),
+            date(2026, 9, 1),
+        )
+
+        self.assertEqual(merged, [
+            TargetAfterMeetingEntry(date(2026, 8, 31), "Жуков Лев", 600),
+            TargetAfterMeetingEntry(date(2026, 9, 10), "Жуков Лев", 333),
+            TargetAfterMeetingEntry(date(2026, 10, 2), "Жуков Лев", 444),
+        ])
+
 
 if __name__ == "__main__":
     unittest.main()

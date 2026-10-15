@@ -1888,6 +1888,19 @@ function scoreboardRows() {
     .sort((a, b) => (b.ratio ?? -1) - (a.ratio ?? -1) || b.factScore - a.factScore || a.mopName.localeCompare(b.mopName));
 }
 
+function scoreboardTotalRows() {
+  return rowsForDateFilters(state.airtimeDateFrom, state.airtimeDateTo).filter((row) => (
+    !row.manualAggregate
+    && rowMatchesPeriodOrDates(
+      row,
+      state.airtimeMonth,
+      state.airtimeSprint,
+      state.airtimeDateFrom,
+      state.airtimeDateTo
+    )
+  ));
+}
+
 function scoreboardStatusClass(row) {
   if (row.ratio === null && row.factScore <= 0) return 'is-empty';
   if (row.ratio === null) return 'is-unplanned';
@@ -1907,13 +1920,14 @@ function scoreboardRankClass(index, total) {
 function renderAirTimePlanFact() {
   const rows = scoreboardRows();
   const maxFactScore = Math.max(...rows.map((row) => row.factScore), 0);
-  const totals = rows.reduce((acc, row) => {
-    for (const metric of SCOREBOARD_METRICS) {
-      if (metric.plan) acc[metric.plan] += Number(row[metric.plan] || 0);
-      acc[metric.fact] += Number(row[metric.fact] || 0);
-    }
-    return acc;
-  }, emptyScoreboardRow('Итого'));
+  const totals = {
+    ...emptyScoreboardRow('Итого'),
+    ...summarizeRows(scoreboardTotalRows()),
+  };
+  const totalRange = scoreboardDateRange();
+  totals.activeDealsFact = (activeDealsData().rows || []).filter((deal) => (
+    deal.mopName && dealIsActiveInRange(deal, totalRange.from, totalRange.to)
+  )).length;
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
 
   if (els.airtimeFreshness) {
