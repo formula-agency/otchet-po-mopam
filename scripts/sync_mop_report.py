@@ -2851,6 +2851,34 @@ def build_mongo_call_aggregation_pipeline(
                         "$cond": [{"$eq": ["$classification", "Нецелевой звонок"]}, 1, 0]
                     }
                 },
+                "legacyTargetCalls": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$classification", "Целевой звонок"]}, 1, 0]
+                    }
+                },
+                "nonResultativeTargetCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {"$eq": ["$classification", "Целевой нерезультативный"]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "completedCallUids": {
+                    "$addToSet": {
+                        "$cond": [
+                            {
+                                "$in": [
+                                    "$classification",
+                                    list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                ]
+                            },
+                            "$call_uid",
+                            None,
+                        ]
+                    }
+                },
                 "targetCalls": {
                     "$sum": {
                         "$cond": [
@@ -2880,6 +2908,16 @@ def build_mongo_call_aggregation_pipeline(
                 },
             }
         },
+        {
+            "$set": {
+                "uniqueCalls": {
+                    "$size": {
+                        "$setDifference": ["$completedCallUids", [None, ""]]
+                    }
+                }
+            }
+        },
+        {"$unset": "completedCallUids"},
         {"$sort": {"_id.day": 1, "_id.mopName": 1}},
     ]
 
