@@ -116,19 +116,39 @@ class MongoCallPipelineTests(unittest.TestCase):
 
     def test_offer_detection_uses_real_estate_presentations_only(self) -> None:
         self.assertTrue(presentation_contains_offer(
-            "Менеджер предложила двухкомнатную квартиру и объяснила условия ипотеки."
+            "Менеджер предложила двухкомнатную квартиру площадью 54 кв. м "
+            "по цене 7,2 млн рублей."
         ))
         self.assertTrue(presentation_contains_offer(
-            "Варианты квартир с ремонтом по субсидированным ставкам."
-        ))
-        self.assertTrue(presentation_contains_offer(
-            "Я предлагаю нашу квартиру поставить в бронь, пусть студия в брони стоит."
-        ))
-        self.assertTrue(presentation_contains_offer(
-            "Мы этот вариант ранее обсуждали: квартира 65 квадратов, евротрешка."
+            "Презентовал апартамент площадью сорок два квадратных метра, "
+            "стоимость шесть миллионов рублей."
         ))
         self.assertTrue(presentation_contains_offer(
             "Появилась евродвушка 38 квадратов по цене 4,89 млн со скидкой."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Менеджер предложила двухкомнатную квартиру и объяснила условия ипотеки."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Варианты квартир с ремонтом по субсидированным ставкам."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Я предлагаю нашу квартиру поставить в бронь, пусть студия в брони стоит."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Мы этот вариант ранее обсуждали: квартира 65 квадратов, евротрешка."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Клиент ищет квартиру площадью 50 квадратов с бюджетом 7 млн рублей."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Менеджер подобрал двухкомнатную квартиру площадью 52 квадрата. "
+            "Первоначальный взнос 1 160 000 рублей, платеж 71 000 рублей."
+        ))
+        self.assertFalse(presentation_contains_offer(
+            "Менеджер предложил обсудить квартиру площадью 50 квадратов. "
+            + "Уточняли требования клиента. " * 40
+            + "Другой объект стоит 7 млн рублей."
         ))
         self.assertFalse(presentation_contains_offer(
             "Менеджер предложил клиенту прислать документы и затем перезвонить."

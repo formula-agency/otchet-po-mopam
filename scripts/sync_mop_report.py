@@ -52,16 +52,37 @@ MONGO_COMPLETED_CALL_CLASSIFICATIONS = (
     *MONGO_TARGET_CALL_CLASSIFICATIONS,
 )
 MONGO_OFFER_PROPERTY_PATTERN = (
-    r"квартир|апартамент|недвижим|\bобъект|\bжк\b|"
-    r"жил(?:ой|ого|ому|ом|ая|ую)\s+комплекс|новостро|застройщик|"
-    r"студи|евро(?:дв|тр)|таунхаус|коттедж"
+    r"квартир|апартамент|студи|евро(?:дв|тр)|"
+    r"однокомнат|двухкомнат|тр[её]хкомнат|четыр[её]хкомнат|"
+    r"таунхаус|коттедж"
 )
-MONGO_OFFER_SUBSTANCE_PATTERN = (
-    r"предлаг|презент|подобр|рекоменд|рассмотр|\bвариант|появил(?:ся|ась|ось)|"
-    r"цен|стоим|скид|бонус|планиров|площад|квадрат|этаж|ремонт|"
-    r"ипотек|рассроч|первоначальн(?:ый|ого|ому|ом)\s+взнос|ставк|"
-    r"плат[её]ж|брон|инвест|доход|сдач"
+MONGO_OFFER_ACTION_PATTERN = (
+    r"предлаг|предлож|презент|подобр|рекоменд|появил(?:ся|ась|ось)|"
+    r"наш(?:ли|ла|ел|ёл)|доступн|"
+    r"(?:у\s+нас\s+.{0,30})?(?:есть|имеется).{0,50}(?:квартир|апартамент|студи)"
 )
+MONGO_OFFER_NUMBER_PATTERN = (
+    r"(?:\d[\d\s]*(?:[.,]\d+)?|"
+    r"(?:один|одна|одно|дв[ае]|три|четыре|пять|шесть|семь|восемь|девять|"
+    r"десять|одиннадцать|двенадцать|тринадцать|четырнадцать|пятнадцать|"
+    r"шестнадцать|семнадцать|восемнадцать|девятнадцать|двадцать|тридцать|"
+    r"сорок|пятьдесят|шестьдесят|семьдесят|восемьдесят|девяносто|сто)"
+    r"(?:\s+(?:один|одна|два|две|три|четыре|пять|шесть|семь|восемь|девять|"
+    r"десять|двадцать|тридцать|сорок|пятьдесят|шестьдесят|семьдесят|"
+    r"восемьдесят|девяносто)){0,3})"
+)
+MONGO_OFFER_AREA_PATTERN = (
+    rf"(?:площад(?:ь|ью|и)|метраж)\D{{0,24}}{MONGO_OFFER_NUMBER_PATTERN}|"
+    rf"{MONGO_OFFER_NUMBER_PATTERN}\s*(?:кв\.?\s*(?:м\.?|метр\w*)|"
+    rf"квадрат\w*(?:\s+метр\w*)?)"
+)
+MONGO_OFFER_PRICE_PATTERN = (
+    rf"(?:цен\w*|стоимост\w*|стои(?:т|ла|ло|ли)|обойд\w*)"
+    rf"[^.!?\n]{{0,50}}{MONGO_OFFER_NUMBER_PATTERN}|"
+    rf"\bза\s+{MONGO_OFFER_NUMBER_PATTERN}\s*"
+    rf"(?:млн|миллион\w*|тыс(?:яч\w*)?|руб\w*|₽)"
+)
+MONGO_OFFER_MAX_EVIDENCE_SPAN = 500
 MONGO_NEGATED_OFFER_PRESENTATION_PATTERN = (
     r"^\s*(?:менеджер\s+)?не\s+"
     r"(?:предлагал[аи]?|предложил[аи]?|презентовал[аи]?|делал[аи]?|проводил[аи]?)"
@@ -2783,18 +2804,56 @@ def mongo_first_nonempty_string(field_paths: tuple[str, ...]) -> dict[str, Any]:
     }
 
 
-def presentation_contains_offer(value: Any) -> bool:
-    presentation = str(value or "").strip()
-    return bool(
-        presentation
-        and re.search(MONGO_OFFER_PROPERTY_PATTERN, presentation, re.IGNORECASE)
-        and re.search(MONGO_OFFER_SUBSTANCE_PATTERN, presentation, re.IGNORECASE)
-        and not re.search(
-            MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
-            presentation,
-            re.IGNORECASE,
-        )
+def offer_evidence_span(value: Any) -> tuple[int, int] | None:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if not text or re.search(
+        MONGO_NEGATED_OFFER_PRESENTATION_PATTERN,
+        text,
+        re.IGNORECASE,
+    ):
+        return None
+
+    patterns = (
+        MONGO_OFFER_PROPERTY_PATTERN,
+        MONGO_OFFER_ACTION_PATTERN,
+        MONGO_OFFER_AREA_PATTERN,
+        MONGO_OFFER_PRICE_PATTERN,
     )
+    events: list[tuple[int, int, int]] = []
+    for kind, pattern in enumerate(patterns):
+        matches = list(re.finditer(pattern, text, re.IGNORECASE))
+        if not matches:
+            return None
+        events.extend((match.start(), match.end(), kind) for match in matches)
+    events.sort(key=lambda event: (event[0], event[1]))
+
+    counts = [0] * len(patterns)
+    covered = 0
+    left = 0
+    best: tuple[int, int] | None = None
+    for right, (_, _, right_kind) in enumerate(events):
+        if counts[right_kind] == 0:
+            covered += 1
+        counts[right_kind] += 1
+        while covered == len(patterns):
+            window = events[left:right + 1]
+            start = window[0][0]
+            end = max(event[1] for event in window)
+            if best is None or end - start < best[1] - best[0]:
+                best = (start, end)
+            left_kind = events[left][2]
+            counts[left_kind] -= 1
+            if counts[left_kind] == 0:
+                covered -= 1
+            left += 1
+
+    if best is None or best[1] - best[0] > MONGO_OFFER_MAX_EVIDENCE_SPAN:
+        return None
+    return best
+
+
+def presentation_contains_offer(value: Any) -> bool:
+    return offer_evidence_span(value) is not None
 
 
 def mongo_offer_text_expression(field_name: str) -> dict[str, Any]:
@@ -2811,7 +2870,21 @@ def mongo_offer_text_expression(field_name: str) -> dict[str, Any]:
             {
                 "$regexMatch": {
                     "input": offer_text,
-                    "regex": MONGO_OFFER_SUBSTANCE_PATTERN,
+                    "regex": MONGO_OFFER_ACTION_PATTERN,
+                    "options": "i",
+                }
+            },
+            {
+                "$regexMatch": {
+                    "input": offer_text,
+                    "regex": MONGO_OFFER_AREA_PATTERN,
+                    "options": "i",
+                }
+            },
+            {
+                "$regexMatch": {
+                    "input": offer_text,
+                    "regex": MONGO_OFFER_PRICE_PATTERN,
                     "options": "i",
                 }
             },
@@ -2977,11 +3050,18 @@ def build_mongo_offer_call_pipeline(
     ]
 
 
-def offer_reason_excerpt(value: Any, limit: int = 220) -> str:
+def offer_reason_excerpt(value: Any, limit: int = 320) -> str:
     text = re.sub(r"\s+", " ", str(value or "")).strip()
     if len(text) <= limit:
         return text
-    return text[: max(0, limit - 1)].rstrip() + "…"
+    evidence = offer_evidence_span(text)
+    anchor = evidence[0] if evidence is not None else 0
+    start = max(0, anchor - limit // 3)
+    end = min(len(text), start + limit)
+    if end - start < limit:
+        start = max(0, end - limit)
+    excerpt = text[start:end].strip()
+    return ("…" if start else "") + excerpt + ("…" if end < len(text) else "")
 
 
 def offer_transcript_text(value: Any) -> str:
