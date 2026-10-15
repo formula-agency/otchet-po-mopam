@@ -3645,6 +3645,13 @@ def build_mongo_deal_call_facts(
                     "okk_list_check",
                     "reports",
                     "analytics_page_snapshot",
+                    "formula_client_history_family_analytics_cache",
+                    "formula_client_history_family_modal_cache",
+                    "formula_client_list_cache",
+                    "formula_families_page_snapshot",
+                    "dashboard_page_snapshot_formula",
+                    "client_profile",
+                    "client_profile_log",
                 ):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
                         {}, {"_id": 0}
