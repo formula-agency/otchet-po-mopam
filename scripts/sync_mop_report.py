@@ -41,6 +41,7 @@ DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES = ("4559", "1", "да", "yes", "y", "tr
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS = 120_000
 MONGO_FAILED_CALL_CLASSIFICATION = "Несостоявшийся разговор"
+MONGO_SUCCESSFUL_CALL_STATUS = "Успешный звонок."
 MONGO_RESULTATIVE_TARGET_CLASSIFICATION = "Целевой результативный"
 MONGO_TARGET_CALL_CLASSIFICATIONS = (
     MONGO_RESULTATIVE_TARGET_CLASSIFICATION,
@@ -2752,6 +2753,32 @@ def build_mongo_call_aggregation_pipeline(
                 }
             }
         },
+        {
+            "$addFields": {
+                "validCompletedCall": {
+                    "$and": [
+                        {"$eq": ["$call_status", MONGO_SUCCESSFUL_CALL_STATUS]},
+                        {
+                            "$in": [
+                                "$classification",
+                                list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                            ]
+                        },
+                    ]
+                },
+                "validTargetCall": {
+                    "$and": [
+                        {"$eq": ["$call_status", MONGO_SUCCESSFUL_CALL_STATUS]},
+                        {
+                            "$in": [
+                                "$classification",
+                                list(MONGO_TARGET_CALL_CLASSIFICATIONS),
+                            ]
+                        },
+                    ]
+                },
+            }
+        },
         {"$match": {"mopName": {"$ne": ""}}},
         {
             "$group": {
@@ -2759,7 +2786,7 @@ def build_mongo_call_aggregation_pipeline(
                 "calls": {
                     "$sum": {
                         "$cond": [
-                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+                            "$validCompletedCall",
                             1,
                             0,
                         ]
@@ -2771,12 +2798,7 @@ def build_mongo_call_aggregation_pipeline(
                             {
                                 "$and": [
                                     {"$eq": ["$callType", "Исходящий"]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
+                                    "$validCompletedCall",
                                 ]
                             },
                             1,
@@ -2790,12 +2812,7 @@ def build_mongo_call_aggregation_pipeline(
                             {
                                 "$and": [
                                     {"$eq": ["$callType", "Входящий"]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
+                                    "$validCompletedCall",
                                 ]
                             },
                             1,
@@ -2809,12 +2826,7 @@ def build_mongo_call_aggregation_pipeline(
                             {
                                 "$and": [
                                     {"$eq": ["$isInternal", True]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
+                                    "$validCompletedCall",
                                 ]
                             },
                             1,
@@ -2828,12 +2840,7 @@ def build_mongo_call_aggregation_pipeline(
                             {
                                 "$and": [
                                     {"$ne": ["$isInternal", True]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
+                                    "$validCompletedCall",
                                 ]
                             },
                             1,
@@ -2868,12 +2875,7 @@ def build_mongo_call_aggregation_pipeline(
                 "completedCallUids": {
                     "$addToSet": {
                         "$cond": [
-                            {
-                                "$in": [
-                                    "$classification",
-                                    list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                ]
-                            },
+                            "$validCompletedCall",
                             "$call_uid",
                             None,
                         ]
@@ -2882,7 +2884,7 @@ def build_mongo_call_aggregation_pipeline(
                 "targetCalls": {
                     "$sum": {
                         "$cond": [
-                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
+                            "$validTargetCall",
                             1,
                             0,
                         ]
@@ -2891,7 +2893,17 @@ def build_mongo_call_aggregation_pipeline(
                 "successfulTargetCalls": {
                     "$sum": {
                         "$cond": [
-                            {"$eq": ["$classification", MONGO_RESULTATIVE_TARGET_CLASSIFICATION]},
+                            {
+                                "$and": [
+                                    "$validTargetCall",
+                                    {
+                                        "$eq": [
+                                            "$classification",
+                                            MONGO_RESULTATIVE_TARGET_CLASSIFICATION,
+                                        ]
+                                    },
+                                ]
+                            },
                             1,
                             0,
                         ]
@@ -2900,7 +2912,7 @@ def build_mongo_call_aggregation_pipeline(
                 "airSeconds": {
                     "$sum": {
                         "$cond": [
-                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
+                            "$validTargetCall",
                             "$duration",
                             0,
                         ]
@@ -2940,6 +2952,7 @@ def build_mongo_target_after_meeting_pipeline(
             "$project": {
                 "callUid": "$call_uid",
                 "callAt": "$call_date",
+                "callStatus": "$call_status",
                 "durationSeconds": {
                     "$convert": {
                         "input": "$call_duration",
@@ -2967,6 +2980,7 @@ def build_mongo_target_after_meeting_pipeline(
                 "callUid": {"$nin": [None, ""]},
                 "dealId": {"$ne": ""},
                 "mopName": {"$ne": ""},
+                "callStatus": MONGO_SUCCESSFUL_CALL_STATUS,
                 "durationSeconds": {"$gt": 0},
                 "classification": {"$in": list(MONGO_TARGET_CALL_CLASSIFICATIONS)},
             }
