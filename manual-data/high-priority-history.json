@@ -37245,7 +37245,9 @@
       "previousDate": "2026-10-13"
     },
     "2026-10-15": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6473"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-15",
@@ -37686,11 +37688,11 @@
         },
         {
           "dateCreate": "2026-09-15",
-          "daysWithoutAttempt": 6,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 21,
           "dealId": "6473",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6473/",
-          "lastCallAttemptDate": "2026-10-09",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-09-24",
           "meetingHeld": false,
           "mopId": "",
@@ -37703,21 +37705,21 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-08-25",
-          "daysWithoutAttempt": 6,
+          "dateCreate": "2026-08-13",
+          "daysWithoutAttempt": 17,
           "daysWithoutCall": 17,
-          "dealId": "6073",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6073/",
-          "lastCallAttemptDate": "2026-10-09",
+          "dealId": "5927",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5927/",
+          "lastCallAttemptDate": "2026-09-28",
           "lastSuccessfulCommunicationDate": "2026-09-28",
           "meetingHeld": false,
           "mopId": "",
-          "mopName": "Жуков Лев",
+          "mopName": "Васильев Владимир",
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Эльвира",
+          "stageName": "Совершить первый контакт",
+          "title": "Ахметов Рустам Тимербаевич",
           "utmSource": "leadit"
         },
         {
@@ -37904,11 +37906,11 @@
         },
         {
           "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "6705",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6705/",
-          "lastCallAttemptDate": "2026-10-12",
+          "lastCallAttemptDate": "2026-10-15",
           "lastSuccessfulCommunicationDate": "2026-09-30",
           "meetingHeld": false,
           "mopId": "",
@@ -38103,7 +38105,6 @@
         "5660",
         "6052",
         "6059",
-        "6073",
         "6074",
         "6082",
         "6172",
@@ -38136,6 +38137,7 @@
       "newOverdueDealIds": [
         "4251",
         "4337",
+        "5927",
         "6705",
         "6749",
         "6757"
