@@ -37654,6 +37654,24 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-09-03",
+          "daysWithoutAttempt": 9,
+          "daysWithoutCall": 22,
+          "dealId": "6180",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6180/",
+          "lastCallAttemptDate": "2026-10-06",
+          "lastSuccessfulCommunicationDate": "2026-09-23",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Васильев Владимир",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Диана",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-09-17",
           "daysWithoutAttempt": 22,
           "daysWithoutCall": 22,
@@ -37938,7 +37956,7 @@
           "lastSuccessfulCommunicationDate": "2026-10-03",
           "meetingHeld": true,
           "mopId": "",
-          "mopName": "Ядрышникова Кристина",
+          "mopName": "Султанов Есен",
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
@@ -38103,6 +38121,7 @@
       ],
       "newOverdueDealIds": [
         "4251",
+        "6180",
         "6705",
         "6749",
         "6757"
