@@ -3641,6 +3641,10 @@ def build_mongo_deal_call_facts(
                     "request_history",
                     "analysis_status_logs",
                     "families_call_deal_relations",
+                    "okk_meetings_check",
+                    "okk_list_check",
+                    "reports",
+                    "analytics_page_snapshot",
                 ):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
                         {}, {"_id": 0}
