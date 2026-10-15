@@ -2702,6 +2702,7 @@ def build_mongo_call_aggregation_pipeline(
             "$project": {
                 "call_uid": 1,
                 "call_status": 1,
+                "callType": "$call_type",
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2758,6 +2759,44 @@ def build_mongo_call_aggregation_pipeline(
                     "$sum": {
                         "$cond": [
                             {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "outgoingCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$callType", "Исходящий"]},
+                                    {
+                                        "$in": [
+                                            "$classification",
+                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                        ]
+                                    },
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "incomingCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$callType", "Входящий"]},
+                                    {
+                                        "$in": [
+                                            "$classification",
+                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                        ]
+                                    },
+                                ]
+                            },
                             1,
                             0,
                         ]
