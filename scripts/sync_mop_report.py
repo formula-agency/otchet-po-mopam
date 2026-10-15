@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import csv
 import io
 import json
@@ -3897,6 +3898,136 @@ def build_mongo_deal_call_facts(
                     "MongoDB October after-meeting total: "
                     f"calls={sum(item['calls'] for item in october_after_meeting.values())} | "
                     f"seconds={sum(item['seconds'] for item in october_after_meeting.values())}"
+                )
+
+                analytics_snapshot_sample = list(
+                    reader.collection("analytics_page_snapshot").find(
+                        {},
+                        {
+                            "_id": 0,
+                            "_snapshot_range_start": 1,
+                            "_snapshot_range_end": 1,
+                            "_snapshot_updated_at": 1,
+                            "date": 1,
+                            "call_date_key": 1,
+                            "is_after_meeting": 1,
+                            "call_duration": 1,
+                            "user_name": 1,
+                        },
+                        max_time_ms=timeout_ms,
+                    ).limit(5)
+                )
+                analytics_snapshot_groups = list(
+                    reader.collection("analytics_page_snapshot").aggregate(
+                        [
+                            {
+                                "$group": {
+                                    "_id": {
+                                        "start": "$_snapshot_range_start",
+                                        "end": "$_snapshot_range_end",
+                                        "after": "$is_after_meeting",
+                                        "afterType": {"$type": "$is_after_meeting"},
+                                    },
+                                    "count": {"$sum": 1},
+                                }
+                            },
+                            {"$sort": {"count": -1}},
+                        ],
+                        maxTimeMS=timeout_ms,
+                    )
+                )
+                analytics_payload = json.dumps(
+                    {
+                        "sample": analytics_snapshot_sample,
+                        "groups": analytics_snapshot_groups,
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                    sort_keys=True,
+                ).encode("utf-8")
+                print(
+                    "MongoDB analytics snapshot diagnostic base64: "
+                    + base64.b64encode(analytics_payload).decode("ascii")
+                )
+
+                meetings_by_deal: dict[str, list[datetime]] = defaultdict(list)
+                for document in reader.collection("okk_meetings_check").find(
+                    {
+                        "meeting_status": {"$in": ["Проведена", "Прошла успешно"]},
+                        "deal_id": {"$nin": [None, ""]},
+                        "meeting_complete_date": {"$ne": None},
+                    },
+                    {"_id": 0, "deal_id": 1, "meeting_complete_date": 1},
+                    max_time_ms=timeout_ms,
+                ):
+                    completed_at = parse_bitrix_datetime(
+                        document.get("meeting_complete_date"),
+                        settings.report_timezone,
+                    )
+                    deal_id = str(document.get("deal_id") or "").strip()
+                    if deal_id and completed_at is not None:
+                        meetings_by_deal[deal_id].append(completed_at)
+
+                target_after_meeting: dict[str, dict[str, int]] = {}
+                target_call_ids: set[str] = set()
+                target_call_rows = collection.aggregate(
+                    [
+                        {"$match": {"call_date": {"$gte": october_start, "$lt": november_start}}},
+                        {
+                            "$lookup": {
+                                "from": "call_analysis",
+                                "localField": "call_uid",
+                                "foreignField": "uuid",
+                                "as": "analysisDocs",
+                            }
+                        },
+                        {
+                            "$project": {
+                                "_id": 0,
+                                "call_uid": 1,
+                                "call_date": 1,
+                                "call_duration": 1,
+                                "b24_deal_id": 1,
+                                "user_name": 1,
+                                "classification": {
+                                    "$arrayElemAt": ["$analysisDocs.call_classification", 0]
+                                },
+                            }
+                        },
+                        {
+                            "$match": {
+                                "classification": {"$in": list(MONGO_TARGET_CALL_CLASSIFICATIONS)}
+                            }
+                        },
+                    ],
+                    maxTimeMS=timeout_ms,
+                )
+                for document in target_call_rows:
+                    call_uid = str(document.get("call_uid") or "").strip()
+                    if not call_uid or call_uid in target_call_ids:
+                        continue
+                    target_call_ids.add(call_uid)
+                    deal_id = str(document.get("b24_deal_id") or "").strip()
+                    call_at = parse_bitrix_datetime(document.get("call_date"), settings.report_timezone)
+                    if not deal_id or call_at is None:
+                        continue
+                    if not any(meeting_at <= call_at for meeting_at in meetings_by_deal.get(deal_id, [])):
+                        continue
+                    responsible = str(document.get("user_name") or "").strip() or "<empty>"
+                    summary = target_after_meeting.setdefault(
+                        responsible,
+                        {"calls": 0, "seconds": 0},
+                    )
+                    summary["calls"] += 1
+                    summary["seconds"] += max(0, parse_number(document.get("call_duration")))
+                target_payload = json.dumps(
+                    target_after_meeting,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                ).encode("utf-8")
+                print(
+                    "MongoDB calculated target after-meeting base64: "
+                    + base64.b64encode(target_payload).decode("ascii")
                 )
 
                 print(
