@@ -2703,6 +2703,7 @@ def build_mongo_call_aggregation_pipeline(
                 "call_uid": 1,
                 "call_status": 1,
                 "callType": "$call_type",
+                "isInternal": "$is_internal",
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2800,6 +2801,54 @@ def build_mongo_call_aggregation_pipeline(
                             1,
                             0,
                         ]
+                    }
+                },
+                "internalCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$eq": ["$isInternal", True]},
+                                    {
+                                        "$in": [
+                                            "$classification",
+                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                        ]
+                                    },
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "externalCalls": {
+                    "$sum": {
+                        "$cond": [
+                            {
+                                "$and": [
+                                    {"$ne": ["$isInternal", True]},
+                                    {
+                                        "$in": [
+                                            "$classification",
+                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
+                                        ]
+                                    },
+                                ]
+                            },
+                            1,
+                            0,
+                        ]
+                    }
+                },
+                "serviceCalls": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$classification", "Сервисный звонок"]}, 1, 0]
+                    }
+                },
+                "nonTargetCalls": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$classification", "Нецелевой звонок"]}, 1, 0]
                     }
                 },
                 "targetCalls": {
