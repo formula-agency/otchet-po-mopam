@@ -83,6 +83,15 @@ MONGO_OFFER_PRICE_PATTERN = (
     rf"(?:млн|миллион\w*|тыс(?:яч\w*)?|руб\w*|₽)"
 )
 MONGO_OFFER_MAX_EVIDENCE_SPAN = 500
+MONGO_NON_OFFER_CONTEXT_PATTERN = (
+    r"просто\s+(?:как\s+)?пример|для\s+пример|"
+    r"не\s+(?:очень\s+)?(?:бы\s+)?хотел\w*.{0,50}предлаг|"
+    r"предлаг\w*.{0,50}не\s+(?:очень\s+)?(?:бы\s+)?хотел"
+)
+MONGO_NON_TOTAL_AREA_CONTEXT_PATTERN = (
+    r"кухн|спальн|сануз|ванн|коридор|лоджи|балкон|кладов|гардероб"
+)
+MONGO_UNIT_PRICE_CONTEXT_PATTERN = r"(?:за|на)\s+(?:кв\.?\s*м|квадрат)"
 MONGO_NEGATED_OFFER_PRESENTATION_PATTERN = (
     r"^\s*(?:менеджер\s+)?не\s+"
     r"(?:предлагал[аи]?|предложил[аи]?|презентовал[аи]?|делал[аи]?|проводил[аи]?)"
@@ -2822,6 +2831,26 @@ def offer_evidence_span(value: Any) -> tuple[int, int] | None:
     events: list[tuple[int, int, int]] = []
     for kind, pattern in enumerate(patterns):
         matches = list(re.finditer(pattern, text, re.IGNORECASE))
+        if kind == 2:
+            matches = [
+                match
+                for match in matches
+                if not re.search(
+                    MONGO_NON_TOTAL_AREA_CONTEXT_PATTERN,
+                    text[max(0, match.start() - 28):min(len(text), match.end() + 28)],
+                    re.IGNORECASE,
+                )
+            ]
+        elif kind == 3:
+            matches = [
+                match
+                for match in matches
+                if not re.search(
+                    MONGO_UNIT_PRICE_CONTEXT_PATTERN,
+                    text[max(0, match.start() - 12):min(len(text), match.end() + 24)],
+                    re.IGNORECASE,
+                )
+            ]
         if not matches:
             return None
         events.extend((match.start(), match.end(), kind) for match in matches)
@@ -2830,7 +2859,7 @@ def offer_evidence_span(value: Any) -> tuple[int, int] | None:
     counts = [0] * len(patterns)
     covered = 0
     left = 0
-    best: tuple[int, int] | None = None
+    candidates: list[tuple[int, int]] = []
     for right, (_, _, right_kind) in enumerate(events):
         if counts[right_kind] == 0:
             covered += 1
@@ -2839,17 +2868,20 @@ def offer_evidence_span(value: Any) -> tuple[int, int] | None:
             window = events[left:right + 1]
             start = window[0][0]
             end = max(event[1] for event in window)
-            if best is None or end - start < best[1] - best[0]:
-                best = (start, end)
+            if end - start <= MONGO_OFFER_MAX_EVIDENCE_SPAN:
+                candidates.append((start, end))
             left_kind = events[left][2]
             counts[left_kind] -= 1
             if counts[left_kind] == 0:
                 covered -= 1
             left += 1
 
-    if best is None or best[1] - best[0] > MONGO_OFFER_MAX_EVIDENCE_SPAN:
-        return None
-    return best
+    for candidate in sorted(set(candidates), key=lambda item: item[1] - item[0]):
+        start, end = candidate
+        context = text[max(0, start - 80):min(len(text), end + 80)]
+        if not re.search(MONGO_NON_OFFER_CONTEXT_PATTERN, context, re.IGNORECASE):
+            return candidate
+    return None
 
 
 def presentation_contains_offer(value: Any) -> bool:
