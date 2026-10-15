@@ -41,7 +41,6 @@ DEFAULT_CONTEST_FIRST_MEETING_YES_VALUES = ("4559", "1", "да", "yes", "y", "tr
 POST_MEETING_AIR_PLAN_RATIO = 0.35
 DEFAULT_MONGO_AGGREGATION_TIMEOUT_MS = 120_000
 MONGO_FAILED_CALL_CLASSIFICATION = "Несостоявшийся разговор"
-MONGO_SUCCESSFUL_CALL_STATUS = "Успешный звонок."
 MONGO_RESULTATIVE_TARGET_CLASSIFICATION = "Целевой результативный"
 MONGO_TARGET_CALL_CLASSIFICATIONS = (
     MONGO_RESULTATIVE_TARGET_CLASSIFICATION,
@@ -2703,15 +2702,6 @@ def build_mongo_call_aggregation_pipeline(
             "$project": {
                 "call_uid": 1,
                 "call_status": 1,
-                "callType": "$call_type",
-                "isInternal": "$is_internal",
-                "userDepartments": {
-                    "$cond": [
-                        {"$isArray": "$user_departments"},
-                        "$user_departments",
-                        [],
-                    ]
-                },
                 "day": {
                     "$dateToString": {
                         "date": "$call_date",
@@ -2760,32 +2750,6 @@ def build_mongo_call_aggregation_pipeline(
                 }
             }
         },
-        {
-            "$addFields": {
-                "validCompletedCall": {
-                    "$and": [
-                        {"$eq": ["$call_status", MONGO_SUCCESSFUL_CALL_STATUS]},
-                        {
-                            "$in": [
-                                "$classification",
-                                list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                            ]
-                        },
-                    ]
-                },
-                "validTargetCall": {
-                    "$and": [
-                        {"$eq": ["$call_status", MONGO_SUCCESSFUL_CALL_STATUS]},
-                        {
-                            "$in": [
-                                "$classification",
-                                list(MONGO_TARGET_CALL_CLASSIFICATIONS),
-                            ]
-                        },
-                    ]
-                },
-            }
-        },
         {"$match": {"mopName": {"$ne": ""}}},
         {
             "$group": {
@@ -2793,162 +2757,16 @@ def build_mongo_call_aggregation_pipeline(
                 "calls": {
                     "$sum": {
                         "$cond": [
-                            "$validCompletedCall",
+                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
                             1,
                             0,
-                        ]
-                    }
-                },
-                "outgoingCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$callType", "Исходящий"]},
-                                    "$validCompletedCall",
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "incomingCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$callType", "Входящий"]},
-                                    "$validCompletedCall",
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "internalCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$isInternal", True]},
-                                    "$validCompletedCall",
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "externalCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$ne": ["$isInternal", True]},
-                                    "$validCompletedCall",
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "departmentCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    "$validCompletedCall",
-                                    {"$gt": [{"$size": "$userDepartments"}, 0]},
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "departmentlessCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    "$validCompletedCall",
-                                    {"$eq": [{"$size": "$userDepartments"}, 0]},
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "callsAtLeast30Seconds": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    "$validCompletedCall",
-                                    {"$gte": ["$duration", 30]},
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "callsFrom15To29Seconds": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    "$validCompletedCall",
-                                    {"$gte": ["$duration", 15]},
-                                    {"$lt": ["$duration", 30]},
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "serviceCalls": {
-                    "$sum": {
-                        "$cond": [{"$eq": ["$classification", "Сервисный звонок"]}, 1, 0]
-                    }
-                },
-                "nonTargetCalls": {
-                    "$sum": {
-                        "$cond": [{"$eq": ["$classification", "Нецелевой звонок"]}, 1, 0]
-                    }
-                },
-                "legacyTargetCalls": {
-                    "$sum": {
-                        "$cond": [{"$eq": ["$classification", "Целевой звонок"]}, 1, 0]
-                    }
-                },
-                "nonResultativeTargetCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {"$eq": ["$classification", "Целевой нерезультативный"]},
-                            1,
-                            0,
-                        ]
-                    }
-                },
-                "completedCallUids": {
-                    "$addToSet": {
-                        "$cond": [
-                            "$validCompletedCall",
-                            "$call_uid",
-                            None,
                         ]
                     }
                 },
                 "targetCalls": {
                     "$sum": {
                         "$cond": [
-                            "$validTargetCall",
+                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
                             1,
                             0,
                         ]
@@ -2957,17 +2775,7 @@ def build_mongo_call_aggregation_pipeline(
                 "successfulTargetCalls": {
                     "$sum": {
                         "$cond": [
-                            {
-                                "$and": [
-                                    "$validTargetCall",
-                                    {
-                                        "$eq": [
-                                            "$classification",
-                                            MONGO_RESULTATIVE_TARGET_CLASSIFICATION,
-                                        ]
-                                    },
-                                ]
-                            },
+                            {"$eq": ["$classification", MONGO_RESULTATIVE_TARGET_CLASSIFICATION]},
                             1,
                             0,
                         ]
@@ -2976,7 +2784,7 @@ def build_mongo_call_aggregation_pipeline(
                 "airSeconds": {
                     "$sum": {
                         "$cond": [
-                            "$validTargetCall",
+                            {"$in": ["$classification", list(MONGO_TARGET_CALL_CLASSIFICATIONS)]},
                             "$duration",
                             0,
                         ]
@@ -2984,16 +2792,6 @@ def build_mongo_call_aggregation_pipeline(
                 },
             }
         },
-        {
-            "$set": {
-                "uniqueCalls": {
-                    "$size": {
-                        "$setDifference": ["$completedCallUids", [None, ""]]
-                    }
-                }
-            }
-        },
-        {"$unset": "completedCallUids"},
         {"$sort": {"_id.day": 1, "_id.mopName": 1}},
     ]
 
@@ -3016,7 +2814,6 @@ def build_mongo_target_after_meeting_pipeline(
             "$project": {
                 "callUid": "$call_uid",
                 "callAt": "$call_date",
-                "callStatus": "$call_status",
                 "durationSeconds": {
                     "$convert": {
                         "input": "$call_duration",
@@ -3044,7 +2841,6 @@ def build_mongo_target_after_meeting_pipeline(
                 "callUid": {"$nin": [None, ""]},
                 "dealId": {"$ne": ""},
                 "mopName": {"$ne": ""},
-                "callStatus": MONGO_SUCCESSFUL_CALL_STATUS,
                 "durationSeconds": {"$gt": 0},
                 "classification": {"$in": list(MONGO_TARGET_CALL_CLASSIFICATIONS)},
             }
@@ -3056,155 +2852,6 @@ def build_mongo_target_after_meeting_pipeline(
                 "durationSeconds": {"$first": "$durationSeconds"},
                 "dealId": {"$first": "$dealId"},
                 "mopName": {"$first": "$mopName"},
-            }
-        },
-    ]
-
-
-def build_mongo_snapshot_call_diagnostic_pipeline(
-    window: ReportWindow,
-) -> list[dict[str, Any]]:
-    return [
-        {
-            "$match": {
-                "call_date_key": {
-                    "$gte": window.start.date().isoformat(),
-                    "$lte": window.end.date().isoformat(),
-                }
-            }
-        },
-        {
-            "$project": {
-                "day": "$call_date_key",
-                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
-                "classification": "$call_classification",
-                "callStatus": "$call_status",
-                "isActive": "$is_active",
-                "weight": {
-                    "$convert": {
-                        "input": "$count",
-                        "to": "int",
-                        "onError": 1,
-                        "onNull": 1,
-                    }
-                },
-            }
-        },
-        {"$match": {"mopName": {"$ne": ""}}},
-        {
-            "$group": {
-                "_id": {"day": "$day", "mopName": "$mopName"},
-                "snapshotCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$in": [
-                                    "$classification",
-                                    list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                ]
-                            },
-                            "$weight",
-                            0,
-                        ]
-                    }
-                },
-                "snapshotSuccessfulStatusCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$callStatus", MONGO_SUCCESSFUL_CALL_STATUS]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
-                                ]
-                            },
-                            "$weight",
-                            0,
-                        ]
-                    }
-                },
-                "snapshotActiveCalls": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$isActive", True]},
-                                    {"$eq": ["$callStatus", MONGO_SUCCESSFUL_CALL_STATUS]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
-                                ]
-                            },
-                            "$weight",
-                            0,
-                        ]
-                    }
-                },
-            }
-        },
-    ]
-
-
-def build_mongo_dashboard_call_diagnostic_pipeline(
-    window: ReportWindow,
-) -> list[dict[str, Any]]:
-    return [
-        {
-            "$match": {
-                "call_date_key": {
-                    "$gte": window.start.date().isoformat(),
-                    "$lte": window.end.date().isoformat(),
-                }
-            }
-        },
-        {
-            "$project": {
-                "day": "$call_date_key",
-                "mopName": {"$trim": {"input": {"$ifNull": ["$user_name", ""]}}},
-                "classification": "$call_classification",
-                "callStatus": "$call_status",
-                "telephonyCount": {
-                    "$convert": {
-                        "input": "$telephony_count",
-                        "to": "int",
-                        "onError": 0,
-                        "onNull": 0,
-                    }
-                },
-            }
-        },
-        {"$match": {"mopName": {"$ne": ""}}},
-        {
-            "$group": {
-                "_id": {"day": "$day", "mopName": "$mopName"},
-                "dashboardTelephonyCount": {"$sum": "$telephonyCount"},
-                "dashboardRows": {"$sum": 1},
-                "dashboardCompletedRows": {
-                    "$sum": {
-                        "$cond": [
-                            {
-                                "$and": [
-                                    {"$eq": ["$callStatus", MONGO_SUCCESSFUL_CALL_STATUS]},
-                                    {
-                                        "$in": [
-                                            "$classification",
-                                            list(MONGO_COMPLETED_CALL_CLASSIFICATIONS),
-                                        ]
-                                    },
-                                ]
-                            },
-                            1,
-                            0,
-                        ]
-                    }
-                },
             }
         },
     ]
@@ -4127,35 +3774,6 @@ def build_mongo_deal_call_facts(
             if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
                 sample = collection.find_one({}, {"_id": 0}) or {}
                 print("MongoDB call fields: " + ", ".join(sorted(sample)))
-                diagnostic_fields = [
-                    field_name
-                    for field_name in sorted(sample)
-                    if any(
-                        marker in normalize_key(field_name)
-                        for marker in ("direction", "type", "status", "incoming", "outgoing")
-                    )
-                ]
-                for field_name in diagnostic_fields:
-                    value_counts = list(
-                        collection.aggregate(
-                            [
-                                {"$match": {"call_date": {"$gte": window.start, "$lte": window.end}}},
-                                {
-                                    "$group": {
-                                        "_id": f"${field_name}",
-                                        "count": {"$sum": 1},
-                                    }
-                                },
-                                {"$sort": {"count": -1}},
-                            ],
-                            allowDiskUse=False,
-                            maxTimeMS=timeout_ms,
-                        )
-                    )
-                    print(
-                        f"MongoDB call {field_name} values: "
-                        + json.dumps(value_counts, ensure_ascii=False, default=str)
-                    )
                 print("MongoDB collections: " + ", ".join(sorted(reader.collection_names())))
                 for diagnostic_collection in ("call_analysis", "call_transcriptions"):
                     diagnostic_sample = reader.collection(diagnostic_collection).find_one(
@@ -5009,67 +4627,6 @@ def build_mongo_call_facts(
                     maxTimeMS=timeout_ms,
                 )
             )
-            if read_bool_env("MONGO_CALL_SCHEMA_DIAGNOSTICS", False):
-                snapshot_rows = list(
-                    reader.collection("analytics_page_snapshot").aggregate(
-                        build_mongo_snapshot_call_diagnostic_pipeline(window),
-                        allowDiskUse=False,
-                        maxTimeMS=timeout_ms,
-                    )
-                )
-                rows_by_identity = {
-                    (
-                        str((row.get("_id") or {}).get("day") or ""),
-                        str((row.get("_id") or {}).get("mopName") or ""),
-                    ): row
-                    for row in rows
-                    if isinstance(row.get("_id"), dict)
-                }
-                for snapshot_row in snapshot_rows:
-                    group = snapshot_row.get("_id")
-                    if not isinstance(group, dict):
-                        continue
-                    identity = (
-                        str(group.get("day") or ""),
-                        str(group.get("mopName") or ""),
-                    )
-                    target_row = rows_by_identity.get(identity)
-                    if target_row is None:
-                        target_row = {"_id": group}
-                        rows.append(target_row)
-                        rows_by_identity[identity] = target_row
-                    for field_name in (
-                        "snapshotCalls",
-                        "snapshotSuccessfulStatusCalls",
-                        "snapshotActiveCalls",
-                    ):
-                        target_row[field_name] = snapshot_row.get(field_name, 0)
-                dashboard_rows = list(
-                    reader.collection("dashboard_page_snapshot_formula").aggregate(
-                        build_mongo_dashboard_call_diagnostic_pipeline(window),
-                        allowDiskUse=False,
-                        maxTimeMS=timeout_ms,
-                    )
-                )
-                for dashboard_row in dashboard_rows:
-                    group = dashboard_row.get("_id")
-                    if not isinstance(group, dict):
-                        continue
-                    identity = (
-                        str(group.get("day") or ""),
-                        str(group.get("mopName") or ""),
-                    )
-                    target_row = rows_by_identity.get(identity)
-                    if target_row is None:
-                        target_row = {"_id": group}
-                        rows.append(target_row)
-                        rows_by_identity[identity] = target_row
-                    for field_name in (
-                        "dashboardTelephonyCount",
-                        "dashboardRows",
-                        "dashboardCompletedRows",
-                    ):
-                        target_row[field_name] = dashboard_row.get(field_name, 0)
             total_calls, total_air_seconds, manager_count = apply_mongo_call_aggregates(
                 data,
                 rows,

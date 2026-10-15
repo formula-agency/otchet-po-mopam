@@ -10,7 +10,6 @@ from zoneinfo import ZoneInfo
 
 from scripts.sync_mop_report import (
     MONGO_COMPLETED_CALL_CLASSIFICATIONS,
-    MONGO_SUCCESSFUL_CALL_STATUS,
     MopReportData,
     MopSettings,
     ReportWindow,
@@ -83,13 +82,13 @@ class MongoCallPipelineTests(unittest.TestCase):
             pipeline[4]["$addFields"]["classification"]["$cond"][1],
             "Несостоявшийся разговор",
         )
-        group_stage = next(stage["$group"] for stage in pipeline if "$group" in stage)
-        self.assertIn("targetCalls", group_stage)
-        self.assertIn("successfulTargetCalls", group_stage)
-        self.assertEqual(group_stage["calls"]["$sum"]["$cond"][0], "$validCompletedCall")
-        serialized = str(pipeline)
-        self.assertIn(MONGO_SUCCESSFUL_CALL_STATUS, serialized)
-        self.assertIn("validTargetCall", serialized)
+        self.assertIn("targetCalls", pipeline[6]["$group"])
+        self.assertIn("successfulTargetCalls", pipeline[6]["$group"])
+        calls_condition = pipeline[6]["$group"]["calls"]["$sum"]["$cond"][0]
+        self.assertEqual(
+            calls_condition,
+            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+        )
         self.assertNotIn("Автоответчик", MONGO_COMPLETED_CALL_CLASSIFICATIONS)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))
 
@@ -127,7 +126,6 @@ class MongoCallPipelineTests(unittest.TestCase):
 
         self.assertEqual(pipeline[0]["$match"]["call_date"], {"$gte": start, "$lte": end})
         self.assertEqual(pipeline[1]["$lookup"]["from"], "call_analysis")
-        self.assertEqual(pipeline[3]["$match"]["callStatus"], MONGO_SUCCESSFUL_CALL_STATUS)
         self.assertEqual(
             pipeline[3]["$match"]["classification"],
             {"$in": ["Целевой результативный", "Целевой нерезультативный", "Целевой звонок"]},
