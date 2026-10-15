@@ -37549,10 +37549,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-25": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Татьяна",
