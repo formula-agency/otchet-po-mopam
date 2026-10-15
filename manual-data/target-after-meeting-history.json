@@ -808,137 +808,167 @@
     {
       "date": "2026-09-01",
       "mopName": "Данчук Марина",
-      "seconds": 3600
+      "seconds": 3543
     },
     {
       "date": "2026-09-01",
       "mopName": "Ядрышникова Кристина",
-      "seconds": 180
+      "seconds": 195
+    },
+    {
+      "date": "2026-09-02",
+      "mopName": "Войнов Данил",
+      "seconds": 698
     },
     {
       "date": "2026-09-02",
       "mopName": "Гавриленко Елена",
-      "seconds": 540
+      "seconds": 528
     },
     {
       "date": "2026-09-03",
       "mopName": "Гавриленко Елена",
-      "seconds": 1800
+      "seconds": 1813
+    },
+    {
+      "date": "2026-09-03",
+      "mopName": "Тончу Ростислав",
+      "seconds": 391
     },
     {
       "date": "2026-09-04",
       "mopName": "Васильев Владимир",
-      "seconds": 180
+      "seconds": 150
+    },
+    {
+      "date": "2026-09-04",
+      "mopName": "Попова Олеся",
+      "seconds": 334
     },
     {
       "date": "2026-09-04",
       "mopName": "Султанов Есен",
-      "seconds": 360
+      "seconds": 352
     },
     {
       "date": "2026-09-04",
       "mopName": "Тончу Ростислав",
-      "seconds": 1740
+      "seconds": 1730
     },
     {
       "date": "2026-09-04",
       "mopName": "Черткова Ирина",
-      "seconds": 540
+      "seconds": 511
     },
     {
       "date": "2026-09-05",
       "mopName": "Жуков Лев",
-      "seconds": 300
+      "seconds": 297
     },
     {
       "date": "2026-09-06",
       "mopName": "Попова Олеся",
-      "seconds": 480
+      "seconds": 636
     },
     {
       "date": "2026-09-07",
       "mopName": "Данчук Марина",
-      "seconds": 6540
+      "seconds": 6542
+    },
+    {
+      "date": "2026-09-07",
+      "mopName": "Черткова Ирина",
+      "seconds": 98
     },
     {
       "date": "2026-09-08",
       "mopName": "Войнов Данил",
-      "seconds": 60
+      "seconds": 37
     },
     {
       "date": "2026-09-08",
       "mopName": "Гавриленко Елена",
-      "seconds": 1620
+      "seconds": 1625
     },
     {
       "date": "2026-09-08",
       "mopName": "Жуков Лев",
-      "seconds": 120
+      "seconds": 136
+    },
+    {
+      "date": "2026-09-08",
+      "mopName": "Попова Олеся",
+      "seconds": 161
     },
     {
       "date": "2026-09-08",
       "mopName": "Султанов Есен",
-      "seconds": 360
+      "seconds": 354
     },
     {
       "date": "2026-09-08",
       "mopName": "Черткова Ирина",
-      "seconds": 60
+      "seconds": 44
     },
     {
       "date": "2026-09-09",
       "mopName": "Данчук Марина",
-      "seconds": 1680
+      "seconds": 1664
     },
     {
       "date": "2026-09-09",
       "mopName": "Попова Олеся",
-      "seconds": 180
+      "seconds": 201
     },
     {
       "date": "2026-09-09",
       "mopName": "Черткова Ирина",
-      "seconds": 660
+      "seconds": 676
     },
     {
       "date": "2026-09-10",
       "mopName": "Данчук Марина",
-      "seconds": 720
+      "seconds": 719
+    },
+    {
+      "date": "2026-09-10",
+      "mopName": "Жуков Лев",
+      "seconds": 32
     },
     {
       "date": "2026-09-11",
       "mopName": "Войнов Данил",
-      "seconds": 60
+      "seconds": 73
     },
     {
       "date": "2026-09-11",
       "mopName": "Гавриленко Елена",
-      "seconds": 360
+      "seconds": 357
     },
     {
       "date": "2026-09-11",
       "mopName": "Султанов Есен",
-      "seconds": 60
+      "seconds": 78
     },
     {
       "date": "2026-09-14",
       "mopName": "Войнов Данил",
-      "seconds": 360
+      "seconds": 328
     },
     {
       "date": "2026-09-14",
       "mopName": "Гавриленко Елена",
-      "seconds": 480
+      "seconds": 458
     },
     {
       "date": "2026-09-14",
       "mopName": "Парфенов Владислав",
-      "seconds": 120
+      "seconds": 140
     },
     {
       "date": "2026-09-14",
       "mopName": "Попова Олеся",
-      "seconds": 1260
+      "seconds": 1232
     },
     {
       "date": "2026-09-15",
@@ -948,147 +978,157 @@
     {
       "date": "2026-09-15",
       "mopName": "Войнов Данил",
-      "seconds": 1680
+      "seconds": 1756
     },
     {
       "date": "2026-09-15",
       "mopName": "Парфенов Владислав",
-      "seconds": 120
+      "seconds": 147
     },
     {
       "date": "2026-09-16",
       "mopName": "Войнов Данил",
-      "seconds": 2220
+      "seconds": 2218
     },
     {
       "date": "2026-09-16",
       "mopName": "Гавриленко Елена",
-      "seconds": 60
+      "seconds": 86
     },
     {
       "date": "2026-09-16",
       "mopName": "Жуков Лев",
-      "seconds": 420
+      "seconds": 445
     },
     {
       "date": "2026-09-16",
       "mopName": "Парфенов Владислав",
-      "seconds": 60
+      "seconds": 58
     },
     {
       "date": "2026-09-16",
       "mopName": "Погребинский Артем",
-      "seconds": 480
+      "seconds": 451
     },
     {
       "date": "2026-09-16",
       "mopName": "Попова Олеся",
-      "seconds": 660
+      "seconds": 640
     },
     {
       "date": "2026-09-17",
       "mopName": "Войнов Данил",
-      "seconds": 300
+      "seconds": 350
     },
     {
       "date": "2026-09-17",
       "mopName": "Гавриленко Елена",
-      "seconds": 840
+      "seconds": 864
     },
     {
       "date": "2026-09-17",
       "mopName": "Данчук Марина",
-      "seconds": 1980
+      "seconds": 1963
     },
     {
       "date": "2026-09-17",
       "mopName": "Жуков Лев",
-      "seconds": 180
+      "seconds": 157
     },
     {
       "date": "2026-09-18",
       "mopName": "Войнов Данил",
-      "seconds": 600
+      "seconds": 578
     },
     {
       "date": "2026-09-18",
       "mopName": "Данчук Марина",
-      "seconds": 540
+      "seconds": 513
     },
     {
       "date": "2026-09-18",
       "mopName": "Жуков Лев",
-      "seconds": 420
+      "seconds": 411
     },
     {
       "date": "2026-09-21",
       "mopName": "Гавриленко Елена",
-      "seconds": 240
+      "seconds": 263
     },
     {
       "date": "2026-09-22",
       "mopName": "Войнов Данил",
-      "seconds": 1020
+      "seconds": 993
     },
     {
       "date": "2026-09-22",
       "mopName": "Данчук Марина",
-      "seconds": 60
+      "seconds": 64
     },
     {
       "date": "2026-09-23",
       "mopName": "Данчук Марина",
-      "seconds": 5820
+      "seconds": 5796
     },
     {
       "date": "2026-09-23",
       "mopName": "Жуков Лев",
-      "seconds": 120
+      "seconds": 100
     },
     {
       "date": "2026-09-23",
       "mopName": "Погребинский Артем",
-      "seconds": 60
+      "seconds": 340
+    },
+    {
+      "date": "2026-09-23",
+      "mopName": "Тончу Ростислав",
+      "seconds": 728
     },
     {
       "date": "2026-09-24",
       "mopName": "Данчук Марина",
-      "seconds": 60
+      "seconds": 81
     },
     {
       "date": "2026-09-24",
       "mopName": "Погребинский Артем",
-      "seconds": 360
+      "seconds": 381
     },
     {
       "date": "2026-09-24",
       "mopName": "Тончу Ростислав",
-      "seconds": 1620
+      "seconds": 1583
     },
     {
       "date": "2026-09-25",
       "mopName": "Войнов Данил",
-      "seconds": 720
+      "seconds": 733
     },
     {
       "date": "2026-09-25",
       "mopName": "Гавриленко Елена",
-      "seconds": 720
+      "seconds": 747
+    },
+    {
+      "date": "2026-09-26",
+      "mopName": "Войнов Данил",
+      "seconds": 129
     },
     {
       "date": "2026-09-27",
       "mopName": "Войнов Данил",
-      "seconds": 600
+      "seconds": 570
     },
     {
       "date": "2026-09-27",
       "mopName": "Парфенов Владислав",
-      "seconds": 360
+      "seconds": 339
     },
     {
       "date": "2026-09-28",
       "mopName": "Войнов Данил",
-      "seconds": 480
+      "seconds": 468
     },
     {
       "date": "2026-09-28",
@@ -1098,22 +1138,27 @@
     {
       "date": "2026-09-29",
       "mopName": "Жуков Лев",
-      "seconds": 120
+      "seconds": 93
+    },
+    {
+      "date": "2026-09-29",
+      "mopName": "Султанов Есен",
+      "seconds": 107
     },
     {
       "date": "2026-09-29",
       "mopName": "Ядрышникова Кристина",
-      "seconds": 1080
+      "seconds": 1072
     },
     {
       "date": "2026-09-30",
       "mopName": "Гавриленко Елена",
-      "seconds": 840
+      "seconds": 823
     },
     {
       "date": "2026-09-30",
       "mopName": "Погребинский Артем",
-      "seconds": 300
+      "seconds": 283
     },
     {
       "date": "2026-10-02",
@@ -1187,5 +1232,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-15T11:02:38+00:00"
+  "updatedAt": "2026-10-15T11:27:18+00:00"
 }
