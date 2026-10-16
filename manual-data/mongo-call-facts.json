@@ -6526,7 +6526,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -6546,7 +6546,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 1533,
-      "calls": 10,
+      "calls": 11,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -6576,7 +6576,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 2129,
-      "calls": 12,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -7606,7 +7606,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 1457,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 1,
       "targetCalls": 4
     },
@@ -7736,7 +7736,7 @@
         "mopName": "Губайдулина Заррина"
       },
       "airSeconds": 40,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -8226,7 +8226,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2129,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 3,
       "targetCalls": 5
     },
@@ -8246,7 +8246,7 @@
         "mopName": "Газисова Мария"
       },
       "airSeconds": 309,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 4
     },
@@ -8376,7 +8376,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 3411,
-      "calls": 22,
+      "calls": 23,
       "successfulTargetCalls": 1,
       "targetCalls": 7
     },
@@ -8446,7 +8446,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -8556,7 +8556,7 @@
         "mopName": "Газисова Мария"
       },
       "airSeconds": 1212,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 6
     },
@@ -8596,7 +8596,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -9066,7 +9066,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 35,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -9336,7 +9336,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 2812,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -9686,7 +9686,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2526,
-      "calls": 10,
+      "calls": 11,
       "successfulTargetCalls": 3,
       "targetCalls": 4
     },
@@ -9946,7 +9946,7 @@
         "mopName": "Газисова Мария"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -10196,7 +10196,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 589,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -10366,7 +10366,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 899,
-      "calls": 15,
+      "calls": 16,
       "successfulTargetCalls": 3,
       "targetCalls": 5
     },
@@ -10406,7 +10406,7 @@
         "mopName": "Газисова Мария"
       },
       "airSeconds": 706,
-      "calls": 5,
+      "calls": 7,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -10846,7 +10846,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 6858,
-      "calls": 10,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 9
     },
@@ -10866,7 +10866,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 276,
-      "calls": 37,
+      "calls": 38,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -10996,7 +10996,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2459,
-      "calls": 21,
+      "calls": 22,
       "successfulTargetCalls": 4,
       "targetCalls": 5
     },
@@ -11186,7 +11186,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 1416,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 4
     },
@@ -11986,7 +11986,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2308,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -12566,7 +12566,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 2675,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 5
     },
@@ -12686,7 +12686,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 3949,
-      "calls": 20,
+      "calls": 21,
       "successfulTargetCalls": 2,
       "targetCalls": 9
     },
@@ -12976,7 +12976,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 842,
-      "calls": 8,
+      "calls": 9,
       "successfulTargetCalls": 2,
       "targetCalls": 2
     },
@@ -13066,7 +13066,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 2341,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -13126,7 +13126,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -13216,7 +13216,7 @@
         "mopName": "Парфенов Владислав"
       },
       "airSeconds": 41,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -13276,7 +13276,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 368,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -13286,7 +13286,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 126,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -13306,7 +13306,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 1879,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 3,
       "targetCalls": 3
     },
@@ -14166,7 +14166,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 433,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -14566,7 +14566,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 2439,
-      "calls": 13,
+      "calls": 14,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -14846,7 +14846,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 641,
-      "calls": 10,
+      "calls": 11,
       "successfulTargetCalls": 0,
       "targetCalls": 4
     },
@@ -14926,7 +14926,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 1474,
-      "calls": 14,
+      "calls": 15,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -15066,7 +15066,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 2863,
-      "calls": 12,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 4
     },
@@ -15096,7 +15096,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 868,
-      "calls": 18,
+      "calls": 19,
       "successfulTargetCalls": 1,
       "targetCalls": 5
     },
@@ -15106,7 +15106,7 @@
         "mopName": "Парфенов Владислав"
       },
       "airSeconds": 708,
-      "calls": 8,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 4
     },
@@ -15516,7 +15516,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 1586,
-      "calls": 18,
+      "calls": 21,
       "successfulTargetCalls": 3,
       "targetCalls": 7
     },
@@ -15526,7 +15526,7 @@
         "mopName": "Парфенов Владислав"
       },
       "airSeconds": 868,
-      "calls": 8,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -15636,7 +15636,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 586,
-      "calls": 14,
+      "calls": 15,
       "successfulTargetCalls": 1,
       "targetCalls": 3
     },
@@ -15736,7 +15736,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 2424,
-      "calls": 9,
+      "calls": 10,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -15766,7 +15766,7 @@
         "mopName": "Парфенов Владислав"
       },
       "airSeconds": 225,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -16146,7 +16146,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 1579,
-      "calls": 10,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 3
     },
@@ -16156,7 +16156,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 2687,
-      "calls": 12,
+      "calls": 14,
       "successfulTargetCalls": 1,
       "targetCalls": 6
     },
@@ -16176,7 +16176,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -16206,7 +16206,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 721,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -16266,7 +16266,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -16276,7 +16276,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 2795,
-      "calls": 19,
+      "calls": 21,
       "successfulTargetCalls": 3,
       "targetCalls": 8
     },
@@ -16316,7 +16316,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 862,
-      "calls": 17,
+      "calls": 19,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -16326,7 +16326,7 @@
         "mopName": "Парфенов Владислав"
       },
       "airSeconds": 88,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -16356,7 +16356,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 237,
-      "calls": 4,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -16386,7 +16386,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 844,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -16406,7 +16406,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 648,
-      "calls": 14,
+      "calls": 16,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -16426,7 +16426,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 6853,
-      "calls": 9,
+      "calls": 10,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -16436,7 +16436,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 100,
-      "calls": 9,
+      "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -16446,7 +16446,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 440,
-      "calls": 32,
+      "calls": 34,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -16466,7 +16466,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 573,
-      "calls": 15,
+      "calls": 16,
       "successfulTargetCalls": 3,
       "targetCalls": 5
     },
@@ -16486,7 +16486,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 687,
-      "calls": 9,
+      "calls": 11,
       "successfulTargetCalls": 1,
       "targetCalls": 4
     },
@@ -16496,7 +16496,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 907,
-      "calls": 10,
+      "calls": 13,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -16516,7 +16516,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 513,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 1,
       "targetCalls": 4
     },
@@ -16596,7 +16596,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 485,
-      "calls": 9,
+      "calls": 11,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -16646,7 +16646,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 809,
-      "calls": 6,
+      "calls": 8,
       "successfulTargetCalls": 3,
       "targetCalls": 3
     },
@@ -16686,7 +16686,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -16726,7 +16726,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 1679,
-      "calls": 14,
+      "calls": 15,
       "successfulTargetCalls": 0,
       "targetCalls": 5
     },
@@ -16766,7 +16766,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 606,
-      "calls": 13,
+      "calls": 14,
       "successfulTargetCalls": 3,
       "targetCalls": 4
     },
@@ -16916,7 +16916,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 1354,
-      "calls": 21,
+      "calls": 22,
       "successfulTargetCalls": 1,
       "targetCalls": 6
     },
@@ -17026,7 +17026,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 371,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -17226,7 +17226,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 348,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -17346,7 +17346,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 424,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -17846,7 +17846,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 2462,
-      "calls": 9,
+      "calls": 10,
       "successfulTargetCalls": 3,
       "targetCalls": 6
     },
@@ -18146,7 +18146,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 494,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18366,7 +18366,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 135,
-      "calls": 6,
+      "calls": 7,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18446,7 +18446,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 921,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 3,
       "targetCalls": 4
     },
@@ -18456,7 +18456,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 880,
-      "calls": 9,
+      "calls": 12,
       "successfulTargetCalls": 1,
       "targetCalls": 3
     },
@@ -18496,7 +18496,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 1590,
-      "calls": 19,
+      "calls": 20,
       "successfulTargetCalls": 1,
       "targetCalls": 5
     },
@@ -18506,7 +18506,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 464,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18526,7 +18526,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 605,
-      "calls": 5,
+      "calls": 8,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -18536,7 +18536,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 512,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -18556,7 +18556,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18566,7 +18566,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 3520,
-      "calls": 8,
+      "calls": 10,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -18576,7 +18576,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18586,7 +18586,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18596,7 +18596,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 6042,
-      "calls": 8,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 5
     },
@@ -18606,7 +18606,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 521,
-      "calls": 9,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -18626,7 +18626,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 1121,
-      "calls": 13,
+      "calls": 15,
       "successfulTargetCalls": 2,
       "targetCalls": 2
     },
@@ -18656,7 +18656,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 2283,
-      "calls": 7,
+      "calls": 11,
       "successfulTargetCalls": 2,
       "targetCalls": 4
     },
@@ -18686,7 +18686,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 467,
-      "calls": 8,
+      "calls": 11,
       "successfulTargetCalls": 0,
       "targetCalls": 3
     },
@@ -18696,7 +18696,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 95,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18706,7 +18706,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 277,
-      "calls": 7,
+      "calls": 9,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18736,7 +18736,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 151,
-      "calls": 4,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18746,7 +18746,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 1965,
-      "calls": 7,
+      "calls": 14,
       "successfulTargetCalls": 1,
       "targetCalls": 5
     },
@@ -18756,7 +18756,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 623,
-      "calls": 7,
+      "calls": 18,
       "successfulTargetCalls": 1,
       "targetCalls": 3
     },
@@ -18786,7 +18786,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18796,7 +18796,7 @@
         "mopName": "Васильев Владимир"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18806,7 +18806,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 28,
-      "calls": 2,
+      "calls": 18,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -18816,7 +18816,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18826,7 +18826,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 215,
-      "calls": 2,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18836,7 +18836,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18846,7 +18846,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 352,
-      "calls": 2,
+      "calls": 24,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18856,7 +18856,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 344,
-      "calls": 6,
+      "calls": 17,
       "successfulTargetCalls": 2,
       "targetCalls": 2
     },
@@ -18866,7 +18866,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 14,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18876,7 +18876,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 1041,
-      "calls": 2,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -18896,7 +18896,17 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 11,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-16",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 0,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -18909,8 +18919,18 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-16",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-16T03:29:45+00:00"
+  "updatedAt": "2026-10-16T05:10:08+00:00"
 }

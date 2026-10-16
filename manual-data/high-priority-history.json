@@ -38093,7 +38093,9 @@
       "previousDate": "2026-10-14"
     },
     "2026-10-16": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6248"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-16",
@@ -38587,26 +38589,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-07",
-          "daysWithoutAttempt": 17,
-          "daysWithoutCall": 17,
-          "dealId": "6248",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6248/",
-          "lastCallAttemptDate": "2026-09-29",
-          "lastSuccessfulCommunicationDate": "2026-09-29",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-09-07": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Лейла",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-08",
           "daysWithoutAttempt": 17,
           "daysWithoutCall": 17,
@@ -38995,7 +38977,6 @@
         "6193",
         "6205",
         "6238",
-        "6248",
         "6266",
         "6267",
         "6277",
