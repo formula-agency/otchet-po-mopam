@@ -38094,6 +38094,7 @@
     },
     "2026-10-16": {
       "calledFromPreviousDealIds": [
+        "6172",
         "6248"
       ],
       "calledFromPreviousEvaluated": true,
