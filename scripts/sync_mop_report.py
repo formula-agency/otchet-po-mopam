@@ -52,6 +52,17 @@ MONGO_COMPLETED_CALL_CLASSIFICATIONS = (
     "Нецелевой звонок",
     *MONGO_TARGET_CALL_CLASSIFICATIONS,
 )
+
+
+def mongo_completed_call_expression(field_name: str = "$classification") -> dict[str, Any]:
+    return {
+        "$or": [
+            {"$in": [field_name, list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+            {"$eq": [{"$ifNull": [field_name, ""]}, ""]},
+        ]
+    }
+
+
 MONGO_OFFER_PROPERTY_PATTERN = (
     r"квартир|апартамент|студи|евро(?:дв|тр)|"
     r"однокомнат|двухкомнат|тр[её]хкомнат|четыр[её]хкомнат|"
@@ -2757,7 +2768,7 @@ def build_mongo_call_aggregation_pipeline(
                 "calls": {
                     "$sum": {
                         "$cond": [
-                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+                            mongo_completed_call_expression(),
                             1,
                             0,
                         ]
@@ -3607,7 +3618,7 @@ def build_mongo_deal_call_pipeline(
                 "successfulDates": {
                     "$addToSet": {
                         "$cond": [
-                            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+                            mongo_completed_call_expression(),
                             "$day",
                             "$$REMOVE",
                         ]

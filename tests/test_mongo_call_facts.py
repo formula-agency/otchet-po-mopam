@@ -30,6 +30,7 @@ from scripts.sync_mop_report import (
     build_mongo_deal_call_pipeline,
     calculate_target_after_meeting_entries,
     key_for_mop_id,
+    mongo_completed_call_expression,
     presentation_contains_offer,
     replace_target_after_meeting_facts,
     week_start_for_date,
@@ -85,9 +86,10 @@ class MongoCallPipelineTests(unittest.TestCase):
         self.assertIn("targetCalls", pipeline[6]["$group"])
         self.assertIn("successfulTargetCalls", pipeline[6]["$group"])
         calls_condition = pipeline[6]["$group"]["calls"]["$sum"]["$cond"][0]
-        self.assertEqual(
-            calls_condition,
-            {"$in": ["$classification", list(MONGO_COMPLETED_CALL_CLASSIFICATIONS)]},
+        self.assertEqual(calls_condition, mongo_completed_call_expression())
+        self.assertIn(
+            {"$eq": [{"$ifNull": ["$classification", ""]}, ""]},
+            calls_condition["$or"],
         )
         self.assertNotIn("Автоответчик", MONGO_COMPLETED_CALL_CLASSIFICATIONS)
         self.assertFalse(any("$out" in stage or "$merge" in stage for stage in pipeline))

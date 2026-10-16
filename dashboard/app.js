@@ -145,7 +145,7 @@ let mopChart;
 let factChart;
 
 const DASHBOARD_REFRESH_INTERVAL_MS = 30 * 1000;
-const DASHBOARD_DATA_VERSION = '20261015-2';
+const DASHBOARD_DATA_VERSION = '20261016-1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'mop-dashboard-sidebar-collapsed';
 const PRIORITY_OVERRIDES_STORAGE_KEY = 'mop-dashboard-priority-overrides-v1';
 const PRIORITY_OVERRIDES_ENDPOINT = './priority-overrides.php';
@@ -1891,6 +1891,7 @@ function scoreboardRows() {
 function scoreboardTotalRows() {
   return rowsForDateFilters(state.airtimeDateFrom, state.airtimeDateTo).filter((row) => (
     !row.manualAggregate
+    && isScoreboardMopIncluded(row.mopName)
     && rowMatchesPeriodOrDates(
       row,
       state.airtimeMonth,
