@@ -39018,7 +39018,10 @@
       "previousDate": "2026-10-15"
     },
     "2026-10-17": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6052",
+        "6639"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-17",
@@ -39550,24 +39553,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-09-25",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 18,
-          "dealId": "6639",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6639/",
-          "lastCallAttemptDate": "2026-10-16",
-          "lastSuccessfulCommunicationDate": "2026-09-29",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "3-7 звонков после показа",
-          "title": "Светлана",
-          "utmSource": ""
-        },
-        {
           "dateCreate": "2026-09-16",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 18,
@@ -39746,27 +39731,6 @@
           "stageName": "Дожать на встречу",
           "title": "Жунид",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 15,
-          "dealId": "6052",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6052/",
-          "lastCallAttemptDate": "2026-10-15",
-          "lastSuccessfulCommunicationDate": "2026-10-02",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {
-            "2026-08-24": 1,
-            "2026-08-25": 1
-          },
-          "offerCallsCount": 2,
-          "stageId": "",
-          "stageName": "3-7 звонков после показа",
-          "title": "Елена",
-          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-10-02",
@@ -40021,7 +39985,6 @@
         "5314",
         "5538",
         "5660",
-        "6052",
         "6059",
         "6074",
         "6082",
@@ -40046,7 +40009,6 @@
         "6515",
         "6573",
         "6601",
-        "6639",
         "6678",
         "6690",
         "6705",
