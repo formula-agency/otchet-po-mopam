@@ -34877,17 +34877,8 @@
       "previousDate": "2026-10-10"
     },
     "2026-10-12": {
-      "calledFromPreviousDealIds": [
-        "6020",
-        "6059",
-        "6171",
-        "6172",
-        "6250",
-        "6258",
-        "6277",
-        "6739"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-12",
       "deals": [
@@ -35622,12 +35613,8 @@
       "previousDate": "2026-10-11"
     },
     "2026-10-13": {
-      "calledFromPreviousDealIds": [
-        "3850",
-        "6571",
-        "6603"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-13",
       "deals": [
@@ -36448,13 +36435,8 @@
       "previousDate": "2026-10-12"
     },
     "2026-10-14": {
-      "calledFromPreviousDealIds": [
-        "6439",
-        "6573",
-        "6603",
-        "6639"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-14",
       "deals": [
@@ -37245,15 +37227,8 @@
       "previousDate": "2026-10-13"
     },
     "2026-10-15": {
-      "calledFromPreviousDealIds": [
-        "6052",
-        "6172",
-        "6473",
-        "6571",
-        "6710",
-        "6726"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-15",
       "deals": [
@@ -38093,16 +38068,8 @@
       "previousDate": "2026-10-14"
     },
     "2026-10-16": {
-      "calledFromPreviousDealIds": [
-        "6172",
-        "6248",
-        "6287",
-        "6397",
-        "6475",
-        "6601",
-        "6639"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-16",
       "deals": [
@@ -39018,11 +38985,8 @@
       "previousDate": "2026-10-15"
     },
     "2026-10-17": {
-      "calledFromPreviousDealIds": [
-        "6052",
-        "6639"
-      ],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousDealIds": [],
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-17",
       "deals": [
@@ -40031,7 +39995,7 @@
     },
     "2026-10-18": {
       "calledFromPreviousDealIds": [],
-      "calledFromPreviousEvaluated": true,
+      "calledFromPreviousEvaluated": false,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-18",
       "deals": [
@@ -40262,10 +40226,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Марина Данчук",
-          "offerCallsByDate": {
-            "2026-09-02": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Никита",
@@ -40354,10 +40316,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-09-21": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Василий",
@@ -40842,10 +40802,8 @@
           "meetingHeld": false,
           "mopId": "",
           "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {
-            "2026-10-03": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Наталья",
@@ -40934,10 +40892,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Жуков Лев",
-          "offerCallsByDate": {
-            "2026-10-07": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Диана",
@@ -40954,10 +40910,8 @@
           "meetingHeld": true,
           "mopId": "",
           "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-10-05": 1
-          },
-          "offerCallsCount": 1,
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
           "stageId": "",
           "stageName": "Провести встречу",
           "title": "Елена",
