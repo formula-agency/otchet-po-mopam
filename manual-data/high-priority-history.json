@@ -41069,7 +41069,11 @@
       "previousDate": "2026-10-17"
     },
     "2026-10-19": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4262",
+        "6473",
+        "6573"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-19",
@@ -41494,11 +41498,11 @@
         },
         {
           "dateCreate": "2026-09-22",
-          "daysWithoutAttempt": 5,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 25,
           "dealId": "6573",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6573/",
-          "lastCallAttemptDate": "2026-10-14",
+          "lastCallAttemptDate": "2026-10-19",
           "lastSuccessfulCommunicationDate": "2026-09-24",
           "meetingHeld": false,
           "mopId": "",
@@ -41512,11 +41516,11 @@
         },
         {
           "dateCreate": "2026-09-15",
-          "daysWithoutAttempt": 4,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 25,
           "dealId": "6473",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6473/",
-          "lastCallAttemptDate": "2026-10-15",
+          "lastCallAttemptDate": "2026-10-19",
           "lastSuccessfulCommunicationDate": "2026-09-24",
           "meetingHeld": false,
           "mopId": "",
@@ -41673,24 +41677,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-03-05",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 18,
-          "dealId": "4221",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4221/",
-          "lastCallAttemptDate": "2026-10-16",
-          "lastSuccessfulCommunicationDate": "2026-10-01",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Абоскалова Анна",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Илья",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-27",
           "daysWithoutAttempt": 18,
           "daysWithoutCall": 18,
@@ -41764,11 +41750,11 @@
         },
         {
           "dateCreate": "2026-03-11",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 17,
           "dealId": "4262",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4262/",
-          "lastCallAttemptDate": "2026-10-16",
+          "lastCallAttemptDate": "2026-10-19",
           "lastSuccessfulCommunicationDate": "2026-10-02",
           "meetingHeld": false,
           "mopId": "",
@@ -42062,7 +42048,6 @@
         "3850",
         "3970",
         "4064",
-        "4221",
         "4243",
         "4251",
         "4262",
