@@ -19225,10 +19225,10 @@
         "day": "2026-10-19",
         "mopName": "Абоскалова Анна"
       },
-      "airSeconds": 0,
-      "calls": 6,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 781,
+      "calls": 7,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -19245,20 +19245,30 @@
         "day": "2026-10-19",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 826,
-      "calls": 41,
-      "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "airSeconds": 1991,
+      "calls": 50,
+      "successfulTargetCalls": 2,
+      "targetCalls": 4
     },
     {
       "_id": {
         "day": "2026-10-19",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 848,
-      "calls": 15,
+      "airSeconds": 1464,
+      "calls": 18,
       "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-19",
+        "mopName": "Градцева Елена"
+      },
+      "airSeconds": 0,
+      "calls": 5,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -19296,7 +19306,7 @@
         "mopName": "Погребинский Артём"
       },
       "airSeconds": 561,
-      "calls": 8,
+      "calls": 10,
       "successfulTargetCalls": 2,
       "targetCalls": 3
     },
@@ -19315,10 +19325,10 @@
         "day": "2026-10-19",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 394,
-      "calls": 19,
-      "successfulTargetCalls": 0,
-      "targetCalls": 1
+      "airSeconds": 505,
+      "calls": 20,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -19335,12 +19345,12 @@
         "day": "2026-10-19",
         "mopName": "Ядрышникова Кристина"
       },
-      "airSeconds": 489,
-      "calls": 7,
+      "airSeconds": 1660,
+      "calls": 9,
       "successfulTargetCalls": 2,
-      "targetCalls": 2
+      "targetCalls": 4
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-19T16:51:27+00:00"
+  "updatedAt": "2026-10-19T22:06:02+00:00"
 }
