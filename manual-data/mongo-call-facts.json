@@ -19396,7 +19396,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 16,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19416,7 +19416,17 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-20",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19426,7 +19436,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 8,
+      "calls": 20,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19436,7 +19446,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 162,
-      "calls": 6,
+      "calls": 13,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -19456,7 +19466,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 15,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19466,7 +19476,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 0,
-      "calls": 8,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19476,11 +19486,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 18,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-20T09:13:59+00:00"
+  "updatedAt": "2026-10-20T14:46:20+00:00"
 }
