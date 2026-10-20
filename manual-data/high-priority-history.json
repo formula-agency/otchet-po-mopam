@@ -42079,7 +42079,9 @@
       "previousDate": "2026-10-18"
     },
     "2026-10-20": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6726"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-20",
@@ -43119,62 +43121,6 @@
           "stageName": "Дожать на встречу",
           "title": "Юлия",
           "utmSource": "avito"
-        },
-        {
-          "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 5,
-          "daysWithoutCall": 8,
-          "dealId": "6438",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6438/",
-          "lastCallAttemptDate": "2026-10-15",
-          "lastSuccessfulCommunicationDate": "2026-10-12",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "offerCallsByDate": {
-            "2026-10-09": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "3-7 звонков после показа",
-          "title": "Анфиса",
-          "utmSource": "avito"
-        },
-        {
-          "dateCreate": "2026-09-08",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 8,
-          "dealId": "6258",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6258/",
-          "lastCallAttemptDate": "2026-10-12",
-          "lastSuccessfulCommunicationDate": "2026-10-12",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Алишер Хайруллоев",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-24",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 8,
-          "dealId": "6606",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6606/",
-          "lastCallAttemptDate": "2026-10-12",
-          "lastSuccessfulCommunicationDate": "2026-10-12",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Татьяна",
-          "utmSource": "leadit"
         }
       ],
       "flowedFromPreviousDealIds": [
@@ -43233,10 +43179,7 @@
       ],
       "newOverdueDealIds": [
         "4972",
-        "6258",
-        "6438",
         "6478",
-        "6606",
         "6716",
         "6768",
         "6775"
