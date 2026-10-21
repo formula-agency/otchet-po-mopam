@@ -19639,8 +19639,18 @@
       "calls": 13,
       "successfulTargetCalls": 1,
       "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-21T19:58:32+00:00"
+  "updatedAt": "2026-10-21T23:06:54+00:00"
 }
