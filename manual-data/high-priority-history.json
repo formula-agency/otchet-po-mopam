@@ -43118,8 +43118,13 @@
     "2026-10-21": {
       "calledFromPreviousDealIds": [
         "4972",
+        "5405",
         "6074",
         "6287",
+        "6473",
+        "6478",
+        "6601",
+        "6705",
         "6707",
         "6744"
       ],
@@ -43201,11 +43206,11 @@
         },
         {
           "dateCreate": "2026-06-05",
-          "daysWithoutAttempt": 22,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 63,
           "dealId": "5405",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5405/",
-          "lastCallAttemptDate": "2026-09-29",
+          "lastCallAttemptDate": "2026-10-21",
           "lastSuccessfulCommunicationDate": "2026-08-19",
           "meetingHeld": false,
           "mopId": "",
@@ -43357,7 +43362,7 @@
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
-          "stageName": "Провести встречу",
+          "stageName": "3-7 звонков после показа",
           "title": "Гринь Олег Николаевич",
           "utmSource": "leadit"
         },
@@ -43434,6 +43439,26 @@
           "stageName": "Дожать на встречу",
           "title": "Рая",
           "utmSource": ""
+        },
+        {
+          "dateCreate": "2026-08-31",
+          "daysWithoutAttempt": 0,
+          "daysWithoutCall": 34,
+          "dealId": "6139",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6139/",
+          "lastCallAttemptDate": "2026-10-21",
+          "lastSuccessfulCommunicationDate": "2026-09-17",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Ядрышникова Кристина",
+          "offerCallsByDate": {
+            "2026-08-31": 1
+          },
+          "offerCallsCount": 1,
+          "stageId": "",
+          "stageName": "0-2 звонка после показа",
+          "title": "Шукурова Наталья",
+          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-09-11",
@@ -43546,24 +43571,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-15",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 27,
-          "dealId": "6473",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6473/",
-          "lastCallAttemptDate": "2026-10-20",
-          "lastSuccessfulCommunicationDate": "2026-09-24",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Ангелина",
-          "utmSource": "avito"
-        },
-        {
           "dateCreate": "2026-05-25",
           "daysWithoutAttempt": 22,
           "daysWithoutCall": 22,
@@ -43636,24 +43643,6 @@
           "utmSource": "avito"
         },
         {
-          "dateCreate": "2026-09-23",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 22,
-          "dealId": "6601",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6601/",
-          "lastCallAttemptDate": "2026-10-20",
-          "lastSuccessfulCommunicationDate": "2026-09-29",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Тончу Ростислав",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Василий Васильевич",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-03-10",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 21,
@@ -43669,24 +43658,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Рустам",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 6,
-          "daysWithoutCall": 21,
-          "dealId": "6705",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6705/",
-          "lastCallAttemptDate": "2026-10-15",
-          "lastSuccessfulCommunicationDate": "2026-09-30",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Сергей",
           "utmSource": "leadit"
         },
         {
@@ -43739,7 +43710,7 @@
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
-          "stageName": "Дожать на встречу",
+          "stageName": "0-2 звонка после показа",
           "title": "Евгения",
           "utmSource": "leadit"
         },
@@ -43891,11 +43862,11 @@
         },
         {
           "dateCreate": "2026-09-16",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 16,
           "dealId": "6478",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6478/",
-          "lastCallAttemptDate": "2026-10-20",
+          "lastCallAttemptDate": "2026-10-21",
           "lastSuccessfulCommunicationDate": "2026-10-05",
           "meetingHeld": false,
           "mopId": "",
@@ -43921,17 +43892,17 @@
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
-          "stageName": "Дожать на встречу",
+          "stageName": "0-2 звонка после показа",
           "title": "Сергей",
           "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-10-05",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 16,
           "dealId": "6768",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6768/",
-          "lastCallAttemptDate": "2026-10-20",
+          "lastCallAttemptDate": "2026-10-21",
           "lastSuccessfulCommunicationDate": "2026-10-05",
           "meetingHeld": false,
           "mopId": "",
@@ -44047,7 +44018,7 @@
           "offerCallsByDate": {},
           "offerCallsCount": 0,
           "stageId": "",
-          "stageName": "Провести встречу",
+          "stageName": "0-2 звонка после показа",
           "title": "Юрий",
           "utmSource": "avito"
         },
@@ -44103,7 +44074,7 @@
           },
           "offerCallsCount": 1,
           "stageId": "",
-          "stageName": "Провести встречу",
+          "stageName": "0-2 звонка после показа",
           "title": "Диана",
           "utmSource": "leadit"
         },
@@ -44178,14 +44149,11 @@
         "6422",
         "6433",
         "6434",
-        "6473",
         "6478",
         "6515",
-        "6601",
         "6673",
         "6678",
         "6690",
-        "6705",
         "6716",
         "6719",
         "6722",
@@ -44198,6 +44166,7 @@
       ],
       "newOverdueDealIds": [
         "3342",
+        "6139",
         "6168",
         "6187",
         "6760",
