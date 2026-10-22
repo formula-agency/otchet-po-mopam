@@ -19643,7 +19643,97 @@
     {
       "_id": {
         "day": "2026-10-22",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 152,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 150,
+      "calls": 7,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
         "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 0,
+      "calls": 9,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Погребинский Артем"
+      },
+      "airSeconds": 0,
+      "calls": 7,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 1107,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Тончу Ростислав"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-22",
+        "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
       "calls": 0,
@@ -19652,5 +19742,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-22T03:37:59+00:00"
+  "updatedAt": "2026-10-22T09:16:57+00:00"
 }
