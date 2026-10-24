@@ -19306,7 +19306,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 283,
-      "calls": 12,
+      "calls": 13,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -19426,7 +19426,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 40,
-      "calls": 14,
+      "calls": 20,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -19556,7 +19556,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 0,
-      "calls": 6,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -19882,5 +19882,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-23T22:57:33+00:00"
+  "updatedAt": "2026-10-24T03:37:08+00:00"
 }
