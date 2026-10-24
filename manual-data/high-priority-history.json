@@ -46330,7 +46330,10 @@
       "previousDate": "2026-10-22"
     },
     "2026-10-24": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6055",
+        "6706"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-24",
@@ -46445,11 +46448,11 @@
         },
         {
           "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 54,
           "dealId": "6055",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6055/",
-          "lastCallAttemptDate": "2026-10-23",
+          "lastCallAttemptDate": "2026-10-24",
           "lastSuccessfulCommunicationDate": "2026-08-31",
           "meetingHeld": true,
           "mopId": "",
@@ -47100,24 +47103,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 17,
-          "daysWithoutCall": 17,
-          "dealId": "6706",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6706/",
-          "lastCallAttemptDate": "2026-10-07",
-          "lastSuccessfulCommunicationDate": "2026-10-07",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Ирина",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-24",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 17,
@@ -47492,7 +47477,6 @@
         "6515",
         "6619",
         "6693",
-        "6706",
         "6707",
         "6712",
         "6716",
