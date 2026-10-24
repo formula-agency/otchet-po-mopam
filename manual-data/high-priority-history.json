@@ -46331,7 +46331,9 @@
     },
     "2026-10-24": {
       "calledFromPreviousDealIds": [
+        "5405",
         "6055",
+        "6504",
         "6706"
       ],
       "calledFromPreviousEvaluated": true,
@@ -46394,11 +46396,11 @@
         },
         {
           "dateCreate": "2026-06-05",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 66,
           "dealId": "5405",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5405/",
-          "lastCallAttemptDate": "2026-10-22",
+          "lastCallAttemptDate": "2026-10-24",
           "lastSuccessfulCommunicationDate": "2026-08-19",
           "meetingHeld": false,
           "mopId": "",
@@ -46444,24 +46446,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Рузиля",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 54,
-          "dealId": "6055",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6055/",
-          "lastCallAttemptDate": "2026-10-24",
-          "lastSuccessfulCommunicationDate": "2026-08-31",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Яна",
           "utmSource": "leadit"
         },
         {
@@ -46684,24 +46668,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Людмила",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-17",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 32,
-          "dealId": "6504",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6504/",
-          "lastCallAttemptDate": "2026-10-23",
-          "lastSuccessfulCommunicationDate": "2026-09-22",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Сергей",
           "utmSource": "leadit"
         },
         {
@@ -47452,7 +47418,6 @@
         "5405",
         "5538",
         "5843",
-        "6055",
         "6074",
         "6082",
         "6139",
@@ -47473,7 +47438,6 @@
         "6433",
         "6434",
         "6478",
-        "6504",
         "6515",
         "6619",
         "6693",
