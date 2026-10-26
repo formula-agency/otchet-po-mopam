@@ -20025,20 +20025,20 @@
         "day": "2026-10-26",
         "mopName": "Абоскалова Анна"
       },
-      "airSeconds": 0,
-      "calls": 5,
+      "airSeconds": 122,
+      "calls": 11,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-10-26",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 0,
-      "calls": 13,
+      "airSeconds": 310,
+      "calls": 11,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -20046,7 +20046,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 598,
-      "calls": 11,
+      "calls": 15,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -20065,10 +20065,10 @@
         "day": "2026-10-26",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 0,
-      "calls": 4,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 145,
+      "calls": 6,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -20076,7 +20076,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20096,7 +20096,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20105,10 +20105,10 @@
         "day": "2026-10-26",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 71,
-      "calls": 5,
+      "airSeconds": 405,
+      "calls": 10,
       "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -20126,11 +20126,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-26T09:50:25+00:00"
+  "updatedAt": "2026-10-26T16:35:19+00:00"
 }
