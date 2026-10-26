@@ -20033,22 +20033,32 @@
     {
       "_id": {
         "day": "2026-10-26",
+        "mopName": "Аверкиев Дмитрий"
+      },
+      "airSeconds": 499,
+      "calls": 6,
+      "successfulTargetCalls": 0,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-10-26",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 310,
-      "calls": 11,
-      "successfulTargetCalls": 0,
-      "targetCalls": 3
+      "airSeconds": 514,
+      "calls": 10,
+      "successfulTargetCalls": 1,
+      "targetCalls": 4
     },
     {
       "_id": {
         "day": "2026-10-26",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 598,
-      "calls": 15,
-      "successfulTargetCalls": 0,
-      "targetCalls": 1
+      "airSeconds": 999,
+      "calls": 14,
+      "successfulTargetCalls": 1,
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -20066,7 +20076,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 145,
-      "calls": 6,
+      "calls": 5,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -20095,8 +20105,18 @@
         "day": "2026-10-26",
         "mopName": "Погребинский Артем"
       },
-      "airSeconds": 0,
+      "airSeconds": 761,
       "calls": 7,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-26",
+        "mopName": "Полстянова Татьяна"
+      },
+      "airSeconds": 0,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20129,8 +20149,18 @@
       "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-26",
+        "mopName": "Яловая Надежда"
+      },
+      "airSeconds": 0,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-26T16:35:19+00:00"
+  "updatedAt": "2026-10-26T22:23:49+00:00"
 }
