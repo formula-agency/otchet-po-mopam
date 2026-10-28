@@ -20306,7 +20306,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20316,7 +20316,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 11,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20326,7 +20326,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20336,7 +20336,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20346,7 +20346,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 432,
-      "calls": 1,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -20356,7 +20356,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 11,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20366,7 +20366,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 736,
-      "calls": 7,
+      "calls": 15,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -20376,7 +20376,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20386,7 +20386,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20396,7 +20396,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20406,11 +20406,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-28T08:00:40+00:00"
+  "updatedAt": "2026-10-28T15:03:26+00:00"
 }
