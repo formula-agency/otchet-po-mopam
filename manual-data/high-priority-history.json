@@ -52021,12 +52021,16 @@
     "2026-10-29": {
       "calledFromPreviousDealIds": [
         "5353",
+        "5385",
+        "5843",
         "6074",
         "6281",
         "6395",
+        "6639",
         "6679",
         "6708",
         "6720",
+        "6734",
         "6774",
         "6802"
       ],
@@ -52435,24 +52439,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-10-02",
-          "daysWithoutAttempt": 27,
-          "daysWithoutCall": 27,
-          "dealId": "6734",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6734/",
-          "lastCallAttemptDate": "2026-10-02",
-          "lastSuccessfulCommunicationDate": "2026-10-02",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Погребинский Артем",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Галина",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-14",
           "daysWithoutAttempt": 13,
           "daysWithoutCall": 27,
@@ -52617,24 +52603,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 20,
-          "dealId": "6707",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6707/",
-          "lastCallAttemptDate": "2026-10-21",
-          "lastSuccessfulCommunicationDate": "2026-10-09",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Василиса",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-02-27",
           "daysWithoutAttempt": 18,
           "daysWithoutCall": 18,
@@ -52689,6 +52657,24 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-09-24",
+          "daysWithoutAttempt": 16,
+          "daysWithoutCall": 16,
+          "dealId": "6624",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6624/",
+          "lastCallAttemptDate": "2026-10-13",
+          "lastSuccessfulCommunicationDate": "2026-10-13",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Тончу Ростислав",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Денис",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-10-02",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 16,
@@ -52708,11 +52694,11 @@
         },
         {
           "dateCreate": "2026-06-03",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "5385",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5385/",
-          "lastCallAttemptDate": "2026-10-28",
+          "lastCallAttemptDate": "2026-10-29",
           "lastSuccessfulCommunicationDate": "2026-10-14",
           "meetingHeld": true,
           "mopId": "",
@@ -52780,11 +52766,11 @@
         },
         {
           "dateCreate": "2026-09-25",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 12,
           "dealId": "6639",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6639/",
-          "lastCallAttemptDate": "2026-10-28",
+          "lastCallAttemptDate": "2026-10-29",
           "lastSuccessfulCommunicationDate": "2026-10-17",
           "meetingHeld": true,
           "mopId": "",
@@ -52853,6 +52839,26 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-10-19",
+          "daysWithoutAttempt": 9,
+          "daysWithoutCall": 9,
+          "dealId": "6966",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6966/",
+          "lastCallAttemptDate": "2026-10-20",
+          "lastSuccessfulCommunicationDate": "2026-10-20",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Погребинский Артем",
+          "offerCallsByDate": {
+            "2026-10-20": 1
+          },
+          "offerCallsCount": 1,
+          "stageId": "",
+          "stageName": "0-2 звонка после показа",
+          "title": "Иван",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-09-22",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -52905,11 +52911,9 @@
         "6619",
         "6639",
         "6679",
-        "6707",
         "6716",
         "6720",
         "6722",
-        "6734",
         "6735",
         "6749",
         "6761",
@@ -52919,7 +52923,9 @@
         "6942"
       ],
       "newOverdueDealIds": [
-        "6562"
+        "6562",
+        "6624",
+        "6966"
       ],
       "previousDate": "2026-10-28"
     }
