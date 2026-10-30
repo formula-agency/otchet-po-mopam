@@ -20533,6 +20533,36 @@
     {
       "_id": {
         "day": "2026-10-30",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-30",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-30",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-10-30",
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
@@ -20545,6 +20575,16 @@
         "day": "2026-10-30",
         "mopName": "Зенкова Анастасия"
       },
+      "airSeconds": 237,
+      "calls": 4,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-10-30",
+        "mopName": "Султанов Есен"
+      },
       "airSeconds": 0,
       "calls": 1,
       "successfulTargetCalls": 0,
@@ -20553,7 +20593,7 @@
     {
       "_id": {
         "day": "2026-10-30",
-        "mopName": "Султанов Есен"
+        "mopName": "Тончу Ростислав"
       },
       "airSeconds": 0,
       "calls": 0,
@@ -20562,5 +20602,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-10-30T04:44:46+00:00"
+  "updatedAt": "2026-10-30T12:18:43+00:00"
 }
