@@ -54007,7 +54007,12 @@
       "previousDate": "2026-10-29"
     },
     "2026-10-31": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5385",
+        "6039",
+        "6205",
+        "6395"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-10-31",
@@ -54085,24 +54090,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 54,
-          "dealId": "6205",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6205/",
-          "lastCallAttemptDate": "2026-10-13",
-          "lastSuccessfulCommunicationDate": "2026-09-07",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Евгений",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-09",
           "daysWithoutAttempt": 19,
           "daysWithoutCall": 52,
@@ -54118,26 +54105,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Екатерина",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-02",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 47,
-          "dealId": "6164",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6164/",
-          "lastCallAttemptDate": "2026-10-28",
-          "lastSuccessfulCommunicationDate": "2026-09-14",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "offerCallsByDate": {
-            "2026-09-02": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Никита",
           "utmSource": "leadit"
         },
         {
@@ -54364,11 +54331,11 @@
         },
         {
           "dateCreate": "2026-09-11",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 32,
           "dealId": "6395",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6395/",
-          "lastCallAttemptDate": "2026-10-29",
+          "lastCallAttemptDate": "2026-10-31",
           "lastSuccessfulCommunicationDate": "2026-09-29",
           "meetingHeld": false,
           "mopId": "",
@@ -54672,11 +54639,11 @@
         },
         {
           "dateCreate": "2026-06-03",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 17,
           "dealId": "5385",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5385/",
-          "lastCallAttemptDate": "2026-10-29",
+          "lastCallAttemptDate": "2026-10-31",
           "lastSuccessfulCommunicationDate": "2026-10-14",
           "meetingHeld": true,
           "mopId": "",
@@ -54780,11 +54747,11 @@
         },
         {
           "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 2,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 16,
           "dealId": "6039",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6039/",
-          "lastCallAttemptDate": "2026-10-29",
+          "lastCallAttemptDate": "2026-10-31",
           "lastSuccessfulCommunicationDate": "2026-10-15",
           "meetingHeld": false,
           "mopId": "",
@@ -55036,12 +55003,10 @@
         "5927",
         "6023",
         "6039",
-        "6164",
         "6168",
         "6175",
         "6180",
         "6193",
-        "6205",
         "6237",
         "6267",
         "6277",
