@@ -21003,6 +21003,16 @@
     {
       "_id": {
         "day": "2026-11-01",
+        "mopName": "Полстянова Татьяна"
+      },
+      "airSeconds": 1230,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-01",
         "mopName": "Султанов Есен"
       },
       "airSeconds": 855,
@@ -21019,8 +21029,18 @@
       "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-01",
+        "mopName": "Яловая Надежда"
+      },
+      "airSeconds": 0,
+      "calls": 7,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-01T16:38:45+00:00"
+  "updatedAt": "2026-11-01T21:48:00+00:00"
 }
