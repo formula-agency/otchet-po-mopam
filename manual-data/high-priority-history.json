@@ -55544,6 +55544,24 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-10-03",
+          "daysWithoutAttempt": 4,
+          "daysWithoutCall": 26,
+          "dealId": "6760",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6760/",
+          "lastCallAttemptDate": "2026-10-28",
+          "lastSuccessfulCommunicationDate": "2026-10-06",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Ядрышникова Кристина",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Любовь Дмитриевна",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-09-24",
           "daysWithoutAttempt": 4,
           "daysWithoutCall": 25,
@@ -55597,6 +55615,24 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Марина",
+          "utmSource": "leadit"
+        },
+        {
+          "dateCreate": "2026-07-31",
+          "daysWithoutAttempt": 4,
+          "daysWithoutCall": 23,
+          "dealId": "5819",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5819/",
+          "lastCallAttemptDate": "2026-10-28",
+          "lastSuccessfulCommunicationDate": "2026-10-09",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Жуков Лев",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Иван",
           "utmSource": "leadit"
         },
         {
@@ -56094,7 +56130,9 @@
         "6966"
       ],
       "newOverdueDealIds": [
-        "6698"
+        "5819",
+        "6698",
+        "6760"
       ],
       "previousDate": "2026-10-31"
     }
