@@ -55046,7 +55046,9 @@
       "previousDate": "2026-10-30"
     },
     "2026-11-01": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6791"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-11-01",
@@ -55870,24 +55872,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-10-07",
-          "daysWithoutAttempt": 12,
-          "daysWithoutCall": 17,
-          "dealId": "6791",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6791/",
-          "lastCallAttemptDate": "2026-10-20",
-          "lastSuccessfulCommunicationDate": "2026-10-15",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Дилара",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-10-15",
           "daysWithoutAttempt": 12,
           "daysWithoutCall": 17,
@@ -56121,7 +56105,6 @@
         "6749",
         "6761",
         "6774",
-        "6791",
         "6802",
         "6840",
         "6854",

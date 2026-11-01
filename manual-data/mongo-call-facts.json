@@ -20986,7 +20986,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20996,7 +20996,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21005,12 +21005,22 @@
         "day": "2026-11-01",
         "mopName": "Султанов Есен"
       },
+      "airSeconds": 855,
+      "calls": 7,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-01",
+        "mopName": "Тончу Ростислав"
+      },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-01T08:51:40+00:00"
+  "updatedAt": "2026-11-01T16:38:45+00:00"
 }
