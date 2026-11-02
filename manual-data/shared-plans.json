@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-10-07T12:01:33Z",
+  "updatedAt": "2026-11-02T08:12:48Z",
   "months": {
     "2026-06": {
       "fileName": "restored-from-pages-artifact-2026-06",
@@ -467,6 +467,132 @@
           "reservationsPlan": 10,
           "approvedMortgagesPlan": 7,
           "airTimePlanSeconds": 30000
+        }
+      ]
+    },
+    "2026-11": {
+      "fileName": "План на ноябрь 2026 (скриншот)",
+      "publishedAt": "2026-11-02T08:12:48Z",
+      "managerCount": 13,
+      "hasAggregatePlan": false,
+      "skippedNames": [],
+      "plans": [
+        {
+          "mopName": "Тончу Ростислав",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Погребинский Артем",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Жуков Лев",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Гавриленко Елена",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Войнов Данил",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Султанов Есен",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Ядрышникова Кристина",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Марина Данчук",
+          "aggregatePlan": false,
+          "salesPlan": 2,
+          "meetingsPlan": 12,
+          "reservationsPlan": 9,
+          "approvedMortgagesPlan": 7,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Абоскалова Анна",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Градцеева Елена",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 24000
+        },
+        {
+          "mopName": "Аверкиев Дмитрий",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Яловая Надежда",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Полстянова Татьяна",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
         }
       ]
     }
