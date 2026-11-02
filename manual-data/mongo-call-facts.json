@@ -21066,7 +21066,7 @@
         "mopName": "Войнов Данил"
       },
       "airSeconds": 538,
-      "calls": 6,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -21076,9 +21076,19 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 641,
-      "calls": 9,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-02",
+        "mopName": "Градцева Елена"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -21096,7 +21106,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21126,7 +21136,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21136,7 +21146,7 @@
         "mopName": "Тончу Ростислав"
       },
       "airSeconds": 106,
-      "calls": 5,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -21146,7 +21156,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 68,
-      "calls": 3,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -21156,11 +21166,11 @@
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-02T08:17:26+00:00"
+  "updatedAt": "2026-11-02T08:59:45+00:00"
 }
