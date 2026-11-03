@@ -173,6 +173,11 @@ const SCOREBOARD_EXCLUDED_MOP_NAMES = [
   'Парфенов Владислав',
   'Попова Юлия',
 ];
+const NOVEMBER_2026_SCOREBOARD_EXCLUDED_MOP_NAMES = [
+  'Васильев Владимир',
+  'Попова Олеся',
+  'Черткова Ирина',
+];
 const ACTIVE_ACTIVITY_LABELS = {
   meetings: 'Встреча',
   approvedMortgages: 'Ипотека',
@@ -258,7 +263,12 @@ function normalizeNameKey(value) {
 
 function isScoreboardMopIncluded(mopName) {
   const mopKey = normalizeNameKey(mopName);
-  return !SCOREBOARD_EXCLUDED_MOP_NAMES.some((name) => normalizeNameKey(name) === mopKey);
+  if (SCOREBOARD_EXCLUDED_MOP_NAMES.some((name) => normalizeNameKey(name) === mopKey)) return false;
+  const range = scoreboardDateRange();
+  const isNovember2026 = range.from?.startsWith('2026-11') && range.to?.startsWith('2026-11');
+  return !isNovember2026 || !NOVEMBER_2026_SCOREBOARD_EXCLUDED_MOP_NAMES.some(
+    (name) => normalizeNameKey(name) === mopKey
+  );
 }
 
 function normalizePlanLabel(value) {
@@ -1927,7 +1937,8 @@ function renderAirTimePlanFact() {
   };
   const totalRange = scoreboardDateRange();
   totals.activeDealsFact = (activeDealsData().rows || []).filter((deal) => (
-    deal.mopName && dealIsActiveInRange(deal, totalRange.from, totalRange.to)
+    deal.mopName && isScoreboardMopIncluded(deal.mopName)
+    && dealIsActiveInRange(deal, totalRange.from, totalRange.to)
   )).length;
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
 
