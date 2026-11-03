@@ -21185,8 +21185,18 @@
         "day": "2026-11-03",
         "mopName": "Абоскалова Анна"
       },
+      "airSeconds": 1981,
+      "calls": 8,
+      "successfulTargetCalls": 0,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-11-03",
+        "mopName": "Аверкиев Дмитрий"
+      },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21195,20 +21205,20 @@
         "day": "2026-11-03",
         "mopName": "Войнов Данил"
       },
-      "airSeconds": 0,
+      "airSeconds": 341,
       "calls": 5,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-03",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 0,
-      "calls": 11,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 4909,
+      "calls": 12,
+      "successfulTargetCalls": 2,
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -21225,10 +21235,10 @@
         "day": "2026-11-03",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 573,
-      "calls": 11,
-      "successfulTargetCalls": 3,
-      "targetCalls": 3
+      "airSeconds": 821,
+      "calls": 12,
+      "successfulTargetCalls": 4,
+      "targetCalls": 5
     },
     {
       "_id": {
@@ -21246,7 +21256,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 306,
-      "calls": 21,
+      "calls": 15,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -21266,7 +21276,7 @@
         "mopName": "Полстянова Татьяна"
       },
       "airSeconds": 0,
-      "calls": 8,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21276,7 +21286,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 17,
+      "calls": 16,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21295,10 +21305,10 @@
         "day": "2026-11-03",
         "mopName": "Ядрышникова Кристина"
       },
-      "airSeconds": 0,
-      "calls": 4,
+      "airSeconds": 993,
+      "calls": 7,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -21312,5 +21322,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-03T11:42:36+00:00"
+  "updatedAt": "2026-11-03T19:12:38+00:00"
 }
