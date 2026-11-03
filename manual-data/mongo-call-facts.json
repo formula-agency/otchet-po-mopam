@@ -20576,7 +20576,7 @@
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 621,
-      "calls": 6,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 2
     },
@@ -20686,7 +20686,7 @@
         "mopName": "Полстянова Татьяна"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -20726,7 +20726,7 @@
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 62,
-      "calls": 4,
+      "calls": 5,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -20816,7 +20816,7 @@
         "mopName": "Полстянова Татьяна"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21036,7 +21036,7 @@
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 0,
-      "calls": 7,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21182,5 +21182,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-02T20:02:25+00:00"
+  "updatedAt": "2026-11-03T02:13:29+00:00"
 }
