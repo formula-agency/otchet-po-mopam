@@ -57867,6 +57867,7 @@
     },
     "2026-11-04": {
       "calledFromPreviousDealIds": [
+        "5263",
         "6014"
       ],
       "calledFromPreviousEvaluated": true,
@@ -58371,11 +58372,11 @@
         },
         {
           "dateCreate": "2026-05-20",
-          "daysWithoutAttempt": 7,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 20,
           "dealId": "5263",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5263/",
-          "lastCallAttemptDate": "2026-10-28",
+          "lastCallAttemptDate": "2026-11-04",
           "lastSuccessfulCommunicationDate": "2026-10-15",
           "meetingHeld": true,
           "mopId": "",
