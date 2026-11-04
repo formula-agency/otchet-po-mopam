@@ -57866,7 +57866,9 @@
       "previousDate": "2026-11-02"
     },
     "2026-11-04": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "6014"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-11-04",
@@ -58149,11 +58151,11 @@
         },
         {
           "dateCreate": "2026-08-20",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 34,
           "dealId": "6014",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6014/",
-          "lastCallAttemptDate": "2026-11-03",
+          "lastCallAttemptDate": "2026-11-04",
           "lastSuccessfulCommunicationDate": "2026-10-01",
           "meetingHeld": false,
           "mopId": "",
@@ -58536,24 +58538,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-05-19",
-          "daysWithoutAttempt": 2,
-          "daysWithoutCall": 10,
-          "dealId": "5253",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5253/",
-          "lastCallAttemptDate": "2026-11-02",
-          "lastSuccessfulCommunicationDate": "2026-10-25",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Казыева Анна Евгеньевна",
-          "utmSource": ""
-        },
-        {
           "dateCreate": "2026-03-07",
           "daysWithoutAttempt": 9,
           "daysWithoutCall": 9,
@@ -58653,7 +58637,6 @@
         "4243",
         "4381",
         "4845",
-        "5253",
         "5263",
         "5314",
         "5538",
