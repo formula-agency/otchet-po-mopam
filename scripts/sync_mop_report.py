@@ -2089,6 +2089,8 @@ def canonical_mop_label(mop_name: str, settings: MopSettings) -> str:
     normalized = normalize_key(mop_name)
     if not normalized:
         return ""
+    if normalized in {"градцева елена", "елена градцева"}:
+        return "Градцеева Елена"
 
     normalized_parts = sorted(part for part in normalized.split() if part)
     partial_matches: list[str] = []

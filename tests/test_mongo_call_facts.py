@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from tempfile import TemporaryDirectory
 from datetime import date, datetime
 from pathlib import Path
@@ -31,6 +32,7 @@ from scripts.sync_mop_report import (
     calculate_target_after_meeting_entries,
     key_for_mop_id,
     mongo_completed_call_expression,
+    mongo_mop_identity,
     presentation_contains_offer,
     replace_target_after_meeting_facts,
     week_start_for_date,
@@ -59,6 +61,14 @@ def test_mop_settings() -> MopSettings:
 
 
 class MongoCallPipelineTests(unittest.TestCase):
+    def test_templab_spelling_of_gradtseva_maps_to_bitrix_manager(self) -> None:
+        settings = test_mop_settings()
+        settings = replace(settings, include_user_labels=(*settings.include_user_labels, "Градцеева Елена"))
+        self.assertEqual(
+            mongo_mop_identity("Градцева Елена", settings),
+            ("221", "Градцеева Елена"),
+        )
+
     def test_pipeline_filters_window_converts_timezone_and_deduplicates(self) -> None:
         timezone_name = "Asia/Yekaterinburg"
         tz = ZoneInfo(timezone_name)
