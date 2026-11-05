@@ -1839,11 +1839,11 @@ function scoreboardDateRange() {
   };
 }
 
-function activeDealCountsByMopForRange(range) {
+function createdDealCountsByMopForRange(range) {
   const counts = new Map();
-  for (const deal of activeDealsData().rows || []) {
-    if (!deal.mopName || !isScoreboardMopIncluded(deal.mopName) || !dealIsActiveInRange(deal, range.from, range.to)) continue;
-    counts.set(deal.mopName, (counts.get(deal.mopName) || 0) + 1);
+  for (const item of data.createdDealCounts || []) {
+    if (!item.mopName || !isScoreboardMopIncluded(item.mopName) || !dateInRange(item.date, range.from, range.to)) continue;
+    counts.set(item.mopName, (counts.get(item.mopName) || 0) + Number(item.count || 0));
   }
   return counts;
 }
@@ -1851,7 +1851,7 @@ function activeDealCountsByMopForRange(range) {
 function scoreboardRows() {
   const scoreboardMopNames = new Set([
     ...(data.filters?.mopNames || []),
-    ...(activeDealsData().mopNames || []),
+    ...(data.createdDealCounts || []).map((item) => item.mopName),
   ].filter(isScoreboardMopIncluded));
   const rowsByMop = new Map([...scoreboardMopNames].map((name) => [name, emptyScoreboardRow(name)]));
 
@@ -1877,8 +1877,8 @@ function scoreboardRows() {
     }
   }
 
-  const activeDealCounts = activeDealCountsByMopForRange(scoreboardDateRange());
-  for (const [mopName, count] of activeDealCounts.entries()) {
+  const createdDealCounts = createdDealCountsByMopForRange(scoreboardDateRange());
+  for (const [mopName, count] of createdDealCounts.entries()) {
     if (!rowsByMop.has(mopName)) {
       rowsByMop.set(mopName, emptyScoreboardRow(mopName));
     }
@@ -1936,10 +1936,8 @@ function renderAirTimePlanFact() {
     ...summarizeRows(scoreboardTotalRows()),
   };
   const totalRange = scoreboardDateRange();
-  totals.activeDealsFact = (activeDealsData().rows || []).filter((deal) => (
-    deal.mopName && isScoreboardMopIncluded(deal.mopName)
-    && dealIsActiveInRange(deal, totalRange.from, totalRange.to)
-  )).length;
+  totals.activeDealsFact = [...createdDealCountsByMopForRange(totalRange).values()]
+    .reduce((sum, count) => sum + count, 0);
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
 
   if (els.airtimeFreshness) {

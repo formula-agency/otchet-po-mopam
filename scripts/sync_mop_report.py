@@ -197,6 +197,9 @@ MANUAL_SALES_DATE_OVERRIDES = {
     "5974": date(2026, 8, 31),
     "6276": date(2026, 9, 30),
     "6580": date(2026, 9, 30),
+    "5899": date(2026, 10, 30),
+    "6853": date(2026, 10, 30),
+    "6842": date(2026, 10, 30),
 }
 MANUAL_MONTHLY_MOP_PLANS = (
     {
@@ -5372,6 +5375,48 @@ def build_daily_dashboard_rows(
     )
 
 
+def build_created_deal_counts(
+    session: requests.Session,
+    settings: Settings,
+    mop_settings: MopSettings,
+    window: ReportWindow,
+) -> list[dict[str, Any]]:
+    category_names = fetch_deal_category_names(session, settings)
+    category_ids = active_deal_category_ids(category_names, mop_settings)
+    if mop_settings.active_deal_category_names and not category_ids:
+        raise ConfigError("Cannot count created deals: configured deal category was not found.")
+
+    date_filters = {
+        ">=DATE_CREATE": window.start.isoformat(timespec="seconds"),
+        "<=DATE_CREATE": window.end.isoformat(timespec="seconds"),
+    }
+    records: list[dict[str, Any]] = []
+    for category_id in sorted(category_ids, key=int) if category_ids else [None]:
+        filters = {**date_filters, **({"CATEGORY_ID": category_id} if category_id else {})}
+        records.extend(fetch_deal_list(session, settings, filters, ["ID", "DATE_CREATE", "ASSIGNED_BY_ID"]))
+
+    seen_ids: set[str] = set()
+    counts: dict[tuple[str, str, str], int] = defaultdict(int)
+    for record in records:
+        deal_id = str(record.get("ID") or "").strip()
+        if not deal_id or deal_id in seen_ids:
+            continue
+        seen_ids.add(deal_id)
+        created = parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        if created is None or not window.start.date() <= created <= window.end.date():
+            continue
+        mop_id = str(record.get("ASSIGNED_BY_ID") or "").strip()
+        mop_name = DEFAULT_MOP_NAMES_BY_ID.get(mop_id, "")
+        if not mop_name or not mop_is_allowed(mop_id, mop_name, mop_settings):
+            continue
+        counts[(created.isoformat(), mop_id, mop_name)] += 1
+
+    return [
+        {"date": event_date, "mopId": mop_id, "mopName": mop_name, "count": count}
+        for (event_date, mop_id, mop_name), count in sorted(counts.items())
+    ]
+
+
 def build_active_deals_payload(
     data: MopReportData,
     service: Any,
@@ -6375,6 +6420,7 @@ def build_dashboard_payload(
     window: ReportWindow,
     active_deals_payload: dict[str, Any] | None = None,
     high_priority_payload: dict[str, Any] | None = None,
+    created_deal_counts: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -6452,6 +6498,7 @@ def build_dashboard_payload(
             ),
         },
         "overview": {"mopCount": len(mop_names), "weekCount": len(weeks)},
+        "createdDealCounts": created_deal_counts or [],
         "activeDeals": active_deals_payload or {
             "rows": [],
             "mopNames": [],
@@ -6609,6 +6656,7 @@ def main() -> int:
             data.offer_calls,
         )
         built_report = build_report_rows(data, mop_settings)
+        created_deal_counts = build_created_deal_counts(session, settings, mop_settings, window)
         payload = build_dashboard_payload(
             data,
             settings,
@@ -6616,6 +6664,7 @@ def main() -> int:
             window,
             active_deals_payload,
             high_priority_payload,
+            created_deal_counts,
         )
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 

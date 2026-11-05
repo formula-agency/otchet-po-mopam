@@ -14,6 +14,13 @@ from sync_mop_report import DEFAULT_INCLUDED_MOPS, DEFAULT_MOP_NAMES_BY_ID  # no
 
 
 class NovemberPlanTest(unittest.TestCase):
+    def test_sync_uses_current_mop_list_instead_of_stale_workflow_override(self) -> None:
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/update-mop-report.yml"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("MOP_INCLUDE_USERS:", workflow)
+
     def test_matches_approved_november_plan(self) -> None:
         store = json.loads(Path("manual-data/shared-plans.json").read_text(encoding="utf-8"))
         month = store["months"]["2026-11"]
