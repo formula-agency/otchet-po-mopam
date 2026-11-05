@@ -21466,7 +21466,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21486,7 +21486,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 7,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21496,7 +21496,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21522,5 +21522,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-05T05:31:39+00:00"
+  "updatedAt": "2026-11-05T06:20:23+00:00"
 }

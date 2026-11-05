@@ -58703,6 +58703,24 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-04-23",
+          "daysWithoutAttempt": 196,
+          "daysWithoutCall": 196,
+          "dealId": "4864",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4864/",
+          "lastCallAttemptDate": "",
+          "lastSuccessfulCommunicationDate": "",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Аверкиев Дмитрий",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "Дожать на встречу",
+          "title": "Киселёва Ольга Владимировна",
+          "utmSource": "selfwalk"
+        },
+        {
           "dateCreate": "2026-06-25",
           "daysWithoutAttempt": 133,
           "daysWithoutCall": 133,
@@ -59576,6 +59594,7 @@
       ],
       "newOverdueDealIds": [
         "4616",
+        "4864",
         "6287",
         "6601",
         "6996",
