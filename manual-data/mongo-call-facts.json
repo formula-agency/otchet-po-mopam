@@ -21466,7 +21466,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21522,5 +21522,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-05T06:20:23+00:00"
+  "updatedAt": "2026-11-05T06:27:35+00:00"
 }
