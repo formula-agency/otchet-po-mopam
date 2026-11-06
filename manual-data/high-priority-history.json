@@ -59594,6 +59594,7 @@
     "2026-11-06": {
       "calledFromPreviousDealIds": [
         "3996",
+        "6014",
         "6039",
         "6244",
         "6395",
@@ -59791,24 +59792,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-03",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 44,
-          "dealId": "6180",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6180/",
-          "lastCallAttemptDate": "2026-11-06",
-          "lastSuccessfulCommunicationDate": "2026-09-23",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Васильев Владимир",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Диана",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-17",
           "daysWithoutAttempt": 11,
           "daysWithoutCall": 44,
@@ -59884,11 +59867,11 @@
         },
         {
           "dateCreate": "2026-08-20",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 36,
           "dealId": "6014",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6014/",
-          "lastCallAttemptDate": "2026-11-05",
+          "lastCallAttemptDate": "2026-11-06",
           "lastSuccessfulCommunicationDate": "2026-10-01",
           "meetingHeld": false,
           "mopId": "",
@@ -59996,11 +59979,11 @@
         },
         {
           "dateCreate": "2026-10-01",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 24,
           "dealId": "6720",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6720/",
-          "lastCallAttemptDate": "2026-11-03",
+          "lastCallAttemptDate": "2026-11-06",
           "lastSuccessfulCommunicationDate": "2026-10-13",
           "meetingHeld": false,
           "mopId": "",
@@ -60083,24 +60066,6 @@
           "stageName": "Дожать на встречу",
           "title": "Булат",
           "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-10-07",
-          "daysWithoutAttempt": 8,
-          "daysWithoutCall": 22,
-          "dealId": "6802",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6802/",
-          "lastCallAttemptDate": "2026-10-29",
-          "lastSuccessfulCommunicationDate": "2026-10-15",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Рафаэль",
-          "utmSource": "selfwalk"
         },
         {
           "dateCreate": "2026-05-20",
@@ -60511,24 +60476,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-10-24",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 8,
-          "dealId": "7043",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/7043/",
-          "lastCallAttemptDate": "2026-11-05",
-          "lastSuccessfulCommunicationDate": "2026-10-29",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Войнов Данил",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Расулова Лейла Шарабидиновна",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-13",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -60621,7 +60568,6 @@
         "6023",
         "6039",
         "6169",
-        "6180",
         "6244",
         "6258",
         "6277",
@@ -60641,7 +60587,6 @@
         "6720",
         "6749",
         "6761",
-        "6802",
         "6822",
         "6854",
         "6943",
@@ -60658,7 +60603,6 @@
         "6962",
         "7007",
         "7016",
-        "7043",
         "7107"
       ],
       "previousDate": "2026-11-05"
