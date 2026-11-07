@@ -21766,7 +21766,17 @@
         "mopName": "Аверкиев Дмитрий"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-07",
+        "mopName": "Васильев Владимир"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21805,10 +21815,10 @@
         "day": "2026-11-07",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 0,
-      "calls": 1,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 843,
+      "calls": 3,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -21825,10 +21835,10 @@
         "day": "2026-11-07",
         "mopName": "Полстянова Татьяна"
       },
-      "airSeconds": 0,
+      "airSeconds": 306,
       "calls": 1,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -21846,11 +21856,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-07T12:37:02+00:00"
+  "updatedAt": "2026-11-07T18:31:44+00:00"
 }

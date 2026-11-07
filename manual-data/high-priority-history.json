@@ -61684,6 +61684,24 @@
           "utmSource": "leadit"
         },
         {
+          "dateCreate": "2026-08-04",
+          "daysWithoutAttempt": 8,
+          "daysWithoutCall": 8,
+          "dealId": "5843",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5843/",
+          "lastCallAttemptDate": "2026-10-30",
+          "lastSuccessfulCommunicationDate": "2026-10-30",
+          "meetingHeld": true,
+          "mopId": "",
+          "mopName": "Абоскалова Анна",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "0-2 звонка после показа",
+          "title": "Руслан",
+          "utmSource": "leadit"
+        },
+        {
           "dateCreate": "2026-10-19",
           "daysWithoutAttempt": 8,
           "daysWithoutCall": 8,
@@ -61756,6 +61774,7 @@
       ],
       "newOverdueDealIds": [
         "4969",
+        "5843",
         "6942",
         "6980",
         "7008",
