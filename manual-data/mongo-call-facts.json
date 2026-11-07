@@ -21665,10 +21665,10 @@
         "day": "2026-11-06",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 2193,
+      "airSeconds": 5011,
       "calls": 10,
-      "successfulTargetCalls": 4,
-      "targetCalls": 6
+      "successfulTargetCalls": 5,
+      "targetCalls": 8
     },
     {
       "_id": {
@@ -21676,7 +21676,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -21752,5 +21752,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-06T17:16:00+00:00"
+  "updatedAt": "2026-11-07T04:58:59+00:00"
 }
