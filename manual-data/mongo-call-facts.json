@@ -21859,8 +21859,18 @@
       "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-08",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-07T23:30:18+00:00"
+  "updatedAt": "2026-11-08T04:52:12+00:00"
 }
