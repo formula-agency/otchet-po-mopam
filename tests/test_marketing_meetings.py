@@ -34,6 +34,21 @@ class MarketingMeetingsTest(unittest.TestCase):
         self.assertEqual(meetings, [MarketingMeeting("2026-09", "100", date(2026, 9, 2))])
         self.assertEqual(duplicates, 1)
 
+    def test_same_deal_counts_once_in_each_meeting_month(self):
+        entries = [
+            sync.MeetingLogEntry(date(2026, 9, 2), "100", "МОП", successful=True),
+            sync.MeetingLogEntry(date(2026, 10, 1), "100", "МОП", successful=True),
+            sync.MeetingLogEntry(date(2026, 10, 8), "100", "МОП", successful=True),
+        ]
+
+        meetings, duplicates = successful_meetings(entries, {"2026-09", "2026-10"})
+
+        self.assertEqual(meetings, [
+            MarketingMeeting("2026-09", "100", date(2026, 9, 2)),
+            MarketingMeeting("2026-10", "100", date(2026, 10, 1)),
+        ])
+        self.assertEqual(duplicates, 1)
+
     def test_counts_meetings_by_event_month_regardless_of_deal_creation_date(self):
         meetings = [
             MarketingMeeting("2026-09", "100", date(2026, 9, 2)),

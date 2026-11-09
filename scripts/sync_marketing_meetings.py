@@ -101,10 +101,10 @@ def successful_meetings(
         and entry.deal_id
         and entry.meeting_date.strftime("%Y-%m") in report_months
     ]
-    by_deal: dict[str, MarketingMeeting] = {}
+    by_deal_month: dict[tuple[str, str], MarketingMeeting] = {}
     for meeting in sorted(candidates, key=lambda item: (item.meeting_date, int(item.deal_id))):
-        by_deal.setdefault(meeting.deal_id, meeting)
-    return list(by_deal.values()), len(candidates) - len(by_deal)
+        by_deal_month.setdefault((meeting.month_key, meeting.deal_id), meeting)
+    return list(by_deal_month.values()), len(candidates) - len(by_deal_month)
 
 
 def count_meetings(
