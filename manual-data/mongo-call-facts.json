@@ -22196,7 +22196,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 264,
-      "calls": 14,
+      "calls": 15,
       "successfulTargetCalls": 1,
       "targetCalls": 3
     },
@@ -22239,8 +22239,18 @@
       "calls": 21,
       "successfulTargetCalls": 0,
       "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Яловая Надежда"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-10T22:57:30+00:00"
+  "updatedAt": "2026-11-11T05:02:09+00:00"
 }
