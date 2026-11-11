@@ -22243,6 +22243,106 @@
     {
       "_id": {
         "day": "2026-11-11",
+        "mopName": "Аверкиев Дмитрий"
+      },
+      "airSeconds": 939,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Гавриленко Елена"
+      },
+      "airSeconds": 3739,
+      "calls": 12,
+      "successfulTargetCalls": 1,
+      "targetCalls": 6
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Градцева Елена"
+      },
+      "airSeconds": 379,
+      "calls": 4,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 0,
+      "calls": 4,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Жуков Лев"
+      },
+      "airSeconds": 339,
+      "calls": 15,
+      "successfulTargetCalls": 0,
+      "targetCalls": 3
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 93,
+      "calls": 18,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Полстянова Татьяна"
+      },
+      "airSeconds": 0,
+      "calls": 10,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Султанов Есен"
+      },
+      "airSeconds": 62,
+      "calls": 5,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-11",
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 0,
@@ -22252,5 +22352,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-11T05:02:09+00:00"
+  "updatedAt": "2026-11-11T13:43:28+00:00"
 }
