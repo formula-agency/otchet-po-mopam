@@ -265,6 +265,11 @@ function isScoreboardMopIncluded(mopName) {
   const mopKey = normalizeNameKey(mopName);
   if (SCOREBOARD_EXCLUDED_MOP_NAMES.some((name) => normalizeNameKey(name) === mopKey)) return false;
   const range = scoreboardDateRange();
+  const currentMonth = String(data.generatedAt || '').slice(0, 7);
+  if (currentMonth && range.from?.slice(0, 7) <= currentMonth && range.to?.slice(0, 7) >= currentMonth) {
+    const employee = (data.mopRoster || []).find((item) => normalizeNameKey(item.mopName) === mopKey);
+    if (employee?.active === false) return false;
+  }
   const isNovember2026 = range.from?.startsWith('2026-11') && range.to?.startsWith('2026-11');
   return !isNovember2026 || !NOVEMBER_2026_SCOREBOARD_EXCLUDED_MOP_NAMES.some(
     (name) => normalizeNameKey(name) === mopKey

@@ -160,6 +160,10 @@ DEFAULT_INCLUDED_MOPS = (
     "Аверкиев Дмитрий",
     "Полстянова Татьяна",
     "Яловая Надежда",
+    "Овчинников Станислав",
+    "Фабрициус Татьяна",
+    "Устинова Ольга",
+    "Григорович Елена",
 )
 DEFAULT_MOP_NAMES_BY_ID = {
     "39": "Погребинский Артем",
@@ -183,6 +187,10 @@ DEFAULT_MOP_NAMES_BY_ID = {
     "222": "Аверкиев Дмитрий",
     "223": "Полстянова Татьяна",
     "224": "Яловая Надежда",
+    "225": "Овчинников Станислав",
+    "226": "Фабрициус Татьяна",
+    "227": "Устинова Ольга",
+    "228": "Григорович Елена",
 }
 DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
 MANUAL_SALES_DATE_OVERRIDES = {
@@ -387,6 +395,10 @@ PLAN_MOP_NAME_ALIASES = {
     "аверкиев": "Аверкиев Дмитрий",
     "полстянова": "Полстянова Татьяна",
     "яловая": "Яловая Надежда",
+    "овчинников": "Овчинников Станислав",
+    "фабрициус": "Фабрициус Татьяна",
+    "устинова": "Устинова Ольга",
+    "григорович": "Григорович Елена",
 }
 
 RUSSIAN_MONTHS = {
@@ -2456,6 +2468,30 @@ def fetch_bitrix_user_names(session: requests.Session, settings: Settings, user_
             or str(user.get("LOGIN") or user.get("EMAIL") or f"Пользователь {user_id}")
         )
     return user_names
+
+
+def fetch_bitrix_mop_roster(session: requests.Session, settings: Settings) -> list[dict[str, Any]]:
+    roster: list[dict[str, Any]] = []
+    next_start: int | None = 0
+    seen_starts: set[int] = set()
+    while next_start is not None:
+        if next_start in seen_starts:
+            raise RuntimeError("Bitrix user pagination repeated a page")
+        seen_starts.add(next_start)
+        payload = execute_bitrix_method(session, settings, "user.get", {"start": next_start})
+        for user in payload.get("result", []):
+            user_id = str(user.get("ID") or "").strip()
+            mop_name = DEFAULT_MOP_NAMES_BY_ID.get(user_id)
+            if not mop_name:
+                continue
+            roster.append({
+                "mopId": user_id,
+                "mopName": mop_name,
+                "active": str(user.get("ACTIVE") or "").lower() in {"true", "y", "1"},
+            })
+        next_value = payload.get("next")
+        next_start = int(next_value) if next_value is not None else None
+    return roster
 
 
 def hydrate_fact_identities(data: MopReportData, user_names: dict[str, str]) -> None:
@@ -6423,6 +6459,7 @@ def build_dashboard_payload(
     active_deals_payload: dict[str, Any] | None = None,
     high_priority_payload: dict[str, Any] | None = None,
     created_deal_counts: list[dict[str, Any]] | None = None,
+    mop_roster: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     totals_plan = MopMetricSet()
@@ -6501,6 +6538,7 @@ def build_dashboard_payload(
         },
         "overview": {"mopCount": len(mop_names), "weekCount": len(weeks)},
         "createdDealCounts": created_deal_counts or [],
+        "mopRoster": mop_roster or [],
         "activeDeals": active_deals_payload or {
             "rows": [],
             "mopNames": [],
@@ -6599,6 +6637,11 @@ def main() -> int:
 
         user_names = fetch_bitrix_user_names(session, settings, data.user_ids)
         hydrate_fact_identities(data, user_names)
+        try:
+            mop_roster = fetch_bitrix_mop_roster(session, settings)
+        except Exception as exc:
+            data.warnings.append(f"Статусы сотрудников Bitrix не загружены: {safe_error_text(exc)}")
+            mop_roster = []
         if service is None:
             data.warnings.append("Планы не загружены: не задан GOOGLE_SERVICE_ACCOUNT_FILE или GOOGLE_SERVICE_ACCOUNT_JSON.")
         elif not mop_settings.plan_sheet_id:
@@ -6667,6 +6710,7 @@ def main() -> int:
             active_deals_payload,
             high_priority_payload,
             created_deal_counts,
+            mop_roster,
         )
         write_dashboard_files(payload, mop_settings.dashboard_dir)
 
