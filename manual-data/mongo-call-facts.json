@@ -22535,20 +22535,20 @@
         "day": "2026-11-13",
         "mopName": "Абоскалова Анна"
       },
-      "airSeconds": 0,
-      "calls": 6,
+      "airSeconds": 871,
+      "calls": 9,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 2
     },
     {
       "_id": {
         "day": "2026-11-13",
         "mopName": "Аверкиев Дмитрий"
       },
-      "airSeconds": 0,
-      "calls": 2,
+      "airSeconds": 89,
+      "calls": 4,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -22565,20 +22565,20 @@
         "day": "2026-11-13",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 1003,
-      "calls": 11,
-      "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "airSeconds": 3059,
+      "calls": 19,
+      "successfulTargetCalls": 6,
+      "targetCalls": 9
     },
     {
       "_id": {
         "day": "2026-11-13",
         "mopName": "Градцева Елена"
       },
-      "airSeconds": 158,
-      "calls": 11,
+      "airSeconds": 1094,
+      "calls": 13,
       "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "targetCalls": 5
     },
     {
       "_id": {
@@ -22586,7 +22586,7 @@
         "mopName": "Григорович Елена"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 1,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22595,10 +22595,10 @@
         "day": "2026-11-13",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 1798,
+      "airSeconds": 4669,
       "calls": 15,
-      "successfulTargetCalls": 0,
-      "targetCalls": 1
+      "successfulTargetCalls": 3,
+      "targetCalls": 6
     },
     {
       "_id": {
@@ -22615,10 +22615,10 @@
         "day": "2026-11-13",
         "mopName": "Зенкова Анастасия"
       },
-      "airSeconds": 282,
-      "calls": 19,
+      "airSeconds": 715,
+      "calls": 20,
       "successfulTargetCalls": 0,
-      "targetCalls": 2
+      "targetCalls": 5
     },
     {
       "_id": {
@@ -22645,10 +22645,10 @@
         "day": "2026-11-13",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 8,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 787,
+      "calls": 14,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -22656,7 +22656,7 @@
         "mopName": "Устинова Ольга"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 10,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22675,22 +22675,22 @@
         "day": "2026-11-13",
         "mopName": "Ядрышникова Кристина"
       },
-      "airSeconds": 0,
-      "calls": 2,
+      "airSeconds": 99,
+      "calls": 6,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-13",
         "mopName": "Яловая Надежда"
       },
-      "airSeconds": 144,
-      "calls": 3,
+      "airSeconds": 1119,
+      "calls": 10,
       "successfulTargetCalls": 0,
-      "targetCalls": 1
+      "targetCalls": 4
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-13T11:57:05+00:00"
+  "updatedAt": "2026-11-13T19:20:05+00:00"
 }
