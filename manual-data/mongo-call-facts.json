@@ -22726,7 +22726,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 207,
-      "calls": 13,
+      "calls": 14,
       "successfulTargetCalls": 0,
       "targetCalls": 1
     },
@@ -22852,5 +22852,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-14T16:26:26+00:00"
+  "updatedAt": "2026-11-14T22:04:24+00:00"
 }
