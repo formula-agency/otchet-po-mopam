@@ -22726,9 +22726,29 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 207,
-      "calls": 4,
+      "calls": 13,
       "successfulTargetCalls": 0,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-14",
+        "mopName": "Аверкиев Дмитрий"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-14",
+        "mopName": "Войнов Данил"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     },
     {
       "_id": {
@@ -22737,6 +22757,26 @@
       },
       "airSeconds": 0,
       "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-14",
+        "mopName": "Градцева Елена"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-14",
+        "mopName": "Григорович Елена"
+      },
+      "airSeconds": 0,
+      "calls": 0,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22765,10 +22805,10 @@
         "day": "2026-11-14",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 4,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 1357,
+      "calls": 10,
+      "successfulTargetCalls": 2,
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -22793,14 +22833,24 @@
     {
       "_id": {
         "day": "2026-11-14",
+        "mopName": "Ядрышникова Кристина"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-14",
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 0,
-      "calls": 0,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-14T08:43:21+00:00"
+  "updatedAt": "2026-11-14T16:26:26+00:00"
 }
