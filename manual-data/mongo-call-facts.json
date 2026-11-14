@@ -22013,6 +22013,16 @@
     {
       "_id": {
         "day": "2026-11-09",
+        "mopName": "Овчинников Станислав"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-09",
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 390,
@@ -22056,7 +22066,7 @@
         "mopName": "Фабрициус Татьяна"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22173,6 +22183,16 @@
     {
       "_id": {
         "day": "2026-11-10",
+        "mopName": "Овчинников Станислав"
+      },
+      "airSeconds": 0,
+      "calls": 9,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-10",
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
@@ -22216,7 +22236,7 @@
         "mopName": "Фабрициус Татьяна"
       },
       "airSeconds": 0,
-      "calls": 11,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22463,6 +22483,16 @@
     {
       "_id": {
         "day": "2026-11-12",
+        "mopName": "Овчинников Станислав"
+      },
+      "airSeconds": 0,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-12",
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 149,
@@ -22656,7 +22686,7 @@
         "mopName": "Устинова Ольга"
       },
       "airSeconds": 0,
-      "calls": 10,
+      "calls": 16,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -22692,5 +22722,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-13T19:20:05+00:00"
+  "updatedAt": "2026-11-14T00:44:43+00:00"
 }
