@@ -22875,10 +22875,10 @@
         "day": "2026-11-15",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 388,
-      "calls": 2,
+      "airSeconds": 586,
+      "calls": 3,
       "successfulTargetCalls": 0,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -22982,5 +22982,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-15T13:34:40+00:00"
+  "updatedAt": "2026-11-15T19:37:40+00:00"
 }
