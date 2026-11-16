@@ -70207,7 +70207,12 @@
       "previousDate": "2026-11-14"
     },
     "2026-11-16": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5263",
+        "5385",
+        "6683",
+        "6707"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-11-16",
@@ -70542,11 +70547,11 @@
         },
         {
           "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 6,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 38,
           "dealId": "6707",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6707/",
-          "lastCallAttemptDate": "2026-11-10",
+          "lastCallAttemptDate": "2026-11-16",
           "lastSuccessfulCommunicationDate": "2026-10-09",
           "meetingHeld": true,
           "mopId": "",
@@ -70578,11 +70583,11 @@
         },
         {
           "dateCreate": "2026-09-29",
-          "daysWithoutAttempt": 4,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 35,
           "dealId": "6683",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6683/",
-          "lastCallAttemptDate": "2026-11-12",
+          "lastCallAttemptDate": "2026-11-16",
           "lastSuccessfulCommunicationDate": "2026-10-12",
           "meetingHeld": true,
           "mopId": "",
@@ -70612,24 +70617,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Сергей",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-05-20",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 32,
-          "dealId": "5263",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5263/",
-          "lastCallAttemptDate": "2026-11-13",
-          "lastSuccessfulCommunicationDate": "2026-10-15",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "3-7 звонков после показа",
-          "title": "Мария",
           "utmSource": "leadit"
         },
         {
@@ -71221,24 +71208,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-08-17",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 18,
-          "dealId": "5969",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5969/",
-          "lastCallAttemptDate": "2026-10-29",
-          "lastSuccessfulCommunicationDate": "2026-10-29",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Яловая Надежда",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Марат",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-08-04",
           "daysWithoutAttempt": 6,
           "daysWithoutCall": 17,
@@ -71481,7 +71450,6 @@
         "4692",
         "4940",
         "4969",
-        "5263",
         "5314",
         "5335",
         "5353",
@@ -71492,7 +71460,6 @@
         "5840",
         "5843",
         "5938",
-        "5969",
         "5997",
         "6257",
         "6277",
