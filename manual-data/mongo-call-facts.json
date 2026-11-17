@@ -23153,6 +23153,36 @@
     {
       "_id": {
         "day": "2026-11-17",
+        "mopName": "Аверкиев Дмитрий"
+      },
+      "airSeconds": 45,
+      "calls": 3,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-17",
+        "mopName": "Григорович Елена"
+      },
+      "airSeconds": 0,
+      "calls": 0,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-17",
+        "mopName": "Зенкова Анастасия"
+      },
+      "airSeconds": 0,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-17",
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
@@ -23162,5 +23192,5 @@
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-17T04:31:50+00:00"
+  "updatedAt": "2026-11-17T05:20:05+00:00"
 }
