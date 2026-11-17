@@ -10,6 +10,7 @@ from scripts.sync_mop_report import (
     MopReportData,
     ReportWindow,
     build_created_deal_counts,
+    build_created_deal_counts_with_totals,
     build_deal_metric_facts,
 )
 
@@ -85,7 +86,7 @@ class CreatedDealCountsTest(unittest.TestCase):
             patch("scripts.sync_mop_report.fetch_deal_category_names", return_value={"1": "Льготная ипотека"}),
             patch("scripts.sync_mop_report.fetch_deal_list", return_value=records) as fetch_deals,
         ):
-            result = build_created_deal_counts(None, settings, mop_settings, window)
+            result, all_result = build_created_deal_counts_with_totals(None, settings, mop_settings, window)
 
         self.assertEqual(
             result,
@@ -96,6 +97,13 @@ class CreatedDealCountsTest(unittest.TestCase):
         )
         self.assertEqual(fetch_deals.call_args.args[2]["CATEGORY_ID"], "1")
         self.assertNotIn("CLOSED", fetch_deals.call_args.args[2])
+        self.assertEqual(all_result, [{"date": "2026-11-02", "count": 3}])
+
+        with (
+            patch("scripts.sync_mop_report.fetch_deal_category_names", return_value={"1": "Льготная ипотека"}),
+            patch("scripts.sync_mop_report.fetch_deal_list", return_value=records),
+        ):
+            self.assertEqual(build_created_deal_counts(None, settings, mop_settings, window), result)
 
 
 if __name__ == "__main__":

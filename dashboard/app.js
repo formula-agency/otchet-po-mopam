@@ -1853,6 +1853,13 @@ function createdDealCountsByMopForRange(range) {
   return counts;
 }
 
+function allCreatedDealCountForRange(range) {
+  if (!Array.isArray(data.allCreatedDealCounts)) return null;
+  return data.allCreatedDealCounts
+    .filter((item) => dateInRange(item.date, range.from, range.to))
+    .reduce((sum, item) => sum + Number(item.count || 0), 0);
+}
+
 function scoreboardRows() {
   const scoreboardMopNames = new Set([
     ...(data.filters?.mopNames || []),
@@ -1941,9 +1948,17 @@ function renderAirTimePlanFact() {
     ...summarizeRows(scoreboardTotalRows()),
   };
   const totalRange = scoreboardDateRange();
-  totals.activeDealsFact = [...createdDealCountsByMopForRange(totalRange).values()]
+  const rankedDealCount = [...createdDealCountsByMopForRange(totalRange).values()]
     .reduce((sum, count) => sum + count, 0);
+  totals.activeDealsFact = allCreatedDealCountForRange(totalRange) ?? rankedDealCount;
+  const dealsOutsideRanking = Math.max(0, totals.activeDealsFact - rankedDealCount);
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
+  const summaryCaption = (metric) => {
+    if (metric.fact === 'activeDealsFact' && dealsOutsideRanking) {
+      return `${formatNumber(dealsOutsideRanking)} вне рейтинга`;
+    }
+    return metric.plan ? completion(totals[metric.fact], totals[metric.plan]) : 'Факт';
+  };
 
   if (els.airtimeFreshness) {
     els.airtimeFreshness.textContent = `Данные актуальны на ${fullDate(actualDataDate())}`;
@@ -1964,7 +1979,7 @@ function renderAirTimePlanFact() {
     <article>
       <span>${escapeHtml(metric.label)}</span>
       <strong>${metricPair(totals, metric)}</strong>
-      <small>${metric.plan ? completion(totals[metric.fact], totals[metric.plan]) : 'Факт'}</small>
+      <small${metric.fact === 'activeDealsFact' && dealsOutsideRanking ? ' title="Закреплены за неактивными МОПами или другими сотрудниками"' : ''}>${summaryCaption(metric)}</small>
     </article>
   `).join('');
 
