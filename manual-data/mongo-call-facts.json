@@ -23345,30 +23345,30 @@
         "day": "2026-11-17",
         "mopName": "Яловая Надежда"
       },
-      "airSeconds": 255,
+      "airSeconds": 599,
       "calls": 9,
       "successfulTargetCalls": 0,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
         "day": "2026-11-18",
         "mopName": "Абоскалова Анна"
       },
-      "airSeconds": 0,
-      "calls": 1,
+      "airSeconds": 159,
+      "calls": 4,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-18",
         "mopName": "Аверкиев Дмитрий"
       },
-      "airSeconds": 0,
-      "calls": 1,
+      "airSeconds": 2144,
+      "calls": 4,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -23385,35 +23385,25 @@
         "day": "2026-11-18",
         "mopName": "Гавриленко Елена"
       },
-      "airSeconds": 2289,
-      "calls": 4,
+      "airSeconds": 3017,
+      "calls": 11,
       "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
         "day": "2026-11-18",
         "mopName": "Градцева Елена"
       },
-      "airSeconds": 0,
-      "calls": 0,
+      "airSeconds": 346,
+      "calls": 5,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-18",
         "mopName": "Григорович Елена"
-      },
-      "airSeconds": 0,
-      "calls": 0,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
-    },
-    {
-      "_id": {
-        "day": "2026-11-18",
-        "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
       "calls": 3,
@@ -23423,12 +23413,22 @@
     {
       "_id": {
         "day": "2026-11-18",
+        "mopName": "Данчук Марина"
+      },
+      "airSeconds": 1193,
+      "calls": 11,
+      "successfulTargetCalls": 2,
+      "targetCalls": 5
+    },
+    {
+      "_id": {
+        "day": "2026-11-18",
         "mopName": "Жуков Лев"
       },
-      "airSeconds": 0,
-      "calls": 0,
+      "airSeconds": 405,
+      "calls": 1,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -23436,7 +23436,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 6,
+      "calls": 12,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23446,7 +23446,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23455,20 +23455,20 @@
         "day": "2026-11-18",
         "mopName": "Полстянова Татьяна"
       },
-      "airSeconds": 320,
-      "calls": 2,
-      "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "airSeconds": 904,
+      "calls": 8,
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
     },
     {
       "_id": {
         "day": "2026-11-18",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 2,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 501,
+      "calls": 10,
+      "successfulTargetCalls": 2,
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -23476,7 +23476,7 @@
         "mopName": "Устинова Ольга"
       },
       "airSeconds": 0,
-      "calls": 2,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23486,11 +23486,21 @@
         "mopName": "Фабрициус Татьяна"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 2,
       "successfulTargetCalls": 0,
       "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-18",
+        "mopName": "Яловая Надежда"
+      },
+      "airSeconds": 232,
+      "calls": 15,
+      "successfulTargetCalls": 1,
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-18T07:29:43+00:00"
+  "updatedAt": "2026-11-18T17:18:30+00:00"
 }
