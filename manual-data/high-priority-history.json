@@ -74036,6 +74036,8 @@
     },
     "2026-11-19": {
       "calledFromPreviousDealIds": [
+        "6753",
+        "6876",
         "7035",
         "7107"
       ],
@@ -74353,11 +74355,11 @@
         },
         {
           "dateCreate": "2026-10-02",
-          "daysWithoutAttempt": 1,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 43,
           "dealId": "6753",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6753/",
-          "lastCallAttemptDate": "2026-11-18",
+          "lastCallAttemptDate": "2026-11-19",
           "lastSuccessfulCommunicationDate": "2026-10-07",
           "meetingHeld": false,
           "mopId": "",
@@ -74980,24 +74982,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-10-13",
-          "daysWithoutAttempt": 3,
-          "daysWithoutCall": 17,
-          "dealId": "6876",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6876/",
-          "lastCallAttemptDate": "2026-11-16",
-          "lastSuccessfulCommunicationDate": "2026-11-02",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Султанов Есен",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Александр",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-11-02",
           "daysWithoutAttempt": 17,
           "daysWithoutCall": 17,
@@ -75322,7 +75306,6 @@
         "6773",
         "6822",
         "6865",
-        "6876",
         "6946",
         "6966",
         "6980",
