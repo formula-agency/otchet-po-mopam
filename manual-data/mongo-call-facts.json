@@ -23403,6 +23403,16 @@
     {
       "_id": {
         "day": "2026-11-18",
+        "mopName": "Грибанов Кирилл"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-18",
         "mopName": "Григорович Елена"
       },
       "airSeconds": 0,
@@ -23443,6 +23453,16 @@
     {
       "_id": {
         "day": "2026-11-18",
+        "mopName": "Ковалев Иван"
+      },
+      "airSeconds": 0,
+      "calls": 9,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
+    },
+    {
+      "_id": {
+        "day": "2026-11-18",
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
@@ -23465,10 +23485,10 @@
         "day": "2026-11-18",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 501,
+      "airSeconds": 541,
       "calls": 10,
       "successfulTargetCalls": 2,
-      "targetCalls": 3
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -23496,11 +23516,11 @@
         "mopName": "Яловая Надежда"
       },
       "airSeconds": 232,
-      "calls": 15,
+      "calls": 14,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-18T17:18:30+00:00"
+  "updatedAt": "2026-11-19T00:24:53+00:00"
 }
