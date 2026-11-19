@@ -24,6 +24,7 @@ class MopRosterTest(unittest.TestCase):
             "Фабрициус Татьяна": "226",
             "Устинова Ольга": "227",
             "Григорович Елена": "228",
+            "Ковалев Иван": "229",
         }
         for name, user_id in expected.items():
             self.assertIn(name, DEFAULT_INCLUDED_MOPS)
@@ -46,6 +47,7 @@ class MopRosterTest(unittest.TestCase):
                     {"ID": "226", "ACTIVE": "Y"},
                     {"ID": "227", "ACTIVE": "1"},
                     {"ID": "228", "ACTIVE": "N"},
+                    {"ID": "229", "ACTIVE": True},
                 ],
             },
         ]
@@ -55,7 +57,7 @@ class MopRosterTest(unittest.TestCase):
         self.assertEqual([call.args[3]["start"] for call in method.call_args_list], [0, 50])
         self.assertEqual(
             {item["mopId"]: item["active"] for item in roster},
-            {"190": False, "225": True, "226": True, "227": True, "228": False},
+            {"190": False, "225": True, "226": True, "227": True, "228": False, "229": True},
         )
 
 
