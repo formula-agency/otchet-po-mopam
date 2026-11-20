@@ -23555,10 +23555,10 @@
         "day": "2026-11-19",
         "mopName": "Градцева Елена"
       },
-      "airSeconds": 165,
+      "airSeconds": 625,
       "calls": 12,
-      "successfulTargetCalls": 1,
-      "targetCalls": 1
+      "successfulTargetCalls": 2,
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -23645,10 +23645,10 @@
         "day": "2026-11-19",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 3518,
+      "airSeconds": 4524,
       "calls": 15,
-      "successfulTargetCalls": 1,
-      "targetCalls": 3
+      "successfulTargetCalls": 2,
+      "targetCalls": 4
     },
     {
       "_id": {
@@ -23676,7 +23676,7 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23705,10 +23705,10 @@
         "day": "2026-11-20",
         "mopName": "Аверкиев Дмитрий"
       },
-      "airSeconds": 169,
-      "calls": 14,
+      "airSeconds": 234,
+      "calls": 15,
       "successfulTargetCalls": 1,
-      "targetCalls": 2
+      "targetCalls": 3
     },
     {
       "_id": {
@@ -23726,7 +23726,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 9,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23735,40 +23735,40 @@
         "day": "2026-11-20",
         "mopName": "Градцева Елена"
       },
-      "airSeconds": 0,
-      "calls": 4,
+      "airSeconds": 622,
+      "calls": 2,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-20",
         "mopName": "Григорович Елена"
       },
-      "airSeconds": 0,
-      "calls": 14,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 441,
+      "calls": 10,
+      "successfulTargetCalls": 1,
+      "targetCalls": 3
     },
     {
       "_id": {
         "day": "2026-11-20",
         "mopName": "Данчук Марина"
       },
-      "airSeconds": 0,
-      "calls": 9,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "airSeconds": 1235,
+      "calls": 10,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
     },
     {
       "_id": {
         "day": "2026-11-20",
         "mopName": "Жуков Лев"
       },
-      "airSeconds": 0,
-      "calls": 6,
+      "airSeconds": 436,
+      "calls": 7,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     },
     {
       "_id": {
@@ -23776,7 +23776,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 24,
+      "calls": 19,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23795,30 +23795,30 @@
         "day": "2026-11-20",
         "mopName": "Погребинский Артем"
       },
-      "airSeconds": 0,
+      "airSeconds": 335,
       "calls": 3,
-      "successfulTargetCalls": 0,
-      "targetCalls": 0
-    },
-    {
-      "_id": {
-        "day": "2026-11-20",
-        "mopName": "Полстянова Татьяна"
-      },
-      "airSeconds": 324,
-      "calls": 9,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
     {
       "_id": {
         "day": "2026-11-20",
+        "mopName": "Полстянова Татьяна"
+      },
+      "airSeconds": 368,
+      "calls": 16,
+      "successfulTargetCalls": 1,
+      "targetCalls": 2
+    },
+    {
+      "_id": {
+        "day": "2026-11-20",
         "mopName": "Султанов Есен"
       },
-      "airSeconds": 0,
-      "calls": 9,
+      "airSeconds": 1225,
+      "calls": 11,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 2
     },
     {
       "_id": {
@@ -23835,12 +23835,12 @@
         "day": "2026-11-20",
         "mopName": "Ядрышникова Кристина"
       },
-      "airSeconds": 0,
-      "calls": 8,
+      "airSeconds": 824,
+      "calls": 9,
       "successfulTargetCalls": 0,
-      "targetCalls": 0
+      "targetCalls": 1
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-20T12:55:21+00:00"
+  "updatedAt": "2026-11-20T21:51:28+00:00"
 }
