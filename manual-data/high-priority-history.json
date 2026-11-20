@@ -75339,10 +75339,12 @@
     "2026-11-20": {
       "calledFromPreviousDealIds": [
         "5927",
+        "6277",
         "6628",
         "6770",
         "7035",
-        "7107"
+        "7107",
+        "7191"
       ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
@@ -75437,24 +75439,6 @@
           "stageName": "Дожать на встречу",
           "title": "Рустам",
           "utmSource": "op"
-        },
-        {
-          "dateCreate": "2026-03-21",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 244,
-          "dealId": "4381",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4381/",
-          "lastCallAttemptDate": "2026-11-02",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Татьяна",
-          "utmSource": "leadit"
         },
         {
           "dateCreate": "2026-04-10",
@@ -75564,24 +75548,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Екатерина",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-14",
-          "daysWithoutAttempt": 18,
-          "daysWithoutCall": 67,
-          "dealId": "6422",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6422/",
-          "lastCallAttemptDate": "2026-11-02",
-          "lastSuccessfulCommunicationDate": "",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Документы на ипотеку поданы",
-          "title": "Новоторженцева Анжелика Вячеславовна",
           "utmSource": "leadit"
         },
         {
@@ -75861,24 +75827,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-30",
-          "daysWithoutAttempt": 10,
-          "daysWithoutCall": 34,
-          "dealId": "6698",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6698/",
-          "lastCallAttemptDate": "2026-11-10",
-          "lastSuccessfulCommunicationDate": "2026-10-17",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Ядрышникова Кристина",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Илькин",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-10-20",
           "daysWithoutAttempt": 14,
           "daysWithoutCall": 28,
@@ -76096,26 +76044,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Сергей",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-10-28",
-          "daysWithoutAttempt": 0,
-          "daysWithoutCall": 22,
-          "dealId": "7107",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/7107/",
-          "lastCallAttemptDate": "2026-11-20",
-          "lastSuccessfulCommunicationDate": "2026-10-29",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Погребинский Артем",
-          "offerCallsByDate": {
-            "2026-10-29": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Максим",
           "utmSource": "leadit"
         },
         {
@@ -76396,11 +76324,11 @@
         },
         {
           "dateCreate": "2026-11-05",
-          "daysWithoutAttempt": 3,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 15,
           "dealId": "7191",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/7191/",
-          "lastCallAttemptDate": "2026-11-17",
+          "lastCallAttemptDate": "2026-11-20",
           "lastSuccessfulCommunicationDate": "2026-11-05",
           "meetingHeld": true,
           "mopId": "",
@@ -76614,7 +76542,6 @@
         "4243",
         "4273",
         "4278",
-        "4381",
         "4600",
         "4616",
         "4692",
@@ -76637,14 +76564,12 @@
         "6277",
         "6291",
         "6397",
-        "6422",
         "6438",
         "6515",
         "6628",
         "6631",
         "6636",
         "6677",
-        "6698",
         "6701",
         "6707",
         "6760",
@@ -76658,7 +76583,6 @@
         "7050",
         "7062",
         "7077",
-        "7107",
         "7141",
         "7148",
         "7159",

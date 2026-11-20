@@ -23696,7 +23696,7 @@
         "mopName": "Абоскалова Анна"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23706,7 +23706,7 @@
         "mopName": "Аверкиев Дмитрий"
       },
       "airSeconds": 169,
-      "calls": 11,
+      "calls": 14,
       "successfulTargetCalls": 1,
       "targetCalls": 2
     },
@@ -23726,7 +23726,7 @@
         "mopName": "Гавриленко Елена"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23736,7 +23736,7 @@
         "mopName": "Градцева Елена"
       },
       "airSeconds": 0,
-      "calls": 3,
+      "calls": 4,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23746,7 +23746,7 @@
         "mopName": "Григорович Елена"
       },
       "airSeconds": 0,
-      "calls": 5,
+      "calls": 14,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23756,7 +23756,7 @@
         "mopName": "Данчук Марина"
       },
       "airSeconds": 0,
-      "calls": 7,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23766,7 +23766,7 @@
         "mopName": "Жуков Лев"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 6,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23776,7 +23776,7 @@
         "mopName": "Зенкова Анастасия"
       },
       "airSeconds": 0,
-      "calls": 21,
+      "calls": 24,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23796,7 +23796,7 @@
         "mopName": "Погребинский Артем"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23806,7 +23806,7 @@
         "mopName": "Полстянова Татьяна"
       },
       "airSeconds": 324,
-      "calls": 5,
+      "calls": 9,
       "successfulTargetCalls": 1,
       "targetCalls": 1
     },
@@ -23816,7 +23816,7 @@
         "mopName": "Султанов Есен"
       },
       "airSeconds": 0,
-      "calls": 6,
+      "calls": 9,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23826,7 +23826,7 @@
         "mopName": "Фабрициус Татьяна"
       },
       "airSeconds": 0,
-      "calls": 1,
+      "calls": 3,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     },
@@ -23836,11 +23836,11 @@
         "mopName": "Ядрышникова Кристина"
       },
       "airSeconds": 0,
-      "calls": 4,
+      "calls": 8,
       "successfulTargetCalls": 0,
       "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-20T09:33:37+00:00"
+  "updatedAt": "2026-11-20T12:55:21+00:00"
 }
