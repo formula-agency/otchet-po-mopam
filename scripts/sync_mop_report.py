@@ -5505,6 +5505,8 @@ def build_active_deals_payload(
     deals: list[dict[str, Any]] = []
     category_names = fetch_deal_category_names(session, settings)
     category_ids = active_deal_category_ids(category_names, mop_settings)
+    if mop_settings.active_deal_category_names and not category_ids:
+        raise ConfigError("Cannot count active deals: configured deal category was not found.")
     base_filters: dict[str, Any] = {
         "CLOSED": "N",
         "<=DATE_CREATE": window.end.isoformat(timespec="seconds"),
@@ -5517,14 +5519,13 @@ def build_active_deals_payload(
             deals = fetch_deal_list(session, settings, base_filters, select_fields)
     except Exception as exc:
         data.warnings.append(f"Активные сделки не загружены: {safe_error_text(exc)}")
-        return {"rows": [], "mopNames": [], "minDate": window.start.date().isoformat(), "maxDate": window.end.date().isoformat()}
-
-    if mop_settings.active_deal_category_names and not category_ids:
-        data.warnings.append(
-            "Активные сделки: не найдена воронка "
-            + ", ".join(mop_settings.active_deal_category_names)
-            + "; сделки загружены по всем воронкам."
-        )
+        return {
+            "rows": [],
+            "mopNames": [],
+            "allOpenDealCountsByCreateDate": [],
+            "minDate": window.start.date().isoformat(),
+            "maxDate": window.end.date().isoformat(),
+        }
 
     unique_deals: dict[str, dict[str, Any]] = {}
     for record in deals:
@@ -5532,6 +5533,11 @@ def build_active_deals_payload(
         if deal_id and deal_id not in unique_deals:
             unique_deals[deal_id] = record
     deals = list(unique_deals.values())
+    all_open_counts: dict[str, int] = defaultdict(int)
+    for record in deals:
+        created = parse_bitrix_date(record.get("DATE_CREATE"), settings.report_timezone)
+        if created is not None:
+            all_open_counts[created.isoformat()] += 1
 
     assigned_user_ids = {
         extract_assigned_user_id(record, mop_settings)
@@ -5665,6 +5671,10 @@ def build_active_deals_payload(
     return {
         "rows": rows,
         "mopNames": sorted(mop_names | configured_mop_names),
+        "allOpenDealCountsByCreateDate": [
+            {"date": created, "count": count}
+            for created, count in sorted(all_open_counts.items())
+        ],
         "minDate": window.start.date().isoformat(),
         "maxDate": window.end.date().isoformat(),
     }

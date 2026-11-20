@@ -1844,26 +1844,37 @@ function scoreboardDateRange() {
   };
 }
 
-function createdDealCountsByMopForRange(range) {
+function scoreboardDealAsOfDate() {
+  const range = scoreboardDateRange();
+  const snapshotDate = activeDealsData().maxDate || data.report?.to || range.to;
+  if (!range.to) return snapshotDate;
+  if (!snapshotDate) return range.to;
+  return range.to < snapshotDate ? range.to : snapshotDate;
+}
+
+function openDealCountsByMopAsOf(asOfDate) {
   const counts = new Map();
-  for (const item of data.createdDealCounts || []) {
-    if (!item.mopName || !isScoreboardMopIncluded(item.mopName) || !dateInRange(item.date, range.from, range.to)) continue;
-    counts.set(item.mopName, (counts.get(item.mopName) || 0) + Number(item.count || 0));
+  for (const deal of activeDealsData().rows || []) {
+    if (!deal.mopName || !isScoreboardMopIncluded(deal.mopName) || !deal.dateCreate || deal.dateCreate > asOfDate) continue;
+    counts.set(deal.mopName, (counts.get(deal.mopName) || 0) + 1);
   }
   return counts;
 }
 
-function allCreatedDealCountForRange(range) {
-  if (!Array.isArray(data.allCreatedDealCounts)) return null;
-  return data.allCreatedDealCounts
-    .filter((item) => dateInRange(item.date, range.from, range.to))
+function allOpenDealCountAsOf(asOfDate) {
+  const counts = data.activeDeals?.allOpenDealCountsByCreateDate;
+  if (!Array.isArray(counts)) {
+    return (activeDealsData().rows || []).filter((deal) => deal.dateCreate && deal.dateCreate <= asOfDate).length;
+  }
+  return counts
+    .filter((item) => item.date && item.date <= asOfDate)
     .reduce((sum, item) => sum + Number(item.count || 0), 0);
 }
 
 function scoreboardRows() {
   const scoreboardMopNames = new Set([
     ...(data.filters?.mopNames || []),
-    ...(data.createdDealCounts || []).map((item) => item.mopName),
+    ...(activeDealsData().rows || []).map((deal) => deal.mopName),
   ].filter(isScoreboardMopIncluded));
   const rowsByMop = new Map([...scoreboardMopNames].map((name) => [name, emptyScoreboardRow(name)]));
 
@@ -1889,8 +1900,8 @@ function scoreboardRows() {
     }
   }
 
-  const createdDealCounts = createdDealCountsByMopForRange(scoreboardDateRange());
-  for (const [mopName, count] of createdDealCounts.entries()) {
+  const openDealCounts = openDealCountsByMopAsOf(scoreboardDealAsOfDate());
+  for (const [mopName, count] of openDealCounts.entries()) {
     if (!rowsByMop.has(mopName)) {
       rowsByMop.set(mopName, emptyScoreboardRow(mopName));
     }
@@ -1947,16 +1958,17 @@ function renderAirTimePlanFact() {
     ...emptyScoreboardRow('Итого'),
     ...summarizeRows(scoreboardTotalRows()),
   };
-  const totalRange = scoreboardDateRange();
-  const rankedDealCount = [...createdDealCountsByMopForRange(totalRange).values()]
+  const asOfDate = scoreboardDealAsOfDate();
+  const rankedDealCount = [...openDealCountsByMopAsOf(asOfDate).values()]
     .reduce((sum, count) => sum + count, 0);
-  totals.activeDealsFact = allCreatedDealCountForRange(totalRange) ?? rankedDealCount;
+  totals.activeDealsFact = allOpenDealCountAsOf(asOfDate);
   const dealsOutsideRanking = Math.max(0, totals.activeDealsFact - rankedDealCount);
   const selectedSprint = selectedOption(sprintOptionsForMonth(state.airtimeMonth), state.airtimeSprint);
   const summaryCaption = (metric) => {
     if (metric.fact === 'activeDealsFact' && dealsOutsideRanking) {
       return `${formatNumber(dealsOutsideRanking)} вне рейтинга`;
     }
+    if (metric.fact === 'activeDealsFact') return 'Сейчас в работе';
     return metric.plan ? completion(totals[metric.fact], totals[metric.plan]) : 'Факт';
   };
 
@@ -1977,7 +1989,7 @@ function renderAirTimePlanFact() {
   }
   els.scoreboardSummary.innerHTML = SCOREBOARD_METRICS.map((metric) => `
     <article>
-      <span>${escapeHtml(metric.label)}</span>
+      <span${metric.fact === 'activeDealsFact' ? ' title="Открытые сейчас сделки, созданные до конца выбранного периода"' : ''}>${escapeHtml(metric.label)}</span>
       <strong>${metricPair(totals, metric)}</strong>
       <small${metric.fact === 'activeDealsFact' && dealsOutsideRanking ? ' title="Закреплены за неактивными МОПами или другими сотрудниками"' : ''}>${summaryCaption(metric)}</small>
     </article>
@@ -2005,7 +2017,7 @@ function renderAirTimePlanFact() {
         </div>
         ${SCOREBOARD_METRICS.map((metric) => `
           <div class="airtime-row__metric">
-            <span>${escapeHtml(metric.label)}</span>
+            <span${metric.fact === 'activeDealsFact' ? ' title="Открытые сейчас сделки, созданные до конца выбранного периода"' : ''}>${escapeHtml(metric.label)}</span>
             <strong>${metricPair(row, metric)}</strong>
           </div>
         `).join('')}

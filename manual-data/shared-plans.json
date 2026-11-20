@@ -473,7 +473,7 @@
     "2026-11": {
       "fileName": "План на ноябрь 2026 (скриншот)",
       "publishedAt": "2026-11-02T08:12:48Z",
-      "managerCount": 13,
+      "managerCount": 18,
       "hasAggregatePlan": false,
       "skippedNames": [],
       "plans": [
@@ -587,6 +587,51 @@
         },
         {
           "mopName": "Полстянова Татьяна",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Григорович Елена",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Ковалев Иван",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Овчинников Станислав",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Устинова Ольга",
+          "aggregatePlan": false,
+          "salesPlan": 1,
+          "meetingsPlan": 8,
+          "reservationsPlan": 6,
+          "approvedMortgagesPlan": 4,
+          "airTimePlanSeconds": 12000
+        },
+        {
+          "mopName": "Фабрициус Татьяна",
           "aggregatePlan": false,
           "salesPlan": 1,
           "meetingsPlan": 8,

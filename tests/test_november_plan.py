@@ -35,7 +35,7 @@ class NovemberPlanTest(unittest.TestCase):
             for item in month["plans"]
         }
 
-        self.assertEqual(month["managerCount"], 13)
+        self.assertEqual(month["managerCount"], 18)
         self.assertEqual(
             plans,
             {
@@ -52,6 +52,11 @@ class NovemberPlanTest(unittest.TestCase):
                 "Аверкиев Дмитрий": (200, 8, 6, 4, 1),
                 "Яловая Надежда": (200, 8, 6, 4, 1),
                 "Полстянова Татьяна": (200, 8, 6, 4, 1),
+                "Григорович Елена": (200, 8, 6, 4, 1),
+                "Ковалев Иван": (200, 8, 6, 4, 1),
+                "Овчинников Станислав": (200, 8, 6, 4, 1),
+                "Устинова Ольга": (200, 8, 6, 4, 1),
+                "Фабрициус Татьяна": (200, 8, 6, 4, 1),
             },
         )
 
