@@ -76600,7 +76600,10 @@
       "previousDate": "2026-11-19"
     },
     "2026-11-21": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "4243",
+        "7197"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-11-21",
@@ -76857,24 +76860,6 @@
           "stageId": "",
           "stageName": "Дожать на встречу",
           "title": "Лариса",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-09-04",
-          "daysWithoutAttempt": 43,
-          "daysWithoutCall": 45,
-          "dealId": "6204",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6204/",
-          "lastCallAttemptDate": "2026-10-09",
-          "lastSuccessfulCommunicationDate": "2026-10-07",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Элина",
           "utmSource": "leadit"
         },
         {
@@ -77139,11 +77124,11 @@
         },
         {
           "dateCreate": "2026-03-07",
-          "daysWithoutAttempt": 26,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 26,
           "dealId": "4243",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/4243/",
-          "lastCallAttemptDate": "2026-10-26",
+          "lastCallAttemptDate": "2026-11-21",
           "lastSuccessfulCommunicationDate": "2026-10-26",
           "meetingHeld": true,
           "mopId": "",
@@ -77653,24 +77638,6 @@
         },
         {
           "dateCreate": "2026-11-05",
-          "daysWithoutAttempt": 14,
-          "daysWithoutCall": 14,
-          "dealId": "7197",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/7197/",
-          "lastCallAttemptDate": "2026-11-07",
-          "lastSuccessfulCommunicationDate": "2026-11-07",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Аверкиев Дмитрий",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Провести встречу",
-          "title": "Александр",
-          "utmSource": "leadit"
-        },
-        {
-          "dateCreate": "2026-11-05",
           "daysWithoutAttempt": 12,
           "daysWithoutCall": 14,
           "dealId": "7198",
@@ -77835,7 +77802,6 @@
         "6057",
         "6085",
         "6120",
-        "6204",
         "6257",
         "6277",
         "6291",
@@ -77865,7 +77831,6 @@
         "7159",
         "7162",
         "7191",
-        "7197",
         "7198"
       ],
       "newOverdueDealIds": [
