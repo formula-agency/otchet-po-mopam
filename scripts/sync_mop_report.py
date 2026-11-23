@@ -566,6 +566,7 @@ class MeetingLogEntry:
     meeting_number: int | None = None
     closed_date: date | None = None
     successful: bool = True
+    closed_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -1559,6 +1560,7 @@ def build_meeting_log_entries(service: Any, settings: Settings) -> list[MeetingL
                     meeting_number,
                     closed_datetime.date() if closed_datetime else None,
                     successful,
+                    closed_datetime,
                 )
             )
     return entries
@@ -2957,6 +2959,28 @@ def calculate_target_after_meeting_entries(
             key=lambda item: (item[0][0], normalize_key(item[0][1])),
         )
     ]
+
+
+def supplement_meeting_documents_from_log(
+    documents: list[dict[str, Any]],
+    entries: list[MeetingLogEntry],
+    timezone_name: str,
+) -> list[dict[str, Any]]:
+    result = list(documents)
+    timezone = ZoneInfo(timezone_name)
+    for entry in entries:
+        if not entry.successful or not entry.deal_id:
+            continue
+        completed_at = entry.closed_at
+        if completed_at is None:
+            completed_at = datetime.combine(
+                entry.closed_date or entry.meeting_date, time.max, tzinfo=timezone
+            )
+        result.append({
+            "deal_id": entry.deal_id,
+            "meeting_complete_date": completed_at,
+        })
+    return result
 
 
 def replace_target_after_meeting_facts(
@@ -4668,6 +4692,7 @@ def build_mongo_call_facts(
     settings: Settings,
     mop_settings: MopSettings,
     window: ReportWindow,
+    meeting_entries: list[MeetingLogEntry] | None = None,
 ) -> bool:
     require_server_read_only = read_bool_env("MONGO_CALLS_REQUIRE_SERVER_READ_ONLY", True)
     timeout_ms = read_positive_int_env(
@@ -4740,7 +4765,11 @@ def build_mongo_call_facts(
                     )
                     target_entries = calculate_target_after_meeting_entries(
                         target_call_rows,
-                        meeting_documents,
+                        supplement_meeting_documents_from_log(
+                            meeting_documents,
+                            meeting_entries or [],
+                            settings.report_timezone,
+                        ),
                         settings.report_timezone,
                     )
                     target_seconds = replace_target_after_meeting_facts(
@@ -6630,12 +6659,14 @@ def main() -> int:
         data = MopReportData()
         booking_events = build_booking_reservation_events(data, session, settings, window)
         build_deal_metric_facts(data, session, settings, mop_settings, window, booking_events)
-        build_meeting_facts(data, service, session, settings, mop_settings, window)
+        meeting_entries = build_meeting_facts(data, service, session, settings, mop_settings, window)
         build_target_after_meeting_facts(data, service, settings, mop_settings, window)
         call_source = resolve_call_source()
         mongo_calls_loaded = False
         if call_source == "mongodb":
-            mongo_calls_loaded = build_mongo_call_facts(data, settings, mop_settings, window)
+            mongo_calls_loaded = build_mongo_call_facts(
+                data, settings, mop_settings, window, meeting_entries
+            )
             build_mongo_deal_call_facts(data, settings, mop_settings, window, session)
             if not mongo_calls_loaded and read_bool_env("MONGO_CALLS_FALLBACK_TO_BITRIX", False):
                 build_call_facts(data, session, settings, mop_settings, window)

@@ -11,6 +11,7 @@ from zoneinfo import ZoneInfo
 
 from scripts.sync_mop_report import (
     MONGO_COMPLETED_CALL_CLASSIFICATIONS,
+    MeetingLogEntry,
     MopReportData,
     MopSettings,
     ReportWindow,
@@ -35,6 +36,7 @@ from scripts.sync_mop_report import (
     mongo_mop_identity,
     presentation_contains_offer,
     replace_target_after_meeting_facts,
+    supplement_meeting_documents_from_log,
     week_start_for_date,
 )
 
@@ -224,6 +226,37 @@ class MongoCallPipelineTests(unittest.TestCase):
 
 
 class MongoCallAggregateTests(unittest.TestCase):
+    def test_google_meeting_completion_qualifies_only_later_calls_in_same_deal(self) -> None:
+        timezone = ZoneInfo("Asia/Yekaterinburg")
+        documents = supplement_meeting_documents_from_log(
+            [],
+            [
+                MeetingLogEntry(
+                    date(2026, 11, 5), "501", "Войнов Данил",
+                    closed_date=date(2026, 11, 5),
+                    closed_at=datetime(2026, 11, 5, 10, 30, tzinfo=timezone),
+                ),
+                MeetingLogEntry(
+                    date(2026, 11, 5), "502", "Войнов Данил",
+                    closed_date=date(2026, 11, 5), successful=False,
+                ),
+            ],
+            "Asia/Yekaterinburg",
+        )
+        calls = [
+            {
+                "callAt": datetime(2026, 11, 5, hour, tzinfo=timezone),
+                "durationSeconds": 60,
+                "dealId": deal_id,
+                "mopName": "Войнов Данил",
+            }
+            for hour, deal_id in [(9, "501"), (11, "501"), (12, "502")]
+        ]
+        entries = calculate_target_after_meeting_entries(
+            calls, documents, "Asia/Yekaterinburg"
+        )
+        self.assertEqual(sum(entry.seconds for entry in entries), 60)
+
     def test_replaces_rounded_google_airtime_with_exact_templab_seconds(self) -> None:
         entries = calculate_target_after_meeting_entries(
             [

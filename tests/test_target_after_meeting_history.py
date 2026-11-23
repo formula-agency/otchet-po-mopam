@@ -22,7 +22,7 @@ class TargetAfterMeetingHistoryTest(unittest.TestCase):
             if entry.event_date.year == 2026 and entry.event_date.month == 9
         )
 
-        self.assertEqual(september_seconds, 53_663)
+        self.assertEqual(september_seconds, 55_225)
 
     def test_keeps_closed_months_and_replaces_current_month_snapshot(self):
         historical = [
