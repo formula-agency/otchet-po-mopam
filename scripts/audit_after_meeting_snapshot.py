@@ -23,7 +23,20 @@ def main() -> None:
     seen = set()
     fields = set()
     with FormulaMongoReader.from_env(None, require_server_read_only=False) as reader:
-        for document in reader.collection("analytics_page_snapshot").find(
+        snapshot = reader.collection("analytics_page_snapshot")
+        sample = snapshot.find_one({}, {"_id": 0}) or {}
+        print("Snapshot sample fields: " + ", ".join(sorted(sample)))
+        print("Snapshot sample dates: " + repr({
+            key: value for key, value in sample.items()
+            if "date" in key.lower() or "meeting" in key.lower() or "snapshot" in key.lower()
+        }))
+        print("Snapshot rows: " + str(snapshot.estimated_document_count()))
+        print("Snapshot marked after meeting: " + str(snapshot.count_documents({"is_after_meeting": True})))
+        for collection_name in ("mongo_calls", "call_analysis"):
+            collection = reader.collection(collection_name)
+            record = collection.find_one({}, {"_id": 0}) or {}
+            print(collection_name + " fields: " + ", ".join(sorted(record)))
+        for document in snapshot.find(
             query, max_time_ms=120000
         ).limit(50000):
             fields.update(document.keys())
