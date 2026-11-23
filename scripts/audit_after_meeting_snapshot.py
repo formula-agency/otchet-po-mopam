@@ -39,7 +39,7 @@ def main() -> None:
                 "seconds": {"$sum": {"$convert": {"input": "$call_duration", "to": "int", "onError": 0, "onNull": 0}}},
             }},
             {"$sort": {"_id.month": 1, "_id.after": 1}},
-        ], maxTimeMS=120000)))
+        ], maxTimeMS=120000))))
         for collection_name in ("mongo_calls", "call_analysis"):
             collection = reader.collection(collection_name)
             record = collection.find_one({}, {"_id": 0}) or {}
