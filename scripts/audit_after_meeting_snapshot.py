@@ -82,6 +82,29 @@ def main() -> None:
         print("Successful meeting records: " + str(len(meeting_docs)))
         print("Matched after-meeting seconds: " + str(sum(item.seconds for item in entries)))
         print("Matched after-meeting managers: " + repr(sorted({item.mop_name for item in entries})))
+        meeting_deals = {str(item["deal_id"]).strip() for item in meeting_docs}
+        call_deals = {str(item["dealId"]).strip() for item in call_rows}
+        print("Target call deals: " + str(len(call_deals)))
+        print("Target call deals with successful meeting: " + str(len(call_deals & meeting_deals)))
+        by_manager = defaultdict(lambda: {"calls": 0, "seconds": 0, "matchedCalls": 0, "matchedSeconds": 0})
+        for row in call_rows:
+            item = by_manager[row["mopName"]]
+            item["calls"] += 1
+            item["seconds"] += row["durationSeconds"]
+            if str(row["dealId"]).strip() in meeting_deals:
+                item["matchedCalls"] += 1
+                item["matchedSeconds"] += row["durationSeconds"]
+        print("Target call deal match by manager: " + repr(dict(sorted(by_manager.items()))))
+        september_classifications = list(snapshot.aggregate([
+            {"$match": {"call_date_key": {"$gte": "2026-09-01", "$lt": "2026-10-01"}, "is_after_meeting": True}},
+            {"$group": {
+                "_id": {"classification": "$call_classification", "meetingCompleted": "$meeting_is_completed"},
+                "calls": {"$sum": 1},
+                "seconds": {"$sum": {"$convert": {"input": "$call_duration", "to": "int", "onError": 0, "onNull": 0}}},
+            }},
+            {"$sort": {"calls": -1}},
+        ], maxTimeMS=120000))
+        print("September after-meeting classifications: " + repr(september_classifications))
         for document in snapshot.find(
             query, max_time_ms=120000
         ).limit(50000):
