@@ -32,6 +32,14 @@ def main() -> None:
         }))
         print("Snapshot rows: " + str(snapshot.estimated_document_count()))
         print("Snapshot marked after meeting: " + str(snapshot.count_documents({"is_after_meeting": True})))
+        print("Snapshot month distribution: " + repr(list(snapshot.aggregate([
+            {"$group": {
+                "_id": {"month": {"$substr": ["$call_date_key", 0, 7]}, "after": "$is_after_meeting"},
+                "count": {"$sum": 1},
+                "seconds": {"$sum": {"$convert": {"input": "$call_duration", "to": "int", "onError": 0, "onNull": 0}}},
+            }},
+            {"$sort": {"_id.month": 1, "_id.after": 1}},
+        ], maxTimeMS=120000)))
         for collection_name in ("mongo_calls", "call_analysis"):
             collection = reader.collection(collection_name)
             record = collection.find_one({}, {"_id": 0}) or {}
