@@ -4743,6 +4743,8 @@ def build_mongo_call_facts(
                     tzinfo=ZoneInfo(settings.report_timezone),
                 )
                 try:
+                    if not meeting_entries:
+                        raise ConfigError("Журнал встреч недоступен или пуст; сохраненный эфир после встречи оставлен без изменений.")
                     target_call_rows = list(
                         collection.aggregate(
                             build_mongo_target_after_meeting_pipeline(target_start, target_end),
