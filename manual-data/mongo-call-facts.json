@@ -24069,8 +24069,28 @@
       "calls": 5,
       "successfulTargetCalls": 1,
       "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-23",
+        "mopName": "Абоскалова Анна"
+      },
+      "airSeconds": 157,
+      "calls": 2,
+      "successfulTargetCalls": 0,
+      "targetCalls": 1
+    },
+    {
+      "_id": {
+        "day": "2026-11-23",
+        "mopName": "Полстянова Татьяна"
+      },
+      "airSeconds": 0,
+      "calls": 1,
+      "successfulTargetCalls": 0,
+      "targetCalls": 0
     }
   ],
   "schemaVersion": 1,
-  "updatedAt": "2026-11-22T23:39:31+00:00"
+  "updatedAt": "2026-11-23T05:13:41+00:00"
 }
