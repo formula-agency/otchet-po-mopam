@@ -8,6 +8,7 @@ from mongo_formula_readonly import FormulaMongoReader
 from sync_mop_report import (
     build_mongo_target_after_meeting_pipeline,
     calculate_target_after_meeting_entries,
+    parse_bitrix_datetime,
 )
 
 
@@ -80,6 +81,18 @@ def main() -> None:
         print("Eligible target calls with deal: " + str(len(call_rows)))
         print("Eligible target seconds: " + str(sum(row["durationSeconds"] for row in call_rows)))
         print("Successful meeting records: " + str(len(meeting_docs)))
+        monthly_meetings = defaultdict(lambda: {"records": 0, "deals": set()})
+        for document in meeting_docs:
+            completed = parse_bitrix_datetime(document.get("meeting_complete_date"), "Asia/Yekaterinburg")
+            if completed is None:
+                continue
+            bucket = monthly_meetings[completed.strftime("%Y-%m")]
+            bucket["records"] += 1
+            bucket["deals"].add(str(document.get("deal_id") or ""))
+        print("Recent successful meetings: " + repr({
+            month: {"records": item["records"], "deals": len(item["deals"])}
+            for month, item in monthly_meetings.items() if month >= "2026-09"
+        }))
         print("Matched after-meeting seconds: " + str(sum(item.seconds for item in entries)))
         print("Matched after-meeting managers: " + repr(sorted({item.mop_name for item in entries})))
         meeting_deals = {str(item["deal_id"]).strip() for item in meeting_docs}
@@ -134,6 +147,21 @@ def main() -> None:
             "snapshotDealsMatchingMeetingTable": len({
                 str(item.get("b24_deal_id") or "") for item in snapshot_target_rows
             } & meeting_deals),
+        }))
+        meeting_times = defaultdict(list)
+        for document in meeting_docs:
+            completed = parse_bitrix_datetime(document.get("meeting_complete_date"), "Asia/Yekaterinburg")
+            if completed is not None:
+                meeting_times[str(document.get("deal_id") or "")].append(completed)
+        reconstructed_after_ids = {
+            str(row.get("_id") or "") for row in september_rows
+            if any(meeting_at <= parse_bitrix_datetime(row.get("callAt"), "Asia/Yekaterinburg")
+                   for meeting_at in meeting_times[str(row.get("dealId") or "")])
+        }
+        print("September reconstruction precision: " + repr({
+            "reconstructedCalls": len(reconstructed_after_ids),
+            "sourceMarkedCalls": len(snapshot_target_ids),
+            "overlap": len(reconstructed_after_ids & snapshot_target_ids),
         }))
         for document in snapshot.find(
             query, max_time_ms=120000
