@@ -105,6 +105,36 @@ def main() -> None:
             {"$sort": {"calls": -1}},
         ], maxTimeMS=120000))
         print("September after-meeting classifications: " + repr(september_classifications))
+        september_start = datetime(2026, 9, 1, tzinfo=timezone)
+        september_end = datetime(2026, 10, 1, tzinfo=timezone)
+        september_rows = list(call_collection.aggregate(
+            build_mongo_target_after_meeting_pipeline(september_start, september_end),
+            allowDiskUse=False, maxTimeMS=120000,
+        ))
+        september_entries = calculate_target_after_meeting_entries(
+            september_rows, meeting_docs, "Asia/Yekaterinburg"
+        )
+        print("September reconstructed target after meeting: " + repr({
+            "callsWithDeal": len(september_rows),
+            "seconds": sum(item.seconds for item in september_entries),
+        }))
+        snapshot_target_rows = list(snapshot.find(
+            {"call_date_key": {"$gte": "2026-09-01", "$lt": "2026-10-01"},
+             "is_after_meeting": True,
+             "call_classification": {"$in": ["Целевой результативный", "Целевой нерезультативный", "Целевой звонок"]}},
+            {"_id": 0, "call_uid": 1, "b24_deal_id": 1, "call_duration": 1},
+            max_time_ms=120000,
+        ))
+        snapshot_target_ids = {str(item.get("call_uid") or "") for item in snapshot_target_rows}
+        reconstructed_ids = {str(item.get("_id") or "") for item in september_rows}
+        print("September snapshot target overlap: " + repr({
+            "snapshotCalls": len(snapshot_target_ids),
+            "reconstructedCallCandidates": len(reconstructed_ids),
+            "overlap": len(snapshot_target_ids & reconstructed_ids),
+            "snapshotDealsMatchingMeetingTable": len({
+                str(item.get("b24_deal_id") or "") for item in snapshot_target_rows
+            } & meeting_deals),
+        }))
         for document in snapshot.find(
             query, max_time_ms=120000
         ).limit(50000):
