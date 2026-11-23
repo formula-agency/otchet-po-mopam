@@ -5,6 +5,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from mongo_formula_readonly import FormulaMongoReader
+from sync_mop_report import (
+    build_mongo_target_after_meeting_pipeline,
+    calculate_target_after_meeting_entries,
+)
 
 
 def main() -> None:
@@ -44,6 +48,40 @@ def main() -> None:
             collection = reader.collection(collection_name)
             record = collection.find_one({}, {"_id": 0}) or {}
             print(collection_name + " fields: " + ", ".join(sorted(record)))
+        meeting_collection = reader.collection("okk_meetings_check")
+        meeting_sample = meeting_collection.find_one({}, {"_id": 0}) or {}
+        print("Meetings fields: " + ", ".join(sorted(meeting_sample)))
+        meeting_stats = list(meeting_collection.aggregate([
+            {"$group": {
+                "_id": "$meeting_status",
+                "count": {"$sum": 1},
+                "withDeal": {"$sum": {"$cond": [{"$ne": ["$deal_id", None]}, 1, 0]}},
+                "withComplete": {"$sum": {"$cond": [{"$ne": ["$meeting_complete_date", None]}, 1, 0]}},
+            }},
+            {"$sort": {"count": -1}},
+        ], maxTimeMS=120000))
+        print("Meeting statuses: " + repr(meeting_stats))
+        call_collection = reader.collection("mongo_calls")
+        print("November call rows: " + str(call_collection.count_documents({
+            "call_date": {"$gte": start, "$lt": end},
+        })))
+        call_rows = list(call_collection.aggregate(
+            build_mongo_target_after_meeting_pipeline(start, end),
+            allowDiskUse=False, maxTimeMS=120000,
+        ))
+        meeting_docs = list(meeting_collection.find(
+            {"meeting_status": {"$in": ["Проведена", "Прошла успешно"]},
+             "deal_id": {"$nin": [None, ""]},
+             "meeting_complete_date": {"$ne": None}},
+            {"_id": 0, "deal_id": 1, "meeting_complete_date": 1},
+            max_time_ms=120000,
+        ))
+        entries = calculate_target_after_meeting_entries(call_rows, meeting_docs, "Asia/Yekaterinburg")
+        print("Eligible target calls with deal: " + str(len(call_rows)))
+        print("Eligible target seconds: " + str(sum(row["durationSeconds"] for row in call_rows)))
+        print("Successful meeting records: " + str(len(meeting_docs)))
+        print("Matched after-meeting seconds: " + str(sum(item.seconds for item in entries)))
+        print("Matched after-meeting managers: " + repr(sorted({item.mop_name for item in entries})))
         for document in snapshot.find(
             query, max_time_ms=120000
         ).limit(50000):
