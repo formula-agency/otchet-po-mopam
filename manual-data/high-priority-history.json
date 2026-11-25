@@ -81298,7 +81298,12 @@
       "previousDate": "2026-11-23"
     },
     "2026-11-25": {
-      "calledFromPreviousDealIds": [],
+      "calledFromPreviousDealIds": [
+        "5819",
+        "5927",
+        "6048",
+        "6631"
+      ],
       "calledFromPreviousEvaluated": true,
       "calledFromPreviousSource": "templab-mongodb-attempts",
       "date": "2026-11-25",
@@ -81738,24 +81743,6 @@
           "utmSource": ""
         },
         {
-          "dateCreate": "2026-08-24",
-          "daysWithoutAttempt": 4,
-          "daysWithoutCall": 28,
-          "dealId": "6048",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6048/",
-          "lastCallAttemptDate": "2026-11-21",
-          "lastSuccessfulCommunicationDate": "2026-10-28",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Марина Данчук",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Светлана",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-04-06",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 28,
@@ -81884,26 +81871,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-07-31",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 23,
-          "dealId": "5819",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5819/",
-          "lastCallAttemptDate": "2026-11-24",
-          "lastSuccessfulCommunicationDate": "2026-11-02",
-          "meetingHeld": false,
-          "mopId": "",
-          "mopName": "Жуков Лев",
-          "offerCallsByDate": {
-            "2026-11-02": 1
-          },
-          "offerCallsCount": 1,
-          "stageId": "",
-          "stageName": "Дожать на встречу",
-          "title": "Иван",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-05-29",
           "daysWithoutAttempt": 1,
           "daysWithoutCall": 23,
@@ -81943,11 +81910,11 @@
         },
         {
           "dateCreate": "2026-08-13",
-          "daysWithoutAttempt": 5,
+          "daysWithoutAttempt": 0,
           "daysWithoutCall": 22,
           "dealId": "5927",
           "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5927/",
-          "lastCallAttemptDate": "2026-11-20",
+          "lastCallAttemptDate": "2026-11-25",
           "lastSuccessfulCommunicationDate": "2026-11-03",
           "meetingHeld": false,
           "mopId": "",
@@ -82142,24 +82109,6 @@
           "utmSource": "leadit"
         },
         {
-          "dateCreate": "2026-09-25",
-          "daysWithoutAttempt": 1,
-          "daysWithoutCall": 16,
-          "dealId": "6631",
-          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/6631/",
-          "lastCallAttemptDate": "2026-11-24",
-          "lastSuccessfulCommunicationDate": "2026-11-09",
-          "meetingHeld": true,
-          "mopId": "",
-          "mopName": "Гавриленко Елена",
-          "offerCallsByDate": {},
-          "offerCallsCount": 0,
-          "stageId": "",
-          "stageName": "0-2 звонка после показа",
-          "title": "Ольга",
-          "utmSource": "leadit"
-        },
-        {
           "dateCreate": "2026-09-29",
           "daysWithoutAttempt": 16,
           "daysWithoutCall": 16,
@@ -82233,6 +82182,24 @@
           "stageName": "Дожать на встречу",
           "title": "Светлана",
           "utmSource": "psk"
+        },
+        {
+          "dateCreate": "2026-06-05",
+          "daysWithoutAttempt": 1,
+          "daysWithoutCall": 15,
+          "dealId": "5405",
+          "dealUrl": "https://crm.formula-agency.com/crm/deal/details/5405/",
+          "lastCallAttemptDate": "2026-11-24",
+          "lastSuccessfulCommunicationDate": "2026-11-10",
+          "meetingHeld": false,
+          "mopId": "",
+          "mopName": "Войнов Данил",
+          "offerCallsByDate": {},
+          "offerCallsCount": 0,
+          "stageId": "",
+          "stageName": "0-2 звонка после показа",
+          "title": "Адель",
+          "utmSource": "avito"
         },
         {
           "dateCreate": "2026-08-27",
@@ -82443,19 +82410,16 @@
         "5538",
         "5610",
         "5759",
-        "5819",
         "5920",
         "5927",
         "5932",
         "5966",
-        "6048",
         "6057",
         "6257",
         "6277",
         "6397",
         "6515",
         "6628",
-        "6631",
         "6676",
         "6678",
         "6692",
@@ -82480,6 +82444,7 @@
       ],
       "newOverdueDealIds": [
         "4686",
+        "5405",
         "5843",
         "6112",
         "6802",
