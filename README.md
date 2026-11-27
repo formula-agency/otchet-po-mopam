@@ -187,7 +187,7 @@ python scripts/import_vats_data.py
 - `MOP_ASSIGNED_FIELD` - поле ответственного, по умолчанию `ASSIGNED_BY_ID`
 - `MOP_CALL_SOURCE` - источник звонков: `mongodb`, `bitrix` или `none`; при наличии Mongo-конфига по умолчанию `mongodb`
 - `MOP_CALL_MIN_DURATION_SECONDS` - минимальная длительность звонка для учета, по умолчанию `0`
-- `MOP_ACTIVE_DEAL_CATEGORY_NAMES` - воронки для учета сделок и отчета по активным сделкам, по умолчанию `Льготная ипотека`
+- `MOP_ACTIVE_DEAL_CATEGORY_NAMES` - воронки для учета сделок и отчета по активным сделкам, по умолчанию `Новостройки` (ID 1, прежнее название `Льготная ипотека`)
 - `MOP_INCLUDE_USERS` / `MOP_EXCLUDE_USERS` - фильтр по ID или ФИО через запятую
 
 По умолчанию отчет показывает только этих МОП:

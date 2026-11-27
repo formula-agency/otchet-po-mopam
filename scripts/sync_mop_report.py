@@ -194,7 +194,7 @@ DEFAULT_MOP_NAMES_BY_ID = {
     "228": "Григорович Елена",
     "229": "Ковалев Иван",
 }
-DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Льготная ипотека",)
+DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES = ("Новостройки",)
 MANUAL_SALES_DATE_OVERRIDES = {
     "4986": date(2026, 5, 31),
     "5394": date(2026, 6, 30),

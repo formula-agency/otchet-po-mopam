@@ -6,10 +6,23 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
-from scripts.sync_mop_report import MopReportData, ReportWindow, build_active_deals_payload
+from scripts.sync_mop_report import (
+    DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES,
+    MopReportData,
+    ReportWindow,
+    active_deal_category_ids,
+    build_active_deals_payload,
+)
 
 
 class ActiveDealInventoryTest(unittest.TestCase):
+    def test_default_category_resolves_renamed_pipeline(self) -> None:
+        settings = SimpleNamespace(active_deal_category_names=DEFAULT_ACTIVE_DEAL_CATEGORY_NAMES)
+        self.assertEqual(
+            active_deal_category_ids({"1": "Новостройки", "10": "Вторичное жилье"}, settings),
+            {"1"},
+        )
+
     def test_counts_open_pipeline_deals_before_report_start_and_outside_mop_roster(self) -> None:
         timezone = ZoneInfo("Asia/Yekaterinburg")
         window = ReportWindow(
